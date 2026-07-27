@@ -1,0 +1,66 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ArrowRight, BadgeCheck, CalendarDays, IndianRupee } from "lucide-react";
+import { Footer } from "@/components/layout/footer";
+import { Navbar } from "@/components/layout/navbar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Container } from "@/components/ui/container";
+import { FAQSection, SocialProofSections } from "@/features/launch/components/content-sections";
+import { launchPrograms } from "@/features/launch/content";
+
+export function generateStaticParams() {
+  return launchPrograms.map((program) => ({ slug: program.slug }));
+}
+
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const program = launchPrograms.find((item) => item.slug === params.slug);
+  if (!program) return {};
+  return { title: program.title, description: program.outcome, openGraph: { title: program.title, description: program.outcome } };
+}
+
+export default function ProgramDetailPage({ params }: { params: { slug: string } }) {
+  const program = launchPrograms.find((item) => item.slug === params.slug);
+  if (!program) notFound();
+  const related = launchPrograms.filter((item) => item.slug !== program.slug).slice(0, 3);
+
+  return (
+    <main className="bg-white text-brand-dark">
+      <Navbar />
+      <section className="px-5 py-16 sm:px-8 lg:px-10">
+        <Container className="grid gap-10 lg:grid-cols-[1fr_360px]">
+          <div>
+            <p className="text-sm font-black uppercase text-brand-red">{program.academy}</p>
+            <h1 className="mt-4 text-5xl font-black leading-tight md:text-7xl">{program.title}</h1>
+            <p className="mt-6 max-w-3xl text-xl leading-9 text-brand-muted">{program.outcome}</p>
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row"><Button asChild size="lg"><Link href="/register">Apply Now</Link></Button><Button asChild size="lg" variant="secondary"><Link href="/contact">Talk to Admissions</Link></Button></div>
+          </div>
+          <Card><CardContent className="p-6"><IndianRupee className="h-8 w-8 text-brand-red" /><h2 className="mt-4 text-2xl font-black">Launch Offer</h2><p className="mt-3 font-bold text-brand-muted">{program.launchOffer}</p><p className="mt-5 text-3xl font-black text-brand-dark">{program.bookingAmount}</p></CardContent></Card>
+        </Container>
+      </section>
+      <Container className="space-y-12 pb-16">
+        <InfoGrid title="Career Outcome" items={[program.outcome]} />
+        <InfoGrid title="Who Should Join" items={program.who} />
+        <InfoGrid title="Learning Journey" items={program.journey} />
+        <InfoGrid title="Projects" items={program.projects} />
+        <InfoGrid title="Mentorship" items={[program.mentorship]} />
+        <InfoGrid title="Internship" items={[program.internship]} />
+        <InfoGrid title="Certification" items={[program.certification]} />
+        <InfoGrid title="Fee" items={[program.fee]} />
+        <InfoGrid title="Important Dates" items={program.importantDates} icon={CalendarDays} />
+        <FAQSection items={program.faqs} />
+        <SocialProofSections />
+        <section>
+          <h2 className="text-3xl font-black text-brand-dark">Related Programs</h2>
+          <div className="mt-5 grid gap-5 md:grid-cols-3">{related.map((item) => <Card key={item.slug}><CardContent className="p-6"><h3 className="text-xl font-black text-brand-dark">{item.title}</h3><Button asChild className="mt-5 w-full" variant="secondary"><Link href={`/programs/${item.slug}`}>View Program <ArrowRight className="h-4 w-4" /></Link></Button></CardContent></Card>)}</div>
+        </section>
+      </Container>
+      <Footer />
+    </main>
+  );
+}
+
+function InfoGrid({ title, items, icon: Icon = BadgeCheck }: { title: string; items: string[]; icon?: React.ComponentType<{ className?: string }> }) {
+  return <section><h2 className="text-3xl font-black text-brand-dark">{title}</h2><div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{items.map((item) => <Card key={item}><CardContent className="flex min-h-28 gap-4 p-5"><Icon className="mt-1 h-5 w-5 shrink-0 text-brand-red" /><p className="font-bold leading-7 text-brand-muted">{item}</p></CardContent></Card>)}</div></section>;
+}
