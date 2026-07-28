@@ -6,14 +6,14 @@ import { Container } from "@/components/ui/container";
 const links = [
   { href: "/#academies", label: "Academies" },
   { href: "/#programs", label: "Programs" },
-  { href: "/admission-process", label: "Admissions" },
+  { href: "/admission-process", label: "How It Works" },
   { href: "/contact", label: "Contact" }
 ];
 
 export function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-black/5 bg-white/95 backdrop-blur">
-      <Container className="flex h-[88px] items-center justify-between py-4">
+      <Container className="flex h-24 items-center justify-between py-4">
         <Link href="/" aria-label="SkillCity home">
           <Logo />
         </Link>
@@ -24,9 +24,14 @@ export function Navbar() {
             </Link>
           ))}
         </nav>
-        <Button asChild variant="secondary" className="min-w-28">
-          <Link href="/login">Login</Link>
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button asChild variant="secondary" className="hidden min-w-24 sm:inline-flex">
+            <Link href="/login">Login</Link>
+          </Button>
+          <Button asChild className="min-w-32">
+            <Link href="/register">Start Learning</Link>
+          </Button>
+        </div>
       </Container>
     </header>
   );
