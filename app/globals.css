@@ -31,3 +31,107 @@ button,
 input {
   outline-color: #eb001b;
 }
+
+.skillcity-paper {
+  background:
+    linear-gradient(90deg, rgba(235, 0, 27, 0.06) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(36, 33, 36, 0.045) 1px, transparent 1px),
+    repeating-linear-gradient(135deg, rgba(36, 33, 36, 0.025) 0 1px, transparent 1px 18px);
+  background-size: 76px 76px, 76px 76px, 100% 100%;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 1));
+}
+
+.skillcity-dark-grid {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(235, 0, 27, 0.14), transparent 34%);
+  background-size: 72px 72px, 72px 72px, 100% 100%;
+}
+
+.skillcity-card-lines {
+  background:
+    linear-gradient(90deg, transparent 0 42%, rgba(235, 0, 27, 0.55) 42% 43%, transparent 43% 100%),
+    linear-gradient(0deg, transparent 0 62%, rgba(255, 255, 255, 0.16) 62% 63%, transparent 63% 100%);
+  background-size: 120px 120px;
+  animation: skillcity-drift 9s linear infinite;
+}
+
+.skillcity-road {
+  background:
+    linear-gradient(90deg, transparent 0 46%, #eb001b 46% 47%, transparent 47% 53%, #eb001b 53% 54%, transparent 54% 100%),
+    linear-gradient(180deg, rgba(235, 0, 27, 0), rgba(235, 0, 27, 0.13));
+  clip-path: polygon(43% 0, 57% 0, 78% 100%, 22% 100%);
+}
+
+.skillcity-road::after {
+  display: block;
+  width: 100%;
+  height: 100%;
+  content: "";
+  background: repeating-linear-gradient(180deg, rgba(235, 0, 27, 0.75) 0 18px, transparent 18px 36px);
+  clip-path: polygon(49% 0, 51% 0, 56% 100%, 44% 100%);
+  animation: skillcity-route 1.6s linear infinite;
+}
+
+.skillcity-red-lines {
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 90px),
+    linear-gradient(65deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 78px);
+  background-size: 120px 120px;
+  animation: skillcity-drift 12s linear infinite;
+}
+
+.skillcity-cta {
+  box-shadow: 0 22px 60px rgba(235, 0, 27, 0.3);
+}
+
+.skillcity-float {
+  animation: skillcity-float 5.4s ease-in-out infinite;
+}
+
+.skillcity-float-delay {
+  animation: skillcity-float 6.2s ease-in-out infinite;
+  animation-delay: -2.6s;
+}
+
+.skillcity-scan {
+  animation: skillcity-scan 1.7s ease-in-out infinite;
+}
+
+@keyframes skillcity-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 120px 120px;
+  }
+}
+
+@keyframes skillcity-route {
+  from {
+    transform: translateY(-36px);
+  }
+  to {
+    transform: translateY(36px);
+  }
+}
+
+@keyframes skillcity-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes skillcity-scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(220%);
+  }
+}

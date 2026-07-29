@@ -4,7 +4,7 @@ import { Logo } from "@/components/ui/logo";
 
 const links = [
   { href: "/#programs", label: "Programs" },
-  { href: "/#about", label: "About" },
+  { href: "/#how-it-works", label: "How It Works" },
   { href: "/login", label: "Login" },
   { href: "/privacy", label: "Privacy" },
   { href: "mailto:contact@skillcity.in", label: "Contact" }
