@@ -99,6 +99,21 @@ input {
   animation: skillcity-scan 1.7s ease-in-out infinite;
 }
 
+.skillcity-nextgen-mark::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(105deg, transparent 0 30%, rgba(255, 255, 255, 0.44) 48%, transparent 66% 100%);
+  transform: translateX(-120%);
+  animation: skillcity-mark-sweep 3.8s ease-in-out infinite;
+}
+
+.skillcity-letter {
+  display: inline-block;
+  transform: translateY(105%);
+  animation: skillcity-letter-rise 720ms cubic-bezier(0.2, 0.82, 0.2, 1) forwards;
+}
+
 @keyframes skillcity-drift {
   from {
     background-position: 0 0;
@@ -108,12 +123,46 @@ input {
   }
 }
 
+@keyframes skillcity-mark-sweep {
+  0%,
+  42% {
+    transform: translateX(-120%);
+  }
+  62%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes skillcity-letter-rise {
+  to {
+    transform: translateY(0);
+  }
+}
+
 @keyframes skillcity-route {
   from {
     transform: translateY(-36px);
   }
   to {
     transform: translateY(36px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skillcity-card-lines,
+  .skillcity-red-lines,
+  .skillcity-road::after,
+  .skillcity-float,
+  .skillcity-float-delay,
+  .skillcity-scan,
+  .skillcity-nextgen-mark::after,
+  .skillcity-letter {
+    animation: none;
+  }
+
+  .skillcity-letter {
+    transform: translateY(0);
   }
 }
 

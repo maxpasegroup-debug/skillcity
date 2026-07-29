@@ -14,7 +14,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-black/5 bg-white/95 backdrop-blur">
       <Container className="flex h-24 items-center justify-between py-4">
-        <Link href="/" aria-label="SkillCity home">
+        <Link href="/" aria-label="Next Gen SkillCity home">
           <Logo />
         </Link>
         <nav className="hidden items-center gap-8 md:flex" aria-label="Main navigation">
