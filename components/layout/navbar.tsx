@@ -5,21 +5,21 @@ import { Container } from "@/components/ui/container";
 
 const links = [
   { href: "/#academies", label: "Academies" },
-  { href: "/#programs", label: "Programs" },
-  { href: "/admission-process", label: "How It Works" },
+  { href: "/#how-it-works", label: "How It Works" },
+  { href: "/#success", label: "Success Stories" },
   { href: "/contact", label: "Contact" }
 ];
 
 export function Navbar() {
   return (
-    <header className="sticky top-0 z-50 border-b border-black/5 bg-white/95 backdrop-blur">
-      <Container className="flex h-24 items-center justify-between py-4">
+    <header className="fixed inset-x-0 top-0 z-50">
+      <Container className="mt-4 flex h-20 items-center justify-between rounded-full border border-white/60 bg-white/72 px-5 shadow-[0_18px_70px_rgba(36,33,36,0.08)] backdrop-blur-xl">
         <Link href="/" aria-label="Next Gen SkillCity home">
           <Logo />
         </Link>
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Main navigation">
+        <nav className="hidden items-center gap-7 lg:flex" aria-label="Main navigation">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} className="text-base font-semibold text-brand-muted transition hover:text-brand-red">
+            <Link key={link.href} href={link.href} className="text-sm font-black text-brand-dark transition hover:text-brand-red">
               {link.label}
             </Link>
           ))}
@@ -28,8 +28,8 @@ export function Navbar() {
           <Button asChild variant="secondary" className="hidden min-w-24 sm:inline-flex">
             <Link href="/login">Login</Link>
           </Button>
-          <Button asChild className="min-w-32">
-            <Link href="/register">Start Learning</Link>
+          <Button asChild className="min-w-28 rounded-full">
+            <Link href="/register">Apply Now</Link>
           </Button>
         </div>
       </Container>

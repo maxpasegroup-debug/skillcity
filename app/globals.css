@@ -176,6 +176,16 @@ input {
   }
 }
 
+@keyframes skillcity-card-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(0.35deg);
+  }
+}
+
 @keyframes skillcity-scan {
   0% {
     transform: translateY(-100%);

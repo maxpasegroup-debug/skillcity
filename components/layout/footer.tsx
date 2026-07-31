@@ -3,28 +3,44 @@ import { Container } from "@/components/ui/container";
 import { Logo } from "@/components/ui/logo";
 
 const links = [
-  { href: "/#programs", label: "Programs" },
+  { href: "/#academies", label: "Academies" },
   { href: "/#how-it-works", label: "How It Works" },
-  { href: "/login", label: "Login" },
-  { href: "/privacy", label: "Privacy" },
-  { href: "mailto:contact@skillcity.in", label: "Contact" }
+  { href: "/contact", label: "Contact" },
+  { href: "/login", label: "Login" }
+];
+
+const policyLinks = [
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/privacy#terms", label: "Terms" },
+  { href: "/privacy#refund", label: "Refund Policy" }
 ];
 
 export function Footer() {
   return (
-    <footer className="border-t border-black/5 bg-white py-10">
-      <Container className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-        <div>
+    <footer id="success" className="border-t border-black/5 bg-white py-10">
+      <Container className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="max-w-xl">
           <Logo />
-          <p className="mt-3 text-sm text-brand-muted">Owned by MIB - MAKE IT BEAUTIFUL LLP</p>
+          <p className="mt-4 text-sm font-semibold leading-6 text-brand-muted">
+            Owned by MIB - MAKE IT BEAUTIFUL LLP. Built for students, founders and working professionals.
+          </p>
         </div>
-        <nav className="flex flex-wrap gap-x-6 gap-y-3" aria-label="Footer navigation">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} className="text-sm font-semibold text-brand-muted transition hover:text-brand-red">
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <div className="space-y-5">
+          <nav className="flex flex-wrap gap-x-6 gap-y-3 lg:justify-end" aria-label="Footer navigation">
+            {links.map((link) => (
+              <Link key={link.href} href={link.href} className="text-sm font-black text-brand-dark transition hover:text-brand-red">
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+          <nav className="flex flex-wrap gap-x-5 gap-y-3 lg:justify-end" aria-label="Policy navigation">
+            {policyLinks.map((link) => (
+              <Link key={link.href} href={link.href} className="text-xs font-bold text-brand-muted transition hover:text-brand-red">
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
       </Container>
     </footer>
   );
