@@ -1,72 +1,84 @@
 import Link from "next/link";
-import { ArrowRight, BookOpenCheck, BriefcaseBusiness, PlayCircle, Star, Trophy, UsersRound } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Bot,
+  Building2,
+  CircleDollarSign,
+  Crown,
+  Handshake,
+  Lightbulb,
+  LineChart,
+  Megaphone,
+  PlayCircle,
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  UsersRound,
+  WandSparkles
+} from "lucide-react";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 
-const academyCards = [
+const livePrograms = [
   {
     title: "Startup Skool",
-    subtitle: "Become a Full Stack Entrepreneur",
-    badge: "Admissions Open",
-    href: "/register?academy=startup-skool&type=admission",
-    image: "https://images.unsplash.com/photo-1517976487492-5750f3195933?auto=format&fit=crop&w=900&q=80",
-    accent: "text-brand-red",
-    button: "Admissions Open"
+    text: "Build, validate and launch a real business.",
+    icon: Rocket,
+    href: "/programs/solo-founder"
   },
   {
-    title: "AI Skills",
-    subtitle: "Build Future-Ready AI Skills",
-    badge: "Waiting List",
-    href: "/register?academy=ai-skills&type=waiting-list",
-    image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=900&q=80",
-    accent: "text-[#0D7DD8]",
-    button: "Join Waiting List"
+    title: "GenZ Builder",
+    text: "Become an AI powered full stack creator.",
+    icon: WandSparkles,
+    href: "/programs/genz-builder"
   },
   {
-    title: "Care Professionals",
-    subtitle: "Healthcare + Nursing Care + Wellness",
-    badge: "Waiting List",
-    href: "/register?academy=care-professionals&type=waiting-list",
-    image: "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=900&q=80",
-    accent: "text-[#E53B7A]",
-    button: "Join Waiting List"
+    title: "AI Sales Mastery",
+    text: "Learn modern selling with AI workflows.",
+    icon: LineChart,
+    href: "/programs/sales-mastery-live-fellowship"
   },
   {
-    title: "Teacher Academy",
-    subtitle: "AI for Teachers Digital Classroom",
-    badge: "Waiting List",
-    href: "/register?academy=teacher-academy&type=waiting-list",
-    image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=900&q=80",
-    accent: "text-[#F05A28]",
-    button: "Join Waiting List"
-  },
-  {
-    title: "Internship Hub",
-    subtitle: "Real World Exposure Earn & Learn",
-    badge: "Waiting List",
-    href: "/register?academy=internship-hub&type=waiting-list",
-    image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=900&q=80",
-    accent: "text-[#7156D9]",
-    button: "Join Waiting List"
-  },
-  {
-    title: "Defence Career",
-    subtitle: "NDA + CDS + AFCAT Agniveer & More",
-    badge: "Waiting List",
-    href: "/register?academy=defence-career&type=waiting-list",
-    image: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=900&q=80",
-    accent: "text-[#188447]",
-    button: "Join Waiting List"
+    title: "AI Skills Arena",
+    text: "Build practical AI skills for daily work.",
+    icon: Bot,
+    href: "/academies/ai-skills-academy"
   }
 ];
 
-const trustItems = [
-  { title: "Online + Offline", text: "Flexible learning rhythm", icon: BookOpenCheck },
-  { title: "Live Mentorship", text: "Guidance from real people", icon: UsersRound },
-  { title: "Certificates", text: "Proof students can share", icon: Trophy },
-  { title: "Placement Support", text: "Career readiness support", icon: BriefcaseBusiness }
+const comingSoon = [
+  "Care Professional",
+  "Home Schooling Professional",
+  "AI Teaching Professional",
+  "AI Office Professional",
+  "AI Marketing Professional",
+  "AI Content Creator",
+  "AI Business Consultant",
+  "Digital Village Professional",
+  "Startup Incubator",
+  "Leadership Academy"
+];
+
+const altt = [
+  { title: "Learn by Doing", icon: Lightbulb },
+  { title: "Build Real Projects", icon: Building2 },
+  { title: "Generate Real Revenue", icon: CircleDollarSign },
+  { title: "Transform Yourself", icon: Sparkles }
+];
+
+const journey = ["Dream", "Learn", "Build", "Launch", "Earn", "Grow"];
+
+const whyChoose = [
+  { title: "AI Powered", icon: Bot },
+  { title: "Practical Learning", icon: BadgeCheck },
+  { title: "Industry Mentors", icon: UsersRound },
+  { title: "Build Your Brand", icon: Crown },
+  { title: "Entrepreneur Community", icon: Handshake },
+  { title: "Future Ready", icon: ShieldCheck }
 ];
 
 export default function HomePage() {
@@ -75,36 +87,38 @@ export default function HomePage() {
       <Navbar />
 
       <section
-        className="relative isolate min-h-[calc(100vh-96px)] overflow-hidden bg-white bg-cover bg-[72%_bottom]"
+        className="relative isolate min-h-screen overflow-hidden bg-white bg-cover bg-[74%_center] pt-28"
         style={{
           backgroundImage:
-            "linear-gradient(90deg, rgba(255,255,255,0.99) 0%, rgba(255,255,255,0.96) 35%, rgba(255,255,255,0.68) 54%, rgba(255,255,255,0.04) 100%), url('/launch/skillcity-hero-reference.png')"
+            "linear-gradient(90deg, rgba(255,255,255,0.99) 0%, rgba(255,255,255,0.96) 38%, rgba(255,255,255,0.72) 55%, rgba(255,255,255,0.08) 100%), url('/launch/skillcity-hero-reference.png')"
         }}
       >
-        <Container className="flex min-h-[calc(100vh-96px)] items-center py-12 sm:py-16">
+        <Container className="flex min-h-[calc(100vh-112px)] items-center py-12">
           <div className="max-w-3xl">
-            <p className="inline-flex items-center gap-2 rounded-full bg-red-50 px-5 py-3 text-sm font-black uppercase text-brand-red shadow-sm">
-              <Star className="h-4 w-4 fill-brand-red" />
-              Welcome to SkillCity
+            <p className="inline-flex items-center gap-2 rounded-full border border-brand-gold/30 bg-white/80 px-5 py-3 text-sm font-black uppercase text-brand-red shadow-soft backdrop-blur">
+              <Star className="h-4 w-4 fill-brand-gold text-brand-gold" />
+              AIRA Skill City
             </p>
-            <h1 className="mt-7 text-6xl font-black uppercase leading-none text-black sm:text-7xl md:text-8xl">
-              Every Skill.
-              <span className="block text-brand-red">One City.</span>
+            <h1 className="mt-8 text-6xl font-black uppercase leading-[0.9] text-black sm:text-7xl lg:text-8xl">
+              Learn.
+              <span className="block text-brand-red">Build.</span>
+              <span className="block text-brand-gold">Earn.</span>
+              <span className="block">Grow.</span>
             </h1>
-            <p className="mt-7 max-w-xl text-xl font-semibold leading-8 text-brand-muted sm:text-2xl">
-              Learn. Practice. Succeed. All in one place.
+            <p className="mt-7 max-w-2xl text-xl font-semibold leading-8 text-brand-muted sm:text-2xl">
+              India&apos;s AI Powered Practical Learning Ecosystem.
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-              <Button asChild size="lg" className="h-16 rounded-lg px-8 shadow-[0_20px_60px_rgba(235,0,27,0.28)]">
+              <Button asChild size="lg" className="h-16 rounded-full px-9 shadow-[0_22px_70px_rgba(235,0,27,0.28)]">
                 <Link href="/register">
                   Apply Now
                   <ArrowRight className="h-6 w-6" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="secondary" className="h-16 rounded-lg border-brand-red/30 px-8">
-                <Link href="#how-it-works">
+              <Button asChild size="lg" variant="secondary" className="h-16 rounded-full border-brand-gold/40 px-9">
+                <Link href="#programs">
                   <PlayCircle className="h-6 w-6 text-brand-red" />
-                  How It Works
+                  Explore Programs
                 </Link>
               </Button>
             </div>
@@ -112,55 +126,140 @@ export default function HomePage() {
         </Container>
       </section>
 
-      <section id="academies" className="min-h-screen bg-white py-14 sm:py-18">
+      <section id="about" className="bg-white py-16 sm:py-24">
         <Container>
-          <div className="mx-auto flex max-w-xl items-center justify-center gap-5 text-center">
-            <span className="h-px w-16 bg-brand-red" />
-            <h2 className="text-2xl font-black uppercase tracking-normal text-black sm:text-3xl">
-              Explore Our <span className="text-brand-red">Academies</span>
-            </h2>
-            <span className="h-px w-16 bg-brand-red" />
-          </div>
-
-          <div id="programs" className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            {academyCards.map((academy, index) => (
-              <AcademyCard key={academy.title} academy={academy} index={index} />
+          <SectionHeading eyebrow="Why AIRA Skill City?" title="An AI Skill University for transformation." />
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {[
+              ["AI Powered", "Tara AI supports learning and decision-making."],
+              ["Practical", "Students learn through action, projects and reflection."],
+              ["Institutional", "One premium city for skills, business and leadership."]
+            ].map(([title, text]) => (
+              <div key={title} className="rounded-lg border border-black/8 bg-[#fbfaf7] p-8 shadow-soft">
+                <div className="h-1 w-14 bg-brand-gold" />
+                <h3 className="mt-8 text-3xl font-black text-black">{title}</h3>
+                <p className="mt-4 text-base font-semibold leading-7 text-brand-muted">{text}</p>
+              </div>
             ))}
           </div>
         </Container>
       </section>
 
-      <section id="how-it-works" className="bg-[#fbfbf8] py-16 sm:py-20">
+      <section id="programs" className="bg-[#080806] py-16 text-white sm:py-24">
         <Container>
-          <div className="grid gap-10 lg:grid-cols-[0.86fr_1.14fr] lg:items-center">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.2em] text-brand-red">How it works</p>
-              <h2 className="mt-4 text-4xl font-black uppercase leading-none text-black sm:text-6xl">
-                Simple path. Real outcomes.
-              </h2>
-              <p className="mt-5 max-w-xl text-lg font-semibold leading-8 text-brand-muted">
-                Students choose an academy, apply, join the right batch, and build proof of skills with Tara AI and mentors.
-              </p>
-              <Button asChild size="lg" className="mt-8 h-14 px-8">
-                <Link href="/register">
-                  Start Application
-                  <ArrowRight className="h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
+          <SectionHeading eyebrow="Live Programs" title="Start with the right doorway." invert />
+          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {livePrograms.map(({ title, text, icon: Icon, href }) => (
+              <Link
+                key={title}
+                href={href}
+                className="group min-h-80 rounded-lg border border-white/10 bg-white/[0.04] p-7 transition duration-300 hover:-translate-y-2 hover:border-brand-gold hover:bg-white/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-gold"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-brand-red text-white shadow-[0_18px_50px_rgba(235,0,27,0.32)]">
+                  <Icon className="h-7 w-7" />
+                </div>
+                <h3 className="mt-16 text-3xl font-black uppercase leading-none">{title}</h3>
+                <p className="mt-4 text-base font-semibold leading-7 text-white/65">{text}</p>
+                <p className="mt-8 inline-flex items-center gap-2 text-sm font-black uppercase text-brand-gold">
+                  Learn More <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                </p>
+              </Link>
+            ))}
+          </div>
+        </Container>
+      </section>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              {trustItems.map(({ title, text, icon: Icon }) => (
-                <div key={title} className="rounded-lg border border-black/8 bg-white p-6 shadow-soft">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-50 text-brand-red">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <h3 className="mt-6 text-2xl font-black text-black">{title}</h3>
-                  <p className="mt-2 text-base font-semibold leading-7 text-brand-muted">{text}</p>
+      <section className="bg-[#fbfaf7] py-16 sm:py-24">
+        <Container>
+          <SectionHeading eyebrow="Coming Soon" title="A future-ready professional city." />
+          <div className="mt-12 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {comingSoon.map((item, index) => (
+              <div key={item} className="rounded-lg border border-black/8 bg-white p-5 shadow-sm">
+                <p className="text-xs font-black text-brand-gold">0{index + 1}</p>
+                <h3 className="mt-4 text-lg font-black text-black">{item}</h3>
+              </div>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-white py-16 sm:py-24">
+        <Container>
+          <SectionHeading eyebrow="ALTT" title="Active learning, not passive watching." />
+          <div className="mt-10 grid gap-5 md:grid-cols-4">
+            {altt.map(({ title, icon: Icon }) => (
+              <div key={title} className="rounded-lg border border-black/8 bg-white p-7 shadow-soft">
+                <Icon className="h-8 w-8 text-brand-red" />
+                <h3 className="mt-10 text-2xl font-black text-black">{title}</h3>
+              </div>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-[#080806] py-16 text-white sm:py-24">
+        <Container>
+          <SectionHeading eyebrow="Student Journey" title="Dream to growth, one step at a time." invert />
+          <div className="mt-12 grid gap-3 md:grid-cols-6">
+            {journey.map((step, index) => (
+              <div key={step} className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
+                <p className="text-xs font-black text-brand-gold">0{index + 1}</p>
+                <h3 className="mt-8 text-2xl font-black uppercase">{step}</h3>
+              </div>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-white py-16 sm:py-24">
+        <Container>
+          <SectionHeading eyebrow="Why Choose AIRA" title="Built for people who want proof." />
+          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {whyChoose.map(({ title, icon: Icon }) => (
+              <div key={title} className="rounded-lg border border-black/8 bg-[#fbfaf7] p-7 shadow-sm">
+                <Icon className="h-7 w-7 text-brand-red" />
+                <h3 className="mt-10 text-2xl font-black text-black">{title}</h3>
+              </div>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      <section id="success" className="bg-[#fbfaf7] py-16 sm:py-24">
+        <Container>
+          <div className="grid gap-8 rounded-lg border border-black/8 bg-white p-8 shadow-soft lg:grid-cols-[0.9fr_1.1fr] lg:p-12">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-brand-red">Success Stories</p>
+              <h2 className="mt-4 text-4xl font-black uppercase leading-none text-black sm:text-6xl">Future ready.</h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {["Project wins", "Revenue stories", "Career shifts"].map((item) => (
+                <div key={item} className="rounded-lg bg-[#fbfaf7] p-5">
+                  <Megaphone className="h-6 w-6 text-brand-gold" />
+                  <p className="mt-8 text-lg font-black text-black">{item}</p>
+                  <p className="mt-2 text-sm font-semibold text-brand-muted">Video friendly after cohort milestones.</p>
                 </div>
               ))}
             </div>
           </div>
+        </Container>
+      </section>
+
+      <section id="admissions" className="relative overflow-hidden bg-brand-red py-16 text-white sm:py-24">
+        <div className="absolute inset-0 skillcity-red-lines opacity-30" />
+        <Container className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-white/70">Admissions</p>
+            <h2 className="mt-4 max-w-4xl text-5xl font-black uppercase leading-none sm:text-7xl">
+              Apply for transformation.
+            </h2>
+          </div>
+          <Button asChild size="lg" variant="secondary" className="h-16 rounded-full border-white bg-white px-10 text-brand-dark hover:border-white hover:text-brand-red">
+            <Link href="/register">
+              Apply Now
+              <ArrowRight className="h-6 w-6" />
+            </Link>
+          </Button>
         </Container>
       </section>
 
@@ -169,46 +268,11 @@ export default function HomePage() {
   );
 }
 
-function AcademyCard({
-  academy,
-  index
-}: {
-  academy: {
-    title: string;
-    subtitle: string;
-    badge: string;
-    href: string;
-    image: string;
-    accent: string;
-    button: string;
-  };
-  index: number;
-}) {
+function SectionHeading({ eyebrow, title, invert = false }: { eyebrow: string; title: string; invert?: boolean }) {
   return (
-    <Link
-      href={academy.href}
-      className="group relative min-h-[360px] overflow-hidden rounded-[1.15rem] border border-black/8 bg-white shadow-[0_18px_55px_rgba(36,33,36,0.13)] transition duration-300 hover:-translate-y-3 hover:rotate-[0.7deg] hover:shadow-[0_26px_80px_rgba(36,33,36,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-red"
-      style={{ animation: `skillcity-card-float ${5.6 + index * 0.24}s ease-in-out infinite`, animationDelay: `${index * -0.36}s` }}
-    >
-      <div className="absolute inset-x-0 top-0 h-[58%] overflow-hidden">
-        <div
-          className="h-full w-full bg-cover bg-center transition duration-500 group-hover:scale-110"
-          style={{ backgroundImage: `url('${academy.image}')` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/18 to-transparent" />
-      </div>
-
-      <div className="absolute left-3 top-3 rounded-full bg-black/55 px-3 py-1 text-[10px] font-black uppercase text-white backdrop-blur">
-        {academy.badge}
-      </div>
-
-      <div className="absolute inset-x-0 bottom-0 rounded-t-[1.4rem] bg-white px-4 pb-5 pt-6 text-center">
-        <h3 className={`text-2xl font-black leading-none ${academy.accent}`}>{academy.title}</h3>
-        <p className="mx-auto mt-3 min-h-10 max-w-[10rem] text-xs font-semibold leading-5 text-brand-muted">{academy.subtitle}</p>
-        <span className="mt-5 inline-flex h-10 items-center justify-center rounded-full border border-black/10 px-4 text-xs font-black text-brand-dark transition group-hover:border-brand-red group-hover:bg-brand-red group-hover:text-white">
-          {academy.button}
-        </span>
-      </div>
-    </Link>
+    <div className="max-w-4xl">
+      <p className={`text-sm font-black uppercase tracking-[0.2em] ${invert ? "text-brand-gold" : "text-brand-red"}`}>{eyebrow}</p>
+      <h2 className={`mt-4 text-4xl font-black uppercase leading-none sm:text-6xl ${invert ? "text-white" : "text-black"}`}>{title}</h2>
+    </div>
   );
 }

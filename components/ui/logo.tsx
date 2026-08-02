@@ -1,21 +1,12 @@
 export function Logo() {
-  const letters = "SkillCity".split("");
-
   return (
-    <div className="group inline-flex items-center">
-      <span className="sr-only">SkillCity</span>
-      <span aria-hidden="true" className="inline-flex items-center gap-2">
-        <span className="inline-flex overflow-hidden text-3xl font-black uppercase leading-none tracking-normal">
-          {letters.map((letter, index) => (
-            <span
-              key={`${letter}-${index}`}
-              className={index < 5 ? "skillcity-letter text-brand-red" : "skillcity-letter text-brand-dark"}
-              style={{ animationDelay: `${index * 45}ms` }}
-            >
-              {letter}
-            </span>
-          ))}
-        </span>
+    <div className="group inline-flex flex-col">
+      <span className="text-2xl font-black uppercase leading-none tracking-normal sm:text-3xl">
+        <span className="text-brand-gold transition duration-300 group-hover:text-brand-red">AIRA</span>{" "}
+        <span className="text-brand-dark transition duration-300 group-hover:text-black">Skill City</span>
+      </span>
+      <span className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-brand-muted">
+        AI Research & Advancement
       </span>
     </div>
   );

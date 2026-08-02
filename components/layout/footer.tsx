@@ -3,8 +3,10 @@ import { Container } from "@/components/ui/container";
 import { Logo } from "@/components/ui/logo";
 
 const links = [
-  { href: "/#academies", label: "Academies" },
-  { href: "/#how-it-works", label: "How It Works" },
+  { href: "/#programs", label: "Programs" },
+  { href: "/#admissions", label: "Admissions" },
+  { href: "/#success", label: "Success Stories" },
+  { href: "/#about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/login", label: "Login" }
 ];
@@ -22,7 +24,7 @@ export function Footer() {
         <div className="max-w-xl">
           <Logo />
           <p className="mt-4 text-sm font-semibold leading-6 text-brand-muted">
-            Owned by MIB - MAKE IT BEAUTIFUL LLP. Built for students, founders and working professionals.
+            AIRA Skill City is owned by MIB - MAKE IT BEAUTIFUL LLP. Built for entrepreneurs, professionals and future leaders.
           </p>
         </div>
         <div className="space-y-5">
