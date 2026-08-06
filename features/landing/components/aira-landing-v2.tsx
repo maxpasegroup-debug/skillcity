@@ -1,0 +1,380 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useRef } from "react";
+import {
+  ArrowDown,
+  ArrowRight,
+  Bot,
+  Brain,
+  Building2,
+  CircleDollarSign,
+  Compass,
+  Hammer,
+  Handshake,
+  MapPin,
+  MessageCircle,
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
+  UsersRound,
+  Zap
+} from "lucide-react";
+
+const programs = [
+  {
+    title: "Startup School",
+    subtitle: "Build a business, not just a plan.",
+    image: "/launch/v2/startup-school.png",
+    href: "/apply?program=startup-skool"
+  },
+  {
+    title: "GenZ Builder",
+    subtitle: "Create with AI, code and design.",
+    image: "/launch/v2/genz-builder.png",
+    href: "/apply?program=genz-builder"
+  },
+  {
+    title: "Sales Mastery",
+    subtitle: "Learn confidence, communication and closing.",
+    image: "/launch/v2/sales-mastery.png",
+    href: "/apply?program=nicejobs-sales-mastery"
+  }
+];
+
+const skillCity = [
+  { title: "Learn", text: "Master practical skills.", icon: Brain },
+  { title: "Build", text: "Create real projects.", icon: Hammer },
+  { title: "Earn", text: "Find real opportunities.", icon: CircleDollarSign },
+  { title: "Grow", text: "Become future ready.", icon: Trophy }
+];
+
+const whyAira = [
+  { title: "AI First", icon: Bot },
+  { title: "Learn by Building", icon: Building2 },
+  { title: "Mentor Guidance", icon: UsersRound },
+  { title: "Real Projects", icon: ShieldCheck },
+  { title: "Startup Mindset", icon: Rocket },
+  { title: "Earn While Learning", icon: CircleDollarSign }
+];
+
+const journey = ["Discover", "Learn", "Build", "Launch", "Earn", "Grow"];
+
+export function AiraLandingV2() {
+  const rootRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    let cleanup = () => {};
+
+    async function animate() {
+      const gsapModule = await import("gsap");
+      const scrollTriggerModule = await import("gsap/ScrollTrigger");
+      const gsap = gsapModule.gsap;
+      const ScrollTrigger = scrollTriggerModule.ScrollTrigger;
+
+      gsap.registerPlugin(ScrollTrigger);
+
+      const root = rootRef.current;
+      if (!root) return;
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduceMotion) return;
+
+      const ctx = gsap.context(() => {
+        gsap.from(".aira-hero-copy > *", {
+          y: 36,
+          opacity: 0,
+          duration: 0.9,
+          ease: "power3.out",
+          stagger: 0.08
+        });
+
+        gsap.from(".aira-hero-image", {
+          y: 42,
+          scale: 0.96,
+          opacity: 0,
+          duration: 1.1,
+          ease: "power3.out",
+          delay: 0.15
+        });
+
+        gsap.utils.toArray<HTMLElement>(".aira-reveal").forEach((item) => {
+          gsap.from(item, {
+            y: 34,
+            opacity: 0,
+            duration: 0.8,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: item,
+              start: "top 84%"
+            }
+          });
+        });
+
+        gsap.utils.toArray<HTMLElement>(".aira-card").forEach((item) => {
+          gsap.from(item, {
+            y: 28,
+            opacity: 0,
+            duration: 0.75,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: item,
+              start: "top 88%"
+            }
+          });
+        });
+
+        gsap.from(".aira-timeline-step", {
+          x: -24,
+          opacity: 0,
+          duration: 0.6,
+          ease: "power2.out",
+          stagger: 0.08,
+          scrollTrigger: {
+            trigger: ".aira-timeline",
+            start: "top 78%"
+          }
+        });
+      }, root);
+
+      cleanup = () => ctx.revert();
+    }
+
+    animate();
+    return () => cleanup();
+  }, []);
+
+  return (
+    <main ref={rootRef} className="min-h-screen overflow-hidden bg-[#0B0B0D] text-[#F8F8F8]">
+      <header className="fixed inset-x-0 top-0 z-50 px-4 py-4 sm:px-6 lg:px-10">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between rounded-full border border-white/10 bg-[#0B0B0D]/62 px-5 shadow-[0_18px_80px_rgba(0,0,0,0.42)] backdrop-blur-xl">
+          <Link href="/" aria-label="AIRA Skill City home" className="group">
+            <span className="block text-xl font-black uppercase leading-none tracking-normal sm:text-2xl">
+              <span className="text-[#D4AF37] transition group-hover:text-[#F8F8F8]">AIRA</span>{" "}
+              <span className="text-[#F8F8F8]">Skill City</span>
+            </span>
+            <span className="mt-1 hidden text-[9px] font-black uppercase tracking-[0.22em] text-[#B0B0B0] sm:block">AI Research & Advancement</span>
+          </Link>
+          <Link href="/apply" className="rounded-full bg-[#C8102E] px-5 py-3 text-sm font-black text-white shadow-[0_18px_48px_rgba(200,16,46,0.32)] transition hover:-translate-y-0.5 hover:bg-[#E01738]">
+            Apply Now
+          </Link>
+        </div>
+      </header>
+
+      <section className="relative isolate min-h-screen px-4 pt-28 sm:px-6 lg:px-10">
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(212,175,55,0.13),transparent_28%),linear-gradient(180deg,#0B0B0D_0%,rgba(11,11,13,0.74)_48%,#0B0B0D_100%)]" />
+        <div className="relative mx-auto grid min-h-[calc(100vh-112px)] max-w-7xl items-center gap-10 py-10 lg:grid-cols-[0.92fr_1.08fr]">
+          <div className="aira-hero-copy">
+            <p className="inline-flex rounded-full border border-[#D4AF37]/30 bg-white/[0.04] px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-[#D4AF37]">
+              Learn. Build. Earn. Grow.
+            </p>
+            <h1 className="mt-8 max-w-4xl text-[clamp(4.1rem,11vw,9.5rem)] font-black uppercase leading-[0.78] tracking-normal text-[#F8F8F8]">
+              Build Your Future
+            </h1>
+            <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-3xl font-black uppercase text-[#D4AF37] sm:text-5xl">
+              <span>Learn.</span>
+              <span>Build.</span>
+              <span>Earn.</span>
+              <span>Grow.</span>
+            </div>
+            <p className="mt-7 max-w-xl text-xl font-semibold leading-8 text-[#B0B0B0]">
+              A modern learning campus where ideas become careers.
+            </p>
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <Link href="#journeys" className="inline-flex h-16 items-center justify-center gap-3 rounded-full bg-[#C8102E] px-8 text-base font-black text-white shadow-[0_24px_70px_rgba(200,16,46,0.34)] transition hover:-translate-y-1 hover:bg-[#E01738]">
+                Explore Programs
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+              <Link href="/contact" className="inline-flex h-16 items-center justify-center gap-3 rounded-full border border-[#D4AF37]/45 bg-white/[0.03] px-8 text-base font-black text-[#F8F8F8] transition hover:-translate-y-1 hover:border-[#D4AF37] hover:bg-[#D4AF37]/10">
+                Visit Campus
+                <MapPin className="h-5 w-5 text-[#D4AF37]" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="aira-hero-image relative min-h-[460px] overflow-hidden rounded-[2rem] border border-white/10 bg-[#141414] shadow-[0_40px_110px_rgba(0,0,0,0.65)] lg:min-h-[650px]">
+            <Image src="/launch/v2/hero-campus.png" alt="Indian students collaborating in a modern AIRA Skill City innovation campus" fill priority sizes="(min-width: 1024px) 54vw, 100vw" className="object-cover" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_48%,rgba(11,11,13,0.82)_100%)]" />
+            <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between rounded-2xl border border-white/10 bg-[#0B0B0D]/62 p-4 backdrop-blur-md">
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-[#D4AF37]">Founding Batch</p>
+              <p className="text-sm font-bold text-[#F8F8F8]">Admissions Open</p>
+            </div>
+          </div>
+        </div>
+        <a href="#what-is-skill-city" aria-label="Scroll to next section" className="absolute bottom-7 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-[#B0B0B0]">
+          Scroll
+          <ArrowDown className="h-5 w-5 animate-bounce text-[#D4AF37]" />
+        </a>
+      </section>
+
+      <section id="what-is-skill-city" className="px-4 py-24 sm:px-6 lg:px-10 lg:py-32">
+        <div className="mx-auto max-w-7xl">
+          <SectionTitle eyebrow="What is Skill City?" title="A place where people learn practical skills, build real projects, start earning and create the future they dream of." />
+          <div className="mt-12 grid gap-4 md:grid-cols-4">
+            {skillCity.map(({ title, text, icon: Icon }) => (
+              <article key={title} className="aira-card group rounded-[1.4rem] border border-white/10 bg-[#141414] p-7 transition duration-300 hover:-translate-y-2 hover:border-[#D4AF37]/60 hover:shadow-[0_24px_80px_rgba(212,175,55,0.12)]">
+                <Icon className="h-10 w-10 text-[#D4AF37]" />
+                <h2 className="mt-14 text-3xl font-black uppercase">{title}</h2>
+                <p className="mt-3 text-base font-semibold leading-7 text-[#B0B0B0]">{text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="journeys" className="px-4 py-24 sm:px-6 lg:px-10 lg:py-32">
+        <div className="mx-auto max-w-7xl">
+          <SectionTitle eyebrow="Choose Your Journey" title="Three doors. One city. Your next version." />
+          <div className="mt-12 grid gap-5 lg:grid-cols-3">
+            {programs.map((program) => (
+              <Link key={program.title} href={program.href} className="aira-card group relative min-h-[620px] overflow-hidden rounded-[1.8rem] border border-white/10 bg-[#141414] shadow-[0_30px_90px_rgba(0,0,0,0.42)]">
+                <Image src={program.image} alt={`${program.title} at AIRA Skill City`} fill sizes="(min-width: 1024px) 33vw, 100vw" className="object-cover transition duration-700 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.06)_0%,rgba(0,0,0,0.18)_38%,rgba(11,11,13,0.94)_100%)]" />
+                <div className="absolute inset-x-0 bottom-0 p-7">
+                  <h2 className="text-5xl font-black uppercase leading-none">{program.title}</h2>
+                  <p className="mt-4 max-w-xs text-lg font-semibold leading-7 text-[#B0B0B0]">{program.subtitle}</p>
+                  <span className="mt-7 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-[#0B0B0D] transition group-hover:bg-[#D4AF37]">
+                    Explore
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-24 sm:px-6 lg:px-10 lg:py-32">
+        <div className="mx-auto max-w-7xl">
+          <SectionTitle eyebrow="Why AIRA" title="Built for ambitious people who want proof, momentum and community." />
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {whyAira.map(({ title, icon: Icon }) => (
+              <article key={title} className="aira-card rounded-[1.4rem] border border-white/10 bg-[#141414] p-7 transition hover:-translate-y-2 hover:border-[#C8102E]/70">
+                <Icon className="h-9 w-9 text-[#C8102E]" />
+                <h2 className="mt-16 text-3xl font-black uppercase leading-none">{title}</h2>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-24 lg:py-32">
+        <div className="aira-reveal px-4 sm:px-6 lg:px-10">
+          <div className="mx-auto max-w-7xl">
+            <SectionTitle eyebrow="Campus Experience" title="Workspaces designed for ideas, people and momentum." />
+          </div>
+        </div>
+        <div className="aira-card relative mt-12 min-h-[460px] overflow-hidden border-y border-white/10 lg:min-h-[680px]">
+          <Image src="/launch/v2/campus-gallery.png" alt="AIRA Skill City campus experience with students networking, coding and presenting" fill sizes="100vw" className="object-cover" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(11,11,13,0.72),transparent_46%,rgba(11,11,13,0.3)),linear-gradient(180deg,transparent_54%,#0B0B0D_100%)]" />
+          <div className="absolute bottom-8 left-4 max-w-xl rounded-[1.5rem] border border-white/10 bg-[#0B0B0D]/70 p-6 backdrop-blur-md sm:left-8 lg:left-14">
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-[#D4AF37]">Not a classroom</p>
+            <h2 className="mt-4 text-4xl font-black uppercase leading-none">A startup campus feeling.</h2>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-24 sm:px-6 lg:px-10 lg:py-32">
+        <div className="mx-auto max-w-7xl">
+          <SectionTitle eyebrow="Our Learning Journey" title="From discovering your direction to growing your future." />
+          <div className="aira-timeline mt-14 grid gap-4 lg:grid-cols-6">
+            {journey.map((step, index) => (
+              <div key={step} className="aira-timeline-step relative rounded-[1.2rem] border border-white/10 bg-[#141414] p-6">
+                <p className="text-sm font-black text-[#D4AF37]">0{index + 1}</p>
+                <h2 className="mt-10 text-2xl font-black uppercase">{step}</h2>
+                {index < journey.length - 1 ? <div className="absolute -right-3 top-1/2 hidden h-px w-6 bg-[#D4AF37]/60 lg:block" /> : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-24 sm:px-6 lg:px-10 lg:py-32">
+        <div className="aira-reveal mx-auto grid max-w-7xl gap-8 rounded-[2rem] border border-[#D4AF37]/25 bg-[#141414] p-8 shadow-[0_40px_120px_rgba(0,0,0,0.42)] lg:grid-cols-[1fr_auto] lg:items-center lg:p-12">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-[#D4AF37]">Why Join Now?</p>
+            <h2 className="mt-5 max-w-4xl text-5xl font-black uppercase leading-none sm:text-7xl">Become Part of Our Founding Batch</h2>
+            <p className="mt-6 max-w-2xl text-xl font-semibold leading-8 text-[#B0B0B0]">
+              Join AIRA Skill City at the beginning of an exciting journey and help build the future alongside passionate learners and mentors.
+            </p>
+          </div>
+          <Link href="/apply" className="inline-flex h-16 items-center justify-center rounded-full bg-[#C8102E] px-9 text-base font-black text-white transition hover:-translate-y-1 hover:bg-[#E01738]">
+            Admissions Open
+          </Link>
+        </div>
+      </section>
+
+      <section className="px-4 py-24 sm:px-6 lg:px-10 lg:py-32">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
+          <div className="aira-reveal">
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-[#D4AF37]">Floating AI Assistant</p>
+            <h2 className="mt-5 text-6xl font-black uppercase leading-none sm:text-8xl">Meet Tara</h2>
+          </div>
+          <div className="aira-card rounded-[2rem] border border-white/10 bg-[#141414] p-6 shadow-[0_32px_100px_rgba(0,0,0,0.38)]">
+            <div className="flex items-center gap-4">
+              <div className="grid h-14 w-14 place-items-center rounded-full bg-[#D4AF37] text-[#0B0B0D]">
+                <Bot className="h-7 w-7" />
+              </div>
+              <div>
+                <p className="font-black text-[#F8F8F8]">Tara AI</p>
+                <p className="text-sm font-semibold text-[#B0B0B0]">Your calm learning companion.</p>
+              </div>
+            </div>
+            <div className="mt-6 rounded-[1.4rem] bg-[#0B0B0D] p-6">
+              <p className="text-xl font-semibold leading-8 text-[#F8F8F8]">
+                “Tell me what you want to become. I will help you take the next step.”
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-24 sm:px-6 lg:px-10 lg:py-32">
+        <div className="aira-reveal mx-auto max-w-7xl rounded-[2.2rem] bg-[#F8F8F8] p-8 text-[#0B0B0D] lg:p-14">
+          <p className="text-sm font-black uppercase tracking-[0.22em] text-[#C8102E]">Final Call</p>
+          <h2 className="mt-5 max-w-5xl text-6xl font-black uppercase leading-none sm:text-8xl">Your Future Starts Here.</h2>
+          <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+            <Link href="/apply" className="inline-flex h-16 items-center justify-center gap-3 rounded-full bg-[#C8102E] px-9 text-base font-black text-white transition hover:-translate-y-1 hover:bg-[#E01738]">
+              Apply Now
+              <ArrowRight className="h-5 w-5" />
+            </Link>
+            <Link href="/contact" className="inline-flex h-16 items-center justify-center gap-3 rounded-full border border-[#0B0B0D]/15 px-9 text-base font-black transition hover:-translate-y-1 hover:border-[#D4AF37] hover:bg-[#D4AF37]/15">
+              Book Campus Visit
+              <Compass className="h-5 w-5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <Link href="/tara" aria-label="Meet Tara AI" className="fixed bottom-5 right-5 z-40 hidden rounded-full border border-[#D4AF37]/35 bg-[#141414]/86 p-4 text-[#D4AF37] shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl transition hover:-translate-y-1 hover:bg-[#D4AF37] hover:text-[#0B0B0D] sm:block">
+        <MessageCircle className="h-6 w-6" />
+      </Link>
+
+      <footer className="border-t border-white/10 px-4 py-10 sm:px-6 lg:px-10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-2xl font-black uppercase"><span className="text-[#D4AF37]">AIRA</span> Skill City</p>
+            <p className="mt-1 text-xs font-black uppercase tracking-[0.22em] text-[#B0B0B0]">AI Research & Advancement</p>
+          </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-bold text-[#B0B0B0]">
+            <span>admissions@airaskillcity.com</span>
+            <span>airaskillcity.com</span>
+            <span>Kerala, India</span>
+            <span className="inline-flex gap-3 text-[#D4AF37]"><Zap className="h-4 w-4" /><Handshake className="h-4 w-4" /><Sparkles className="h-4 w-4" /></span>
+          </div>
+        </div>
+      </footer>
+    </main>
+  );
+}
+
+function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <div className="aira-reveal max-w-5xl">
+      <p className="text-sm font-black uppercase tracking-[0.22em] text-[#D4AF37]">{eyebrow}</p>
+      <h2 className="mt-5 text-4xl font-black uppercase leading-none text-[#F8F8F8] sm:text-6xl lg:text-7xl">{title}</h2>
+    </div>
+  );
+}
