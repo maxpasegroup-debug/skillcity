@@ -1,12 +1,16 @@
 import Link from "next/link";
 import type React from "react";
-import { BarChart3, Bot, CalendarClock, CreditCard, FileCheck2, FileText, Gauge, GraduationCap, MessageSquare, Settings, Users } from "lucide-react";
+import { BarChart3, Bot, CalendarClock, CheckCircle2, CreditCard, FileCheck2, FileText, Gauge, GraduationCap, MessageSquare, Settings, Users, XCircle, BookOpen, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 
 const nav = [
   { href: "/admissions/dashboard", label: "Dashboard", icon: Gauge },
   { href: "/admissions/leads", label: "Leads", icon: Users },
   { href: "/admissions/applications", label: "Applications", icon: FileText },
+  { href: "/admissions/review", label: "Review Queue", icon: CheckCircle2 },
+  { href: "/admissions/approved", label: "Approved", icon: GraduationCap },
+  { href: "/admissions/rejected", label: "Rejected", icon: XCircle },
+  { href: "/admissions/programs", label: "Programs", icon: BookOpen },
   { href: "/admissions/documents", label: "Documents", icon: FileCheck2 },
   { href: "/admissions/payments", label: "Payments", icon: CreditCard },
   { href: "/admissions/enrollments", label: "Enrollments", icon: GraduationCap },
@@ -14,6 +18,7 @@ const nav = [
   { href: "/admissions/communications", label: "Communications", icon: MessageSquare },
   { href: "/admissions/reports", label: "Reports", icon: BarChart3 },
   { href: "/admissions/tara", label: "Tara AI", icon: Bot },
+  { href: "/admin/dashboard", label: "Admin Command", icon: ShieldCheck },
   { href: "/admissions/settings", label: "Settings", icon: Settings }
 ];
 

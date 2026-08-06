@@ -15,7 +15,8 @@
     "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "launch:check": "tsx scripts/launch-readiness.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "latest",

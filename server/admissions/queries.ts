@@ -52,7 +52,7 @@ export async function getAdmissionDashboard() {
   await ensureDefaultPipeline();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const [leadsToday, totalLeads, wonLeads, revenue, pendingDocuments, pendingPayments, upcomingCounselling, topPrograms] = await Promise.all([
+  const [leadsToday, totalLeads, wonLeads, revenue, pendingDocuments, pendingPayments, upcomingCounselling, topPrograms, pendingReview, approvedApplications, rejectedApplications] = await Promise.all([
     prisma.lead.count({ where: { createdAt: { gte: today } } }),
     prisma.lead.count(),
     prisma.lead.count({ where: { status: "WON" } }),
@@ -60,7 +60,10 @@ export async function getAdmissionDashboard() {
     prisma.studentDocument.count({ where: { status: "PENDING" } }),
     prisma.feeInvoice.count({ where: { status: { in: ["ISSUED", "PARTIALLY_PAID"] } } }),
     prisma.counsellingSession.findMany({ where: { scheduledAt: { gte: new Date() } }, orderBy: { scheduledAt: "asc" }, take: 6, include: { lead: true, counsellor: true } }),
-    prisma.program.findMany({ orderBy: { leads: { _count: "desc" } }, take: 5, include: { leads: true } })
+    prisma.program.findMany({ orderBy: { leads: { _count: "desc" } }, take: 5, include: { leads: true } }),
+    prisma.admissionApplication.count({ where: { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } } }),
+    prisma.admissionApplication.count({ where: { status: "APPROVED" } }),
+    prisma.admissionApplication.count({ where: { status: "REJECTED" } })
   ]);
   return {
     stats: {
@@ -71,7 +74,10 @@ export async function getAdmissionDashboard() {
       pendingPayments,
       bdmPerformance: wonLeads,
       topPrograms: topPrograms.length,
-      upcomingCounselling: upcomingCounselling.length
+      upcomingCounselling: upcomingCounselling.length,
+      pendingReview,
+      approvedApplications,
+      rejectedApplications
     },
     upcomingCounselling,
     topPrograms

@@ -24,6 +24,17 @@ enum ContentStatus {
   ARCHIVED
 }
 
+enum ProgramFeeType {
+  PAID
+  FREE
+}
+
+enum ProgramAdmissionStatus {
+  OPEN
+  CLOSED
+  WAITLIST
+}
+
 enum EnrollmentStatus {
   ACTIVE
   PAUSED
@@ -595,6 +606,18 @@ enum ProviderStatus {
   INACTIVE
 }
 
+enum StudentCredentialStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum WhatsAppMessageStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   name         String     @db.VarChar(120)
@@ -687,6 +710,9 @@ model User {
   executiveReports ExecutiveReport[] @relation("ExecutiveReportCreator")
   executiveInsights ExecutiveInsight[] @relation("ExecutiveInsightOwner")
   platformAudits PlatformAudit[] @relation("PlatformAuditActor")
+  studentLoginCredentials StudentLoginCredential[] @relation("StudentLoginCredentials")
+  generatedStudentCredentials StudentLoginCredential[] @relation("GeneratedStudentCredentials")
+  whatsAppMessageLogs WhatsAppMessageLog[]
 
   @@index([email])
   @@index([deletedAt])
@@ -703,6 +729,11 @@ model Program {
   durationDays Int
   status       ContentStatus @default(DRAFT)
   thumbnail    String?       @db.VarChar(500)
+  category     String?       @db.VarChar(120)
+  feeType      ProgramFeeType @default(PAID)
+  admissionStatus ProgramAdmissionStatus @default(CLOSED)
+  displayOrder Int           @default(0)
+  publicVisible Boolean      @default(false)
   deletedAt    DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -733,6 +764,8 @@ model Program {
 
   @@index([slug])
   @@index([status])
+  @@index([admissionStatus, publicVisible])
+  @@index([displayOrder])
   @@index([institutionId])
   @@index([campusId])
   @@index([departmentId])
@@ -2633,10 +2666,62 @@ model AdmissionApplication {
   student User? @relation(fields: [studentId], references: [id], onDelete: SetNull)
   program Program @relation(fields: [programId], references: [id], onDelete: Restrict)
   documents StudentDocument[]
+  studentLoginCredentials StudentLoginCredential[]
+  whatsAppMessageLogs WhatsAppMessageLog[]
 
   @@index([leadId])
   @@index([studentId])
   @@index([programId, status])
+}
+
+model StudentLoginCredential {
+  id             String                  @id @default(uuid()) @db.Uuid
+  userId         String                  @db.Uuid
+  applicationId  String?                 @db.Uuid
+  whatsapp       String                  @unique @db.VarChar(40)
+  pinHash        String
+  status         StudentCredentialStatus @default(ACTIVE)
+  temporary      Boolean                 @default(true)
+  mustResetPin   Boolean                 @default(true)
+  expiresAt      DateTime?
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  generatedById  String?                 @db.Uuid
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  user User @relation("StudentLoginCredentials", fields: [userId], references: [id], onDelete: Cascade)
+  application AdmissionApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  generatedBy User? @relation("GeneratedStudentCredentials", fields: [generatedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([applicationId])
+  @@index([status, expiresAt])
+  @@index([generatedById])
+}
+
+model WhatsAppMessageLog {
+  id            String                @id @default(uuid()) @db.Uuid
+  to            String                @db.VarChar(40)
+  template      String                @db.VarChar(120)
+  message       String                @db.Text
+  status        WhatsAppMessageStatus @default(QUEUED)
+  provider      String?               @db.VarChar(80)
+  providerRef   String?               @db.VarChar(160)
+  applicationId String?               @db.Uuid
+  userId        String?               @db.Uuid
+  metadata      Json?
+  sentAt        DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  application AdmissionApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([to])
+  @@index([status])
+  @@index([applicationId])
+  @@index([userId])
 }
 
 model StudentDocument {

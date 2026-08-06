@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { hashPassword, verifyPassword } from "@/lib/security/password";
 import { createOtp, createToken, hashToken } from "@/lib/security/token";
-import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema } from "@/features/auth/schemas";
-import { createSession, revokeCurrentSession } from "@/server/auth/session";
+import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, resetPinSchema, whatsappPinLoginSchema } from "@/features/auth/schemas";
+import { createSession, getCurrentUser, revokeCurrentSession } from "@/server/auth/session";
 import { sendEmail } from "@/server/email/provider";
 import { otpEmail, resetPasswordEmail, welcomeEmail } from "@/emails/templates";
 import { siteConfig } from "@/config/site";
@@ -15,6 +15,13 @@ type ActionState = {
   ok: boolean;
   message: string;
 };
+
+function normalizeWhatsApp(value: string) {
+  const trimmed = value.trim();
+  const hasPlus = trimmed.startsWith("+");
+  const digits = trimmed.replace(/\D/g, "");
+  return hasPlus ? `+${digits}` : digits;
+}
 
 export async function registerAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = registerSchema.safeParse(Object.fromEntries(formData));
@@ -92,6 +99,63 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
   redirect("/");
 }
 
+export async function whatsappPinLoginAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = whatsappPinLoginSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Check your WhatsApp login details." };
+  }
+
+  const whatsapp = normalizeWhatsApp(parsed.data.whatsapp);
+  const limited = checkRateLimit(`whatsapp-login:${whatsapp}`, 5, 60_000);
+  if (!limited.allowed) {
+    return { ok: false, message: "Too many attempts. Please wait a minute." };
+  }
+
+  const credential = await prisma.studentLoginCredential.findUnique({
+    where: { whatsapp },
+    include: { user: { include: { roles: { include: { role: true } } } } }
+  });
+
+  if (!credential || credential.status !== "ACTIVE" || credential.revokedAt) {
+    return { ok: false, message: "Your application is under review. Login opens after Admission Cell approval." };
+  }
+
+  if (credential.expiresAt && credential.expiresAt < new Date()) {
+    await prisma.studentLoginCredential.update({
+      where: { id: credential.id },
+      data: { status: "EXPIRED" }
+    });
+    return { ok: false, message: "This temporary PIN expired. Please contact Admission Cell for a new PIN." };
+  }
+
+  if (credential.user.deletedAt || credential.user.status === "SUSPENDED") {
+    return { ok: false, message: "This account is currently unavailable." };
+  }
+
+  const valid = await verifyPassword(parsed.data.pin, credential.pinHash);
+  if (!valid) {
+    return { ok: false, message: "WhatsApp number or PIN is incorrect." };
+  }
+
+  await prisma.$transaction([
+    prisma.studentLoginCredential.update({
+      where: { id: credential.id },
+      data: { lastUsedAt: new Date() }
+    }),
+    prisma.auditLog.create({
+      data: {
+        userId: credential.userId,
+        action: "WHATSAPP_PIN_LOGIN",
+        entity: "StudentLoginCredential",
+        entityId: credential.id
+      }
+    })
+  ]);
+
+  await createSession(credential.userId);
+  redirect(credential.mustResetPin || credential.temporary ? "/reset-pin" : "/dashboard");
+}
+
 export async function forgotPasswordAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = forgotPasswordSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -153,6 +217,49 @@ export async function resetPasswordAction(_: ActionState, formData: FormData): P
   ]);
 
   return { ok: true, message: "Password updated. You can login now." };
+}
+
+export async function resetPinAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, message: "Please login with your temporary PIN first." };
+  }
+
+  const parsed = resetPinSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Check your new PIN." };
+  }
+
+  const credential = await prisma.studentLoginCredential.findFirst({
+    where: { userId: user.id, status: "ACTIVE", revokedAt: null },
+    orderBy: { createdAt: "desc" }
+  });
+
+  if (!credential) {
+    return { ok: false, message: "No approved WhatsApp login was found for this account." };
+  }
+
+  await prisma.$transaction([
+    prisma.studentLoginCredential.update({
+      where: { id: credential.id },
+      data: {
+        pinHash: await hashPassword(parsed.data.pin),
+        temporary: false,
+        mustResetPin: false,
+        expiresAt: null
+      }
+    }),
+    prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "STUDENT_PIN_RESET",
+        entity: "StudentLoginCredential",
+        entityId: credential.id
+      }
+    })
+  ]);
+
+  redirect("/dashboard");
 }
 
 export async function logoutAction() {

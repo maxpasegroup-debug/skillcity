@@ -30,6 +30,32 @@ export const applicationSchema = z.object({
   status: z.enum(["DRAFT", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED"])
 });
 
+export const applicationReviewSchema = z.object({
+  applicationId: z.string().uuid(),
+  status: z.enum(["SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED"]),
+  note: z.string().max(1200).optional()
+});
+
+export const studentCredentialSchema = z.object({
+  applicationId: z.string().uuid(),
+  whatsapp: z.string().trim().min(7, "Enter a valid WhatsApp number").max(40)
+});
+
+export const admissionProgramSchema = z.object({
+  id: z.string().uuid().optional().or(z.literal("")),
+  name: z.string().trim().min(2).max(160),
+  slug: z.string().trim().min(2).max(180).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use a lowercase URL slug."),
+  category: z.string().trim().min(2).max(120),
+  description: z.string().trim().min(10),
+  durationDays: z.coerce.number().int().positive(),
+  status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]),
+  feeType: z.enum(["PAID", "FREE"]),
+  admissionStatus: z.enum(["OPEN", "CLOSED", "WAITLIST"]),
+  displayOrder: z.coerce.number().int().min(0),
+  publicVisible: z.enum(["on"]).optional(),
+  thumbnail: z.string().url().optional().or(z.literal(""))
+});
+
 export const documentSchema = z.object({
   applicationId: z.string().uuid().optional().or(z.literal("")),
   studentId: z.string().uuid().optional().or(z.literal("")),

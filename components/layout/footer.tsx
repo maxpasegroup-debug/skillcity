@@ -8,6 +8,7 @@ const links = [
   { href: "/#success", label: "Success Stories" },
   { href: "/#about", label: "About" },
   { href: "/contact", label: "Contact" },
+  { href: "/application-status", label: "Application Status" },
   { href: "/login", label: "Login" }
 ];
 

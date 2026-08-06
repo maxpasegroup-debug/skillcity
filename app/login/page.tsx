@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <AuthShell title="Welcome back" subtitle="Continue your SkillCity learning journey with Tara AI.">
+    <AuthShell title="Enter with your approved PIN" subtitle="Students receive WhatsApp login access only after Admission Cell approval.">
       <LoginForm />
     </AuthShell>
   );

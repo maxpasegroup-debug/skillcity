@@ -18,6 +18,11 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Enter your password")
 });
 
+export const whatsappPinLoginSchema = z.object({
+  whatsapp: z.string().trim().min(7, "Enter your WhatsApp number").max(40),
+  pin: z.string().trim().regex(/^[0-9]{6}$/, "Enter the 6 digit PIN from Admission Cell")
+});
+
 export const forgotPasswordSchema = z.object({
   email: z.string().email("Enter a valid email").toLowerCase()
 });
@@ -27,7 +32,19 @@ export const resetPasswordSchema = z.object({
   password: passwordSchema
 });
 
+export const resetPinSchema = z
+  .object({
+    pin: z.string().trim().regex(/^[0-9]{6}$/, "Choose a 6 digit PIN"),
+    confirmPin: z.string().trim().regex(/^[0-9]{6}$/, "Confirm your 6 digit PIN")
+  })
+  .refine((data) => data.pin === data.confirmPin, {
+    message: "PIN confirmation must match",
+    path: ["confirmPin"]
+  });
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type WhatsAppPinLoginInput = z.infer<typeof whatsappPinLoginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ResetPinInput = z.infer<typeof resetPinSchema>;
