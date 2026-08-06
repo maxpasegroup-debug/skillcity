@@ -34,7 +34,7 @@ export default function ProgramDetailPage({ params }: { params: { slug: string }
             <p className="text-sm font-black uppercase text-brand-red">{program.academy}</p>
             <h1 className="mt-4 text-5xl font-black leading-tight md:text-7xl">{program.title}</h1>
             <p className="mt-6 max-w-3xl text-xl leading-9 text-brand-muted">{program.outcome}</p>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row"><Button asChild size="lg"><Link href="/register">Apply Now</Link></Button><Button asChild size="lg" variant="secondary"><Link href="/contact">Talk to Admissions</Link></Button></div>
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row"><Button asChild size="lg"><Link href="/apply">Apply Now</Link></Button><Button asChild size="lg" variant="secondary"><Link href="/contact">Talk to Admissions</Link></Button></div>
           </div>
           <Card><CardContent className="p-6"><IndianRupee className="h-8 w-8 text-brand-red" /><h2 className="mt-4 text-2xl font-black">Launch Offer</h2><p className="mt-3 font-bold text-brand-muted">{program.launchOffer}</p><p className="mt-5 text-3xl font-black text-brand-dark">{program.bookingAmount}</p></CardContent></Card>
         </Container>

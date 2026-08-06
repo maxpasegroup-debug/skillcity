@@ -28,25 +28,19 @@ const livePrograms = [
     title: "Startup Skool",
     text: "Build, validate and launch a real business.",
     icon: Rocket,
-    href: "/programs/solo-founder"
+    href: "/apply?program=startup-skool"
   },
   {
     title: "GenZ Builder",
     text: "Become an AI powered full stack creator.",
     icon: WandSparkles,
-    href: "/programs/genz-builder"
+    href: "/apply?program=genz-builder"
   },
   {
-    title: "AI Sales Mastery",
-    text: "Learn modern selling with AI workflows.",
+    title: "NiceJobs - Sales Mastery",
+    text: "Free internship pathway for sales and career readiness.",
     icon: LineChart,
-    href: "/programs/sales-mastery-live-fellowship"
-  },
-  {
-    title: "AI Skills Arena",
-    text: "Build practical AI skills for daily work.",
-    icon: Bot,
-    href: "/academies/ai-skills-academy"
+    href: "/apply?program=nicejobs-sales-mastery"
   }
 ];
 
@@ -110,7 +104,7 @@ export default function HomePage() {
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <Button asChild size="lg" className="h-16 rounded-full px-9 shadow-[0_22px_70px_rgba(235,0,27,0.28)]">
-                <Link href="/register">
+                <Link href="/apply">
                   Apply Now
                   <ArrowRight className="h-6 w-6" />
                 </Link>
@@ -148,7 +142,7 @@ export default function HomePage() {
       <section id="programs" className="bg-[#080806] py-16 text-white sm:py-24">
         <Container>
           <SectionHeading eyebrow="Live Programs" title="Start with the right doorway." invert />
-          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
             {livePrograms.map(({ title, text, icon: Icon, href }) => (
               <Link
                 key={title}
@@ -161,7 +155,7 @@ export default function HomePage() {
                 <h3 className="mt-16 text-3xl font-black uppercase leading-none">{title}</h3>
                 <p className="mt-4 text-base font-semibold leading-7 text-white/65">{text}</p>
                 <p className="mt-8 inline-flex items-center gap-2 text-sm font-black uppercase text-brand-gold">
-                  Learn More <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                  Apply <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                 </p>
               </Link>
             ))}
@@ -255,7 +249,7 @@ export default function HomePage() {
             </h2>
           </div>
           <Button asChild size="lg" variant="secondary" className="h-16 rounded-full border-white bg-white px-10 text-brand-dark hover:border-white hover:text-brand-red">
-            <Link href="/register">
+            <Link href="/apply">
               Apply Now
               <ArrowRight className="h-6 w-6" />
             </Link>

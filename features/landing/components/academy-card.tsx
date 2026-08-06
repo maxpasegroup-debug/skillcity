@@ -26,7 +26,7 @@ export function AcademyCard({
         <h3 className="mt-6 text-2xl font-black text-brand-dark">{title}</h3>
         <p className="mt-3 flex-1 text-base leading-7 text-brand-muted">{description}</p>
         <Button asChild className="mt-6 w-full" variant={comingSoon ? "secondary" : "primary"}>
-          <Link href={comingSoon ? "/register" : "#programs"}>{comingSoon ? "Get Updates" : "Explore"}</Link>
+          <Link href={comingSoon ? "/apply" : "#programs"}>{comingSoon ? "Join Waitlist" : "Explore"}</Link>
         </Button>
       </CardContent>
     </Card>
