@@ -163,23 +163,29 @@ export function AiraLandingV2() {
         </div>
       </header>
 
-      <section className="relative isolate min-h-screen px-4 pt-28 sm:px-6 lg:px-10">
-        <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(212,175,55,0.13),transparent_28%),linear-gradient(180deg,#0B0B0D_0%,rgba(11,11,13,0.74)_48%,#0B0B0D_100%)]" />
-        <div className="relative mx-auto grid min-h-[calc(100vh-112px)] max-w-7xl items-center gap-10 py-10 lg:grid-cols-[0.92fr_1.08fr]">
-          <div className="aira-hero-copy">
-            <p className="inline-flex rounded-full border border-[#D4AF37]/30 bg-white/[0.04] px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-[#D4AF37]">
-              Learn. Build. Earn. Grow.
+      <section className="relative isolate min-h-screen overflow-hidden px-4 pt-28 sm:px-6 lg:px-10">
+        <div className="absolute inset-0 bg-[#0B0B0D]" />
+        <div className="aira-hero-image absolute inset-y-0 right-0 hidden w-[61vw] lg:block">
+          <Image src="/launch/v2/hero-campus.png" alt="Indian students collaborating in a modern AIRA Skill City innovation campus" fill priority sizes="61vw" className="object-cover" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,#0B0B0D_0%,rgba(11,11,13,0.82)_18%,rgba(11,11,13,0.32)_48%,rgba(11,11,13,0.1)_100%),linear-gradient(180deg,rgba(11,11,13,0.1)_0%,#0B0B0D_100%)]" />
+        </div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(212,175,55,0.2),transparent_28%),radial-gradient(circle_at_36%_92%,rgba(200,16,46,0.24),transparent_24%)]" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/45 to-transparent" />
+
+        <div className="relative mx-auto grid min-h-[calc(100vh-112px)] max-w-7xl items-center py-10 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="aira-hero-copy max-w-4xl">
+            <p className="inline-flex rounded-full border border-[#D4AF37]/35 bg-[#D4AF37]/10 px-5 py-3 text-xs font-black uppercase tracking-[0.24em] text-[#D4AF37] shadow-[0_0_44px_rgba(212,175,55,0.14)]">
+              A modern campus for builders
             </p>
-            <h1 className="mt-8 max-w-4xl text-[clamp(4.1rem,11vw,9.5rem)] font-black uppercase leading-[0.78] tracking-normal text-[#F8F8F8]">
-              Build Your Future
+            <h1 className="mt-8 text-[clamp(4.5rem,10.5vw,10.8rem)] font-black uppercase leading-[0.77] tracking-normal text-[#F8F8F8]">
+              Build
+              <span className="block text-[#D4AF37]">Your</span>
+              <span className="block">Future</span>
             </h1>
-            <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-3xl font-black uppercase text-[#D4AF37] sm:text-5xl">
-              <span>Learn.</span>
-              <span>Build.</span>
-              <span>Earn.</span>
-              <span>Grow.</span>
-            </div>
-            <p className="mt-7 max-w-xl text-xl font-semibold leading-8 text-[#B0B0B0]">
+            <p className="mt-8 text-[clamp(2.2rem,4.2vw,5rem)] font-black uppercase leading-none text-[#F8F8F8]">
+              Learn. <span className="text-[#D4AF37]">Build.</span> Earn. <span className="text-[#C8102E]">Grow.</span>
+            </p>
+            <p className="mt-7 max-w-lg text-xl font-semibold leading-8 text-[#B0B0B0]">
               A modern learning campus where ideas become careers.
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -192,17 +198,27 @@ export function AiraLandingV2() {
                 <MapPin className="h-5 w-5 text-[#D4AF37]" />
               </Link>
             </div>
-          </div>
 
-          <div className="aira-hero-image relative min-h-[460px] overflow-hidden rounded-[2rem] border border-white/10 bg-[#141414] shadow-[0_40px_110px_rgba(0,0,0,0.65)] lg:min-h-[650px]">
-            <Image src="/launch/v2/hero-campus.png" alt="Indian students collaborating in a modern AIRA Skill City innovation campus" fill priority sizes="(min-width: 1024px) 54vw, 100vw" className="object-cover" />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_48%,rgba(11,11,13,0.82)_100%)]" />
-            <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between rounded-2xl border border-white/10 bg-[#0B0B0D]/62 p-4 backdrop-blur-md">
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-[#D4AF37]">Founding Batch</p>
-              <p className="text-sm font-bold text-[#F8F8F8]">Admissions Open</p>
+            <div className="mt-12 grid max-w-2xl gap-3 sm:grid-cols-3">
+              {["Admissions Open", "Founding Batch", "Practical Campus"].map((item) => (
+                <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-md">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#D4AF37]">{item}</p>
+                </div>
+              ))}
             </div>
           </div>
+
+          <div className="relative mt-10 min-h-[430px] overflow-hidden rounded-[2rem] border border-white/10 bg-[#141414] shadow-[0_40px_110px_rgba(0,0,0,0.65)] lg:hidden">
+            <Image src="/launch/v2/hero-campus.png" alt="Indian students collaborating in a modern AIRA Skill City innovation campus" fill priority sizes="100vw" className="object-cover" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(11,11,13,0.86)_100%)]" />
+          </div>
         </div>
+
+        <div className="pointer-events-none absolute bottom-8 right-6 hidden max-w-xs rounded-[1.5rem] border border-white/10 bg-[#0B0B0D]/62 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl lg:block">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#D4AF37]">Inside AIRA</p>
+          <p className="mt-3 text-lg font-black leading-6 text-[#F8F8F8]">A place where ambitious people come to build.</p>
+        </div>
+
         <a href="#what-is-skill-city" aria-label="Scroll to next section" className="absolute bottom-7 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-[#B0B0B0]">
           Scroll
           <ArrowDown className="h-5 w-5 animate-bounce text-[#D4AF37]" />
