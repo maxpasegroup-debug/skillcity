@@ -114,6 +114,94 @@ input {
   animation: skillcity-letter-rise 720ms cubic-bezier(0.2, 0.82, 0.2, 1) forwards;
 }
 
+.skillcity-nexa-orb {
+  position: relative;
+  width: min(230px, 62vw);
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  perspective: 900px;
+  filter: drop-shadow(0 28px 54px rgba(235, 0, 27, 0.34));
+}
+
+.skillcity-nexa-core {
+  position: absolute;
+  inset: 18%;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.92) 0 8%, rgba(255, 255, 255, 0.18) 9% 18%, transparent 19%),
+    radial-gradient(circle at 62% 72%, rgba(198, 155, 67, 0.86), transparent 24%),
+    radial-gradient(circle at 38% 38%, #ff3b4f, #eb001b 44%, #6e0611 78%, #242124 100%);
+  box-shadow:
+    inset -22px -28px 48px rgba(0, 0, 0, 0.42),
+    inset 18px 18px 36px rgba(255, 255, 255, 0.24),
+    0 0 30px rgba(235, 0, 27, 0.58),
+    0 0 70px rgba(198, 155, 67, 0.24);
+  animation: skillcity-nexa-pulse 3.4s ease-in-out infinite;
+}
+
+.skillcity-nexa-core::after {
+  position: absolute;
+  inset: 9%;
+  content: "";
+  border-radius: inherit;
+  background:
+    linear-gradient(120deg, transparent 0 38%, rgba(255, 255, 255, 0.32) 44%, transparent 52% 100%),
+    repeating-linear-gradient(18deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 20px);
+  mix-blend-mode: screen;
+  opacity: 0.76;
+  animation: skillcity-nexa-shift 7s linear infinite;
+}
+
+.skillcity-nexa-ring {
+  position: absolute;
+  inset: 9%;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: inherit;
+  transform-style: preserve-3d;
+}
+
+.skillcity-nexa-ring::before {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  content: "";
+  border-radius: 9999px;
+  background: #c69b43;
+  box-shadow: 0 0 20px rgba(198, 155, 67, 0.9);
+}
+
+.skillcity-nexa-ring-one {
+  transform: rotateX(70deg) rotateZ(-22deg);
+  animation: skillcity-nexa-orbit 5.6s linear infinite;
+}
+
+.skillcity-nexa-ring-one::before {
+  top: 12%;
+  left: 18%;
+}
+
+.skillcity-nexa-ring-two {
+  inset: 15%;
+  border-color: rgba(235, 0, 27, 0.46);
+  transform: rotateX(62deg) rotateZ(54deg);
+  animation: skillcity-nexa-orbit 7.2s linear infinite reverse;
+}
+
+.skillcity-nexa-ring-two::before {
+  right: 12%;
+  bottom: 22%;
+  background: #ffffff;
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.9);
+}
+
+.skillcity-nexa-glint {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2), transparent 62%);
+  animation: skillcity-float 4.8s ease-in-out infinite;
+}
+
 @keyframes skillcity-drift {
   from {
     background-position: 0 0;
@@ -140,6 +228,31 @@ input {
   }
 }
 
+@keyframes skillcity-nexa-orbit {
+  to {
+    transform: rotateX(70deg) rotateZ(338deg);
+  }
+}
+
+@keyframes skillcity-nexa-pulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.035);
+  }
+}
+
+@keyframes skillcity-nexa-shift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 120px 0;
+  }
+}
+
 @keyframes skillcity-route {
   from {
     transform: translateY(-36px);
@@ -157,7 +270,11 @@ input {
   .skillcity-float-delay,
   .skillcity-scan,
   .skillcity-nextgen-mark::after,
-  .skillcity-letter {
+  .skillcity-letter,
+  .skillcity-nexa-core,
+  .skillcity-nexa-core::after,
+  .skillcity-nexa-ring,
+  .skillcity-nexa-glint {
     animation: none;
   }
 

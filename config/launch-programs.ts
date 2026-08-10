@@ -12,9 +12,9 @@ export const launchPrograms = [
   },
   {
     slug: "genz-builder",
-    title: "GenZ Builder",
+    title: "GenZ Builder - Vibe Coding",
     shortTitle: "GenZ Builder",
-    description: "For students who want practical AI and full stack creation skills.",
+    description: "For students who want practical AI, full stack creation and vibe coding skills.",
     category: "AI Skills",
     durationDays: 180,
     displayOrder: 2,
