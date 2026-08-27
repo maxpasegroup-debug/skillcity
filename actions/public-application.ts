@@ -4,12 +4,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { ensureDefaultPipeline } from "@/server/admissions/queries";
 import { getLaunchApplicationProgram } from "@/features/apply/programs";
-import { applicationStatusSchema, publicApplicationSchema } from "@/features/apply/schemas";
+import { applicationStatusSchema, publicApplicationSchema, publicEnquirySchema } from "@/features/apply/schemas";
 
 export type PublicApplicationState = {
   ok: boolean;
   message: string;
   applicationId?: string;
+  leadId?: string;
 };
 
 export type ApplicationStatusState = {
@@ -39,25 +40,13 @@ function normalizePhone(value: string) {
   return hasPlus ? `+${digits}` : digits;
 }
 
-export async function submitPublicApplicationAction(_: PublicApplicationState, formData: FormData): Promise<PublicApplicationState> {
-  const parsed = publicApplicationSchema.safeParse(Object.fromEntries(formData));
-
-  if (!parsed.success) {
-    return {
-      ok: false,
-      message: parsed.error.issues[0]?.message ?? "Please check your application."
-    };
-  }
-
-  const selectedProgram = getLaunchApplicationProgram(parsed.data.programSlug);
-  const stages = await ensureDefaultPipeline();
-  const applicationStage = stages.find((stage) => stage.slug === "application-submitted") ?? stages[0];
+async function ensureWebsiteProgramAndReferrer(programSlug: string, referralId?: string) {
+  const selectedProgram = getLaunchApplicationProgram(programSlug);
   const websiteSource = await prisma.leadSource.upsert({
     where: { name: "Website" },
     update: { active: true },
     create: { name: "Website" }
   });
-
   const program = await prisma.program.upsert({
     where: { slug: selectedProgram.slug },
     update: {
@@ -84,25 +73,104 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
       publicVisible: true
     }
   });
-  const referrer = parsed.data.referralId
-    ? await prisma.user.findUnique({ where: { id: parsed.data.referralId }, select: { id: true } })
-    : null;
+  const referrer = referralId ? await prisma.user.findUnique({ where: { id: referralId }, select: { id: true } }) : null;
+
+  return { selectedProgram, websiteSource, program, referrer };
+}
+
+export async function submitPublicEnquiryAction(_: PublicApplicationState, formData: FormData): Promise<PublicApplicationState> {
+  const parsed = publicEnquirySchema.safeParse(Object.fromEntries(formData));
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: parsed.error.issues[0]?.message ?? "Please check your details."
+    };
+  }
+
+  const stages = await ensureDefaultPipeline();
+  const enquiryStage = stages.find((stage) => stage.slug === "new-lead") ?? stages[0];
+  const { selectedProgram, websiteSource, program, referrer } = await ensureWebsiteProgramAndReferrer(parsed.data.programSlug, parsed.data.referralId);
+
+  const lead = await prisma.$transaction(async (tx) => {
+    const createdLead = await tx.lead.create({
+      data: {
+        name: parsed.data.name,
+        email: nullable(parsed.data.email),
+        phone: parsed.data.phone?.trim() || parsed.data.whatsapp,
+        whatsapp: parsed.data.whatsapp,
+        city: parsed.data.city,
+        state: nullable(parsed.data.state),
+        programInterestedId: program.id,
+        sourceId: websiteSource.id,
+        pipelineStageId: enquiryStage.id,
+        ownerId: referrer?.id ?? null,
+        priority: "MEDIUM",
+        notes: `Nexa enquiry for ${selectedProgram.title}. Intent: ${parsed.data.intent || parsed.data.goal}. Counselling pending.`
+      }
+    });
+
+    await tx.leadActivity.create({
+      data: {
+        leadId: createdLead.id,
+        type: "PUBLIC_ENQUIRY_SUBMITTED",
+        summary: `Nexa enquiry captured for ${selectedProgram.title}. Counselling pending.`
+      }
+    });
+
+    if (referrer) {
+      await tx.referral.create({
+        data: {
+          referrerId: referrer.id,
+          leadId: createdLead.id,
+          programId: program.id,
+          code: `ENQ-${createdLead.id}`
+        }
+      });
+    }
+
+    return createdLead;
+  });
+
+  revalidatePath("/admissions/leads");
+  revalidatePath("/admissions/dashboard");
+
+  return {
+    ok: true,
+    leadId: lead.id,
+    message: "Your enquiry has been saved. Our Admissions Team can guide you from here."
+  };
+}
+
+export async function submitPublicApplicationAction(_: PublicApplicationState, formData: FormData): Promise<PublicApplicationState> {
+  const parsed = publicApplicationSchema.safeParse(Object.fromEntries(formData));
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: parsed.error.issues[0]?.message ?? "Please check your application."
+    };
+  }
+
+  const stages = await ensureDefaultPipeline();
+  const applicationStage = stages.find((stage) => stage.slug === "application-submitted") ?? stages[0];
+  const { selectedProgram, websiteSource, program, referrer } = await ensureWebsiteProgramAndReferrer(parsed.data.programSlug, parsed.data.referralId);
 
   const application = await prisma.$transaction(async (tx) => {
     const lead = await tx.lead.create({
       data: {
         name: parsed.data.name,
         email: nullable(parsed.data.email),
-        phone: parsed.data.phone,
+        phone: parsed.data.phone?.trim() || parsed.data.whatsapp,
         whatsapp: parsed.data.whatsapp,
         city: parsed.data.city,
-        state: parsed.data.state,
+        state: nullable(parsed.data.state),
         programInterestedId: program.id,
         sourceId: websiteSource.id,
         pipelineStageId: applicationStage.id,
         ownerId: referrer?.id ?? null,
         priority: selectedProgram.isFree ? "MEDIUM" : "HIGH",
-        notes: `Public application for ${selectedProgram.title}. Current status: ${parsed.data.educationOrWork}. Goal: ${parsed.data.goal}. Preferred counselling: ${parsed.data.preferredCounsellingTime}.`
+        notes: `Public application for ${selectedProgram.title}. Intent: ${parsed.data.intent || parsed.data.goal}. Counselling: ${parsed.data.counselled ?? "YES"}.`
       }
     });
 
@@ -134,10 +202,12 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
         data: {
           programSlug: selectedProgram.slug,
           feeType: selectedProgram.isFree ? "FREE" : "PAID",
-          educationOrWork: parsed.data.educationOrWork,
+          educationOrWork: parsed.data.educationOrWork || "Counselling completed",
           goal: parsed.data.goal,
-          preferredCounsellingTime: parsed.data.preferredCounsellingTime,
-          source: "PUBLIC_APPLY_PAGE"
+          preferredCounsellingTime: parsed.data.preferredCounsellingTime || "Admissions follow-up",
+          intent: parsed.data.intent || parsed.data.goal,
+          counsellingStatus: "COUNSELLING_COMPLETED",
+          source: "NEXA_ONBOARDING"
         }
       }
     });
@@ -150,7 +220,7 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
   return {
     ok: true,
     applicationId: application.id,
-    message: "Your application is under review. The Admission Cell will contact you soon."
+    message: "Your application has been sent to the AIRA Skill City Admissions Team."
   };
 }
 

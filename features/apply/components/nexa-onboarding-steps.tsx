@@ -1,74 +1,116 @@
 "use client";
 
 import type React from "react";
-import Link from "next/link";
 import { ArrowRight, Bot, CheckCircle2, Code2, LineChart, MessageCircle, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { buildAdmissionsWhatsAppUrl } from "@/config/admissions";
 import { launchApplicationPrograms, type LaunchApplicationProgramSlug } from "@/features/apply/programs";
+
+export type IntentId = "business" | "income" | "own" | "exploring";
+export type CounsellingAnswer = "YES" | "NO" | "";
 
 export type FormValues = {
   name: string;
-  phone: string;
   whatsapp: string;
   email: string;
   city: string;
-  state: string;
-  educationOrWork: string;
-  preferredCounsellingTime: string;
-  goal: string;
+  intent: IntentId | "";
+  counselled: CounsellingAnswer;
 };
 
 export const initialApplicationValues: FormValues = {
   name: "",
-  phone: "",
   whatsapp: "",
   email: "",
   city: "",
-  state: "",
-  educationOrWork: "",
-  preferredCounsellingTime: "",
-  goal: ""
+  intent: "",
+  counselled: ""
 };
 
-export type OnboardingState = "intro" | "program" | "candidate" | "goals" | "review";
+export type OnboardingState = "intent" | "program" | "name" | "whatsapp" | "city" | "email" | "counselling" | "enquiry" | "review";
 
-export const onboardingStates: Array<{ id: OnboardingState; label: string }> = [
-  { id: "intro", label: "Nexa intro" },
-  { id: "program", label: "Path" },
-  { id: "candidate", label: "You" },
-  { id: "goals", label: "Goal" },
-  { id: "review", label: "Handoff" }
-];
+export const progressStages = ["Welcome", "Your Path", "Your Details", "Counselling", "Application"] as const;
+
+export function getProgressIndex(state: OnboardingState) {
+  if (state === "intent") return 0;
+  if (state === "program") return 1;
+  if (state === "name" || state === "whatsapp" || state === "city" || state === "email") return 2;
+  if (state === "counselling" || state === "enquiry") return 3;
+  return 4;
+}
+
+export const intentOptions = [
+  {
+    id: "business",
+    number: "01",
+    label: "I want to start a business",
+    response: "Great. Let's find the path that fits your ambition. 🚀"
+  },
+  {
+    id: "income",
+    number: "02",
+    label: "I want to turn my skills into income",
+    response: "Perfect. Let's explore a path where your skills can become an income stream."
+  },
+  {
+    id: "own",
+    number: "03",
+    label: "I want to build something of my own",
+    response: "That's exactly what we're here for. Let's find your path."
+  },
+  {
+    id: "exploring",
+    number: "04",
+    label: "I'm exploring my options",
+    response: "No problem. I'll help you understand the options first."
+  }
+] satisfies Array<{ id: IntentId; number: string; label: string; response: string }>;
 
 const programCopy = {
   "startup-skool": {
     number: "01",
-    label: "STARTUP SKOOL",
+    label: "STARTUP SCHOOL",
     line: "Build your own business.",
-    icon: Rocket,
-    response: "Great choice. 🚀",
-    followUp: "You are looking to build something of your own."
+    icon: Rocket
   },
   "genz-builder": {
     number: "02",
     label: "GENZ BUILDER",
     line: "Build with Vibe Coding.",
-    icon: Code2,
-    response: "Nice. You want to create with AI.",
-    followUp: "Let us understand what kind of builder you want to become."
+    icon: Code2
   },
   "nicejobs-sales-mastery": {
     number: "03",
     label: "SALES MASTERY",
     line: "Master the art of selling.",
-    icon: LineChart,
-    response: "Strong path. Sales is a real career advantage.",
-    followUp: "I will help the Admission Cell understand your intent clearly."
+    icon: LineChart
   }
-} satisfies Record<LaunchApplicationProgramSlug, { number: string; label: string; line: string; icon: typeof Rocket; response: string; followUp: string }>;
+} satisfies Record<LaunchApplicationProgramSlug, { number: string; label: string; line: string; icon: typeof Rocket }>;
 
 export function getProgramDisplay(slug: LaunchApplicationProgramSlug) {
   return programCopy[slug];
+}
+
+export function getProgramTitle(slug: LaunchApplicationProgramSlug) {
+  if (slug === "startup-skool") return "Startup School";
+  if (slug === "genz-builder") return "GenZ Builder";
+  return "Sales Mastery";
+}
+
+export function getIntentLabel(intent: IntentId | "") {
+  return intentOptions.find((option) => option.id === intent)?.label ?? "";
+}
+
+export function applicationWhatsAppUrl(programSlug: LaunchApplicationProgramSlug) {
+  return buildAdmissionsWhatsAppUrl(`Hi AIRA Skill City Admissions, I have submitted my application for ${getProgramTitle(programSlug)}. Please help me with the next step.`);
+}
+
+export function enquiryWhatsAppUrl(programSlug: LaunchApplicationProgramSlug) {
+  return buildAdmissionsWhatsAppUrl(`Hi AIRA Skill City Admissions, I'm interested in ${getProgramTitle(programSlug)}. I'd like to know more about the program and speak with the Admissions Team.`);
+}
+
+export function generalAdmissionsWhatsAppUrl() {
+  return buildAdmissionsWhatsAppUrl("Hi AIRA Skill City Admissions, I'd like to know more about the programs.");
 }
 
 export function HiddenApplicationFields({ selectedProgramSlug, referralId, values }: { selectedProgramSlug: string; referralId?: string; values: FormValues }) {
@@ -76,46 +118,61 @@ export function HiddenApplicationFields({ selectedProgramSlug, referralId, value
     <>
       <input type="hidden" name="programSlug" value={selectedProgramSlug} />
       <input type="hidden" name="referralId" value={referralId ?? ""} />
-      {(Object.keys(values) as Array<keyof FormValues>).map((field) => (
-        <input key={field} type="hidden" name={field} value={values[field]} />
-      ))}
+      <input type="hidden" name="name" value={values.name} />
+      <input type="hidden" name="phone" value={values.whatsapp} />
+      <input type="hidden" name="whatsapp" value={values.whatsapp} />
+      <input type="hidden" name="email" value={values.email} />
+      <input type="hidden" name="city" value={values.city} />
+      <input type="hidden" name="state" value="" />
+      <input type="hidden" name="educationOrWork" value="Counselling completed" />
+      <input type="hidden" name="preferredCounsellingTime" value="Admissions follow-up" />
+      <input type="hidden" name="goal" value={getIntentLabel(values.intent)} />
+      <input type="hidden" name="intent" value={getIntentLabel(values.intent)} />
+      <input type="hidden" name="counselled" value={values.counselled} />
     </>
   );
 }
 
-export function IntroStep() {
+export function IntentStep({ selectedIntent, onSelect }: { selectedIntent: IntentId | ""; onSelect: (intent: IntentId) => void }) {
+  const selected = intentOptions.find((option) => option.id === selectedIntent);
+
   return (
-    <section className="space-y-8">
-      <NexaLine delay="delay-100">Hi, I&apos;m Nexa. 👋</NexaLine>
-      <NexaLine delay="delay-300">I&apos;ll help you find the right path at AIRA Skill City.</NexaLine>
-      <div className="pt-3">
-        <p className="text-sm font-black uppercase tracking-[0.22em] text-brand-red">First question</p>
-        <h2 className="mt-3 text-4xl font-black leading-none text-brand-dark sm:text-5xl">What are you looking to build?</h2>
+    <section>
+      <div className="space-y-5">
+        <NexaLine delay="delay-100">Hi, I&apos;m Nexa. 👋</NexaLine>
+        <NexaLine delay="delay-300">I&apos;ll help you find the right path at AIRA Skill City.</NexaLine>
+        <NexaLine>What brings you to AIRA Skill City?</NexaLine>
+        {selected ? <NexaLine tone="warm">{selected.response}</NexaLine> : null}
+      </div>
+
+      <div className="mt-8 grid gap-3">
+        {intentOptions.map((option) => {
+          const active = option.id === selectedIntent;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onSelect(option.id)}
+              className={`grid min-h-20 grid-cols-[auto_1fr] items-center gap-4 rounded-lg border p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-brand-gold/70 hover:shadow-soft ${
+                active ? "border-brand-red bg-brand-dark text-white shadow-[0_24px_70px_rgba(235,0,27,0.18)]" : "border-black/8 bg-white text-brand-dark"
+              }`}
+            >
+              <span className={`text-sm font-black ${active ? "text-brand-gold" : "text-brand-red"}`}>{option.number}</span>
+              <span className="text-lg font-black leading-tight">{option.label}</span>
+            </button>
+          );
+        })}
       </div>
     </section>
   );
 }
 
-export function ProgramStep({
-  selectedProgramSlug,
-  selectedOnce,
-  onSelect
-}: {
-  selectedProgramSlug: LaunchApplicationProgramSlug;
-  selectedOnce: boolean;
-  onSelect: (slug: LaunchApplicationProgramSlug) => void;
-}) {
+export function ProgramStep({ selectedProgramSlug, selectedOnce, onSelect }: { selectedProgramSlug: LaunchApplicationProgramSlug; selectedOnce: boolean; onSelect: (slug: LaunchApplicationProgramSlug) => void }) {
   return (
     <section>
       <div className="space-y-5">
         <NexaLine>Which path feels right for you?</NexaLine>
-        {selectedOnce ? (
-          <NexaLine tone="warm">
-            {programCopy[selectedProgramSlug].response}
-            <br />
-            {programCopy[selectedProgramSlug].followUp}
-          </NexaLine>
-        ) : null}
+        {selectedOnce ? <NexaLine tone="warm">Great choice. Let&apos;s get to know you a little.</NexaLine> : null}
       </div>
 
       <div className="mt-8 grid gap-3">
@@ -153,123 +210,155 @@ export function ProgramStep({
   );
 }
 
-export function CandidateStep({ values, onChange }: { values: FormValues; onChange: (field: keyof FormValues, value: string) => void }) {
+export function DetailStep({
+  question,
+  label,
+  value,
+  onChange,
+  type = "text",
+  autoComplete,
+  required = true
+}: {
+  question: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  autoComplete?: string;
+  required?: boolean;
+}) {
   return (
     <section>
       <div className="space-y-5">
-        <NexaLine tone="warm">Let&apos;s get to know you a little.</NexaLine>
-        <NexaLine>No long form. Just the details the Admission Cell needs to call you correctly.</NexaLine>
+        <NexaLine tone="warm">No long form. Just the details our Admissions Team needs to contact you.</NexaLine>
+        <NexaLine>{question}</NexaLine>
       </div>
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <TextInput label="Full name" value={values.name} onChange={(value) => onChange("name", value)} autoComplete="name" required />
-        <TextInput label="Phone" value={values.phone} onChange={(value) => onChange("phone", value)} autoComplete="tel" required />
-        <TextInput label="WhatsApp" value={values.whatsapp} onChange={(value) => onChange("whatsapp", value)} autoComplete="tel" required />
-        <TextInput label="Email" value={values.email} onChange={(value) => onChange("email", value)} type="email" autoComplete="email" />
-        <TextInput label="City" value={values.city} onChange={(value) => onChange("city", value)} autoComplete="address-level2" required />
-        <TextInput label="State" value={values.state} onChange={(value) => onChange("state", value)} autoComplete="address-level1" required />
+      <div className="mt-9 max-w-xl">
+        <TextInput label={label} value={value} onChange={onChange} type={type} autoComplete={autoComplete} required={required} />
       </div>
     </section>
   );
 }
 
-export function GoalsStep({ values, onChange }: { values: FormValues; onChange: (field: keyof FormValues, value: string) => void }) {
+export function CounsellingStep({ answer, onSelect }: { answer: CounsellingAnswer; onSelect: (answer: CounsellingAnswer) => void }) {
   return (
     <section>
       <div className="space-y-5">
-        <NexaLine>What brings you to Skill City today?</NexaLine>
-        <NexaLine tone="warm">Say it simply. I&apos;ll carry the right context forward.</NexaLine>
+        <NexaLine>Have you already spoken with our Admissions Team?</NexaLine>
+        {answer === "YES" ? <NexaLine tone="warm">Perfect. Let&apos;s complete your application.</NexaLine> : null}
+        {answer === "NO" ? <NexaLine tone="warm">Let&apos;s get you connected first.</NexaLine> : null}
       </div>
-      <div className="mt-8 grid gap-4">
-        <Field label="What are you doing now?">
-          <select value={values.educationOrWork} onChange={(event) => onChange("educationOrWork", event.target.value)} required className="h-12 w-full rounded-lg border border-black/10 bg-white px-4 text-base font-semibold text-brand-dark focus:border-brand-red focus:outline-none focus:ring-4 focus:ring-brand-red/10">
-            <option value="">Choose one</option>
-            <option>School student</option>
-            <option>College student</option>
-            <option>Graduate</option>
-            <option>Working professional</option>
-            <option>Founder / business owner</option>
-            <option>Looking for internship</option>
-          </select>
-        </Field>
-        <Field label="Best time for counselling">
-          <select value={values.preferredCounsellingTime} onChange={(event) => onChange("preferredCounsellingTime", event.target.value)} required className="h-12 w-full rounded-lg border border-black/10 bg-white px-4 text-base font-semibold text-brand-dark focus:border-brand-red focus:outline-none focus:ring-4 focus:ring-brand-red/10">
-            <option value="">Choose a time</option>
-            <option>Morning</option>
-            <option>Afternoon</option>
-            <option>Evening</option>
-            <option>Weekend</option>
-          </select>
-        </Field>
-        <Field label="Your goal">
-          <textarea
-            value={values.goal}
-            onChange={(event) => onChange("goal", event.target.value)}
-            required
-            rows={4}
-            placeholder="I want to..."
-            className="w-full rounded-lg border border-black/10 bg-white px-4 py-3 text-base font-semibold text-brand-dark placeholder:text-brand-muted/65 focus:border-brand-red focus:outline-none focus:ring-4 focus:ring-brand-red/10"
-          />
-        </Field>
+      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+        <ChoiceButton number="YES" title="Continue Application" active={answer === "YES"} onClick={() => onSelect("YES")} />
+        <ChoiceButton number="NO" title="Talk to Admissions" active={answer === "NO"} onClick={() => onSelect("NO")} />
+      </div>
+    </section>
+  );
+}
+
+export function EnquiryStep({ programSlug, enquirySaved, enquiryPending, enquiryMessage }: { programSlug: LaunchApplicationProgramSlug; enquirySaved: boolean; enquiryPending: boolean; enquiryMessage: string }) {
+  return (
+    <section>
+      <div className="space-y-5">
+        <NexaLine>Let&apos;s get you connected with our Admissions Team first.</NexaLine>
+        <NexaLine tone="warm">They&apos;ll help you understand the program and answer your questions.</NexaLine>
+      </div>
+      {enquiryMessage ? <p className="mt-6 rounded-lg border border-brand-gold/25 bg-brand-gold/10 p-4 text-sm font-bold text-brand-dark">{enquiryMessage}</p> : null}
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        {enquirySaved ? (
+          <Button asChild className="h-14 rounded-full px-8">
+            <a href={enquiryWhatsAppUrl(programSlug)} target="_blank" rel="noreferrer">
+              Talk to Admissions on WhatsApp
+              <MessageCircle className="h-5 w-5" />
+            </a>
+          </Button>
+        ) : (
+          <Button disabled={enquiryPending} className="h-14 rounded-full px-8">
+            {enquiryPending ? "Saving..." : "Talk to Admissions on WhatsApp"}
+            <MessageCircle className="h-5 w-5" />
+          </Button>
+        )}
       </div>
     </section>
   );
 }
 
 export function ReviewStep({ values, selectedProgramSlug }: { values: FormValues; selectedProgramSlug: LaunchApplicationProgramSlug }) {
-  const selectedProgram = launchApplicationPrograms.find((program) => program.slug === selectedProgramSlug) ?? launchApplicationPrograms[0];
   const reviewRows = [
-    ["Path", programCopy[selectedProgramSlug].label],
+    ["Selected program", getProgramDisplay(selectedProgramSlug).label],
+    ["Status", "Application Received"],
     ["Name", values.name],
     ["WhatsApp", values.whatsapp],
-    ["Location", `${values.city}, ${values.state}`],
-    ["Current stage", values.educationOrWork],
-    ["Counselling", values.preferredCounsellingTime],
-    ["Goal", values.goal]
+    ["City", values.city],
+    ["Email", values.email || "Not provided"],
+    ["What brings you here", getIntentLabel(values.intent)]
   ];
 
   return (
     <section>
       <div className="space-y-5">
-        <NexaLine tone="warm">Looks good.</NexaLine>
-        <NexaLine>I&apos;ll send this to the Admission Cell for review.</NexaLine>
+        <NexaLine tone="warm">Perfect. Let&apos;s complete your application.</NexaLine>
+        <NexaLine>I&apos;ll send this to the Admissions Team for review.</NexaLine>
       </div>
       <div className="mt-8 overflow-hidden rounded-lg border border-black/8 bg-white">
         {reviewRows.map(([label, value]) => (
-          <div key={label} className="grid gap-2 border-b border-black/8 p-4 last:border-b-0 sm:grid-cols-[150px_1fr]">
+          <div key={label} className="grid gap-2 border-b border-black/8 p-4 last:border-b-0 sm:grid-cols-[170px_1fr]">
             <p className="text-sm font-black text-brand-muted">{label}</p>
-            <p className="font-semibold leading-7 text-brand-dark">{value || "Not provided"}</p>
+            <p className="font-semibold leading-7 text-brand-dark">{value}</p>
           </div>
         ))}
       </div>
-      <p className="mt-5 flex items-start gap-2 text-sm font-semibold leading-6 text-brand-muted">
-        <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand-gold" />
-        After submission, the team reviews your {selectedProgram.shortTitle} application and contacts you for counselling.
-      </p>
     </section>
   );
 }
 
-export function SubmittedStep({ applicationId, message }: { applicationId?: string; message: string }) {
+export function SubmittedStep({ programSlug, applicationId, message }: { programSlug: LaunchApplicationProgramSlug; applicationId?: string; message: string }) {
   return (
     <section className="grid min-h-[520px] place-items-center p-6 text-center sm:p-8">
       <div className="max-w-xl">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-red text-white shadow-[0_20px_54px_rgba(235,0,27,0.24)]">
           <CheckCircle2 className="h-8 w-8" />
         </div>
-        <p className="mt-8 text-sm font-black uppercase tracking-[0.22em] text-brand-gold">Application submitted</p>
-        <h2 className="mt-3 text-4xl font-black leading-none text-brand-dark sm:text-5xl">Nexa sent it for review.</h2>
+        <p className="mt-8 text-sm font-black uppercase tracking-[0.22em] text-brand-gold">Application received.</p>
+        <h2 className="mt-3 text-4xl font-black leading-none text-brand-dark sm:text-5xl">Application received. ✓</h2>
         <p className="mt-5 text-lg font-semibold leading-8 text-brand-muted">{message}</p>
-        {applicationId ? (
-          <div className="mx-auto mt-7 max-w-md rounded-lg border border-black/8 bg-brand-card p-4 text-left">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-brand-red">Application ID</p>
-            <p className="mt-2 break-all text-sm font-semibold text-brand-muted">{applicationId}</p>
-          </div>
-        ) : null}
-        <Button asChild className="mt-7 rounded-full" size="lg" variant="secondary">
-          <Link href="/application-status">Check Status Later</Link>
+        <div className="mx-auto mt-7 max-w-md overflow-hidden rounded-lg border border-black/8 bg-white text-left">
+          <SummaryRow label="Selected program" value={getProgramDisplay(programSlug).label} />
+          <SummaryRow label="Status" value="Application Received" />
+          <SummaryRow label="Next step" value="Admissions Team will contact you." />
+          {applicationId ? <SummaryRow label="Application ID" value={applicationId} /> : null}
+        </div>
+        <Button asChild className="mt-7 rounded-full" size="lg">
+          <a href={applicationWhatsAppUrl(programSlug)} target="_blank" rel="noreferrer">
+            Chat with Admissions on WhatsApp
+            <MessageCircle className="h-5 w-5" />
+          </a>
         </Button>
       </div>
     </section>
+  );
+}
+
+export function TalkToAdmissionsLink() {
+  return (
+    <a href={generalAdmissionsWhatsAppUrl()} target="_blank" rel="noreferrer" className="text-sm font-black text-brand-muted underline decoration-brand-gold/60 underline-offset-4 transition hover:text-brand-red">
+      Just want to know more? Talk to Admissions
+    </a>
+  );
+}
+
+function ChoiceButton({ number, title, active, onClick }: { number: string; title: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-h-28 rounded-lg border p-5 text-left transition hover:-translate-y-1 hover:border-brand-gold/70 hover:shadow-soft ${
+        active ? "border-brand-red bg-brand-dark text-white shadow-[0_24px_70px_rgba(235,0,27,0.18)]" : "border-black/8 bg-white text-brand-dark"
+      }`}
+    >
+      <span className={`text-sm font-black ${active ? "text-brand-gold" : "text-brand-red"}`}>{number}</span>
+      <span className="mt-3 block text-xl font-black">{title}</span>
+    </button>
   );
 }
 
@@ -285,21 +374,7 @@ function NexaLine({ children, tone = "plain", delay = "" }: { children: React.Re
   );
 }
 
-function TextInput({
-  label,
-  value,
-  onChange,
-  type = "text",
-  autoComplete,
-  required = false
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: string;
-  autoComplete?: string;
-  required?: boolean;
-}) {
+function TextInput({ label, value, onChange, type = "text", autoComplete, required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; autoComplete?: string; required?: boolean }) {
   const id = `nexa-${label.toLowerCase().replaceAll(" ", "-")}`;
   return (
     <label className="block" htmlFor={id}>
@@ -311,17 +386,17 @@ function TextInput({
         onChange={(event) => onChange(event.target.value)}
         autoComplete={autoComplete}
         required={required}
-        className="h-12 w-full rounded-lg border border-black/10 bg-white px-4 text-base font-semibold text-brand-dark placeholder:text-brand-muted/65 focus:border-brand-red focus:outline-none focus:ring-4 focus:ring-brand-red/10"
+        className="h-14 w-full rounded-lg border border-black/10 bg-white px-4 text-lg font-semibold text-brand-dark placeholder:text-brand-muted/65 focus:border-brand-red focus:outline-none focus:ring-4 focus:ring-brand-red/10"
       />
     </label>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-bold text-brand-dark">{label}</span>
-      {children}
-    </label>
+    <div className="border-b border-black/8 p-4 last:border-b-0">
+      <p className="text-xs font-black uppercase tracking-[0.16em] text-brand-red">{label}</p>
+      <p className="mt-1 break-words font-semibold leading-6 text-brand-dark">{value}</p>
+    </div>
   );
 }
