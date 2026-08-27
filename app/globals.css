@@ -49,6 +49,43 @@ input {
   background-size: 72px 72px, 72px 72px, 100% 100%;
 }
 
+.skillcity-shell-bg {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(235, 0, 27, 0.07), transparent 34%),
+    radial-gradient(circle at 100% 12%, rgba(198, 155, 67, 0.12), transparent 28%),
+    linear-gradient(180deg, #ffffff 0%, #fbfaf7 42%, #f6f6f4 100%);
+}
+
+.skillcity-shell-bg::before {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(90deg, rgba(235, 0, 27, 0.04) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(36, 33, 36, 0.035) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.36), rgba(0, 0, 0, 0.08));
+}
+
+.skillcity-sidebar {
+  border-right: 1px solid rgba(36, 33, 36, 0.08);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 18px 0 60px rgba(36, 33, 36, 0.05);
+  backdrop-filter: blur(18px);
+}
+
+.skillcity-mobile-header {
+  border-bottom: 1px solid rgba(36, 33, 36, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(18px);
+}
+
+.skillcity-shell-content {
+  position: relative;
+  z-index: 1;
+}
+
 .skillcity-card-lines {
   background:
     linear-gradient(90deg, transparent 0 42%, rgba(235, 0, 27, 0.55) 42% 43%, transparent 43% 100%),
@@ -202,6 +239,62 @@ input {
   animation: skillcity-float 4.8s ease-in-out infinite;
 }
 
+.skillcity-nexa-say {
+  position: relative;
+  overflow: hidden;
+  animation: skillcity-nexa-say-in 520ms ease-out both;
+}
+
+.skillcity-nexa-say::after {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  width: 22px;
+  height: 4px;
+  content: "";
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(235, 0, 27, 0.95), rgba(198, 155, 67, 0.95));
+  animation: skillcity-nexa-typing 1.4s ease-in-out both;
+}
+
+@keyframes skillcity-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes skillcity-nexa-say-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes skillcity-nexa-typing {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.15);
+    transform-origin: left;
+  }
+  42% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
 @keyframes skillcity-drift {
   from {
     background-position: 0 0;
@@ -274,7 +367,9 @@ input {
   .skillcity-nexa-core,
   .skillcity-nexa-core::after,
   .skillcity-nexa-ring,
-  .skillcity-nexa-glint {
+  .skillcity-nexa-glint,
+  .skillcity-nexa-say,
+  .skillcity-nexa-say::after {
     animation: none;
   }
 
