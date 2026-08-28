@@ -1,5 +1,7 @@
 export const platformRoles = [
   "Student",
+  "Telecaller",
+  "Counsellor",
   "Trainer",
   "Director",
   "Admission",
