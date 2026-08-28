@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/server/auth/session";
 
@@ -52,7 +53,7 @@ function isLimitedTelecaller(user: Awaited<ReturnType<typeof requireTelecallerUs
   return roles.includes("Telecaller") && !roles.some((role) => role === "Admission" || role === "Director" || role === "Admin");
 }
 
-function telecallerLeadScope(user: Awaited<ReturnType<typeof requireTelecallerUser>>) {
+function telecallerLeadScope(user: Awaited<ReturnType<typeof requireTelecallerUser>>): Prisma.LeadWhereInput {
   if (!isLimitedTelecaller(user)) return {};
   return { OR: [{ assignedToId: user.id }, { assignedToId: null }] };
 }
@@ -62,7 +63,7 @@ function isLimitedCounsellor(user: Awaited<ReturnType<typeof requireCounsellorUs
   return roles.includes("Counsellor") && !roles.some((role) => role === "Admission" || role === "Director" || role === "Admin");
 }
 
-function counsellorLeadScope(user: Awaited<ReturnType<typeof requireCounsellorUser>>) {
+function counsellorLeadScope(user: Awaited<ReturnType<typeof requireCounsellorUser>>): Prisma.LeadWhereInput {
   if (!isLimitedCounsellor(user)) return {};
   return {
     OR: [
@@ -73,7 +74,7 @@ function counsellorLeadScope(user: Awaited<ReturnType<typeof requireCounsellorUs
   };
 }
 
-function searchLeadWhere(query?: string) {
+function searchLeadWhere(query?: string): Prisma.LeadWhereInput {
   const q = query?.trim();
   if (!q) return {};
   return {
@@ -86,7 +87,7 @@ function searchLeadWhere(query?: string) {
   };
 }
 
-function filterLeadWhere(filter?: string, todayEnd?: Date) {
+function filterLeadWhere(filter?: string, todayEnd?: Date): Prisma.LeadWhereInput {
   if (!filter || filter === "all") return {};
   if (filter === "new") return { pipelineStage: { slug: "new-lead" } };
   if (filter === "follow-up") return { communicationLogs: { some: { status: "SCHEDULED" as const, scheduledAt: { lte: todayEnd ?? new Date() } } } };
@@ -98,13 +99,13 @@ function filterLeadWhere(filter?: string, todayEnd?: Date) {
   return {};
 }
 
-function filterCounsellorWhere(filter?: string, todayEnd?: Date) {
+function filterCounsellorWhere(filter?: string, todayEnd?: Date): Prisma.LeadWhereInput {
   if (!filter || filter === "all") return {};
   if (filter === "new") return { activities: { some: { type: "TELECALLER_SENT_TO_COUNSELLOR" } } };
-  if (filter === "counselling-today") return { counsellingSessions: { some: { scheduledAt: { lte: todayEnd ?? new Date() }, outcome: { in: ["SCHEDULED", "RESCHEDULED"] as const } } } };
+  if (filter === "counselling-today") return { counsellingSessions: { some: { scheduledAt: { lte: todayEnd ?? new Date() }, outcome: { in: ["SCHEDULED", "RESCHEDULED"] } } } };
   if (filter === "follow-up") return { communicationLogs: { some: { status: "SCHEDULED" as const, subject: "Counsellor follow-up", scheduledAt: { lte: todayEnd ?? new Date() } } } };
   if (filter === "pending-decision") return { pipelineStage: { slug: { in: ["counselling-scheduled", "qualified"] } } };
-  if (filter === "application-pending") return { applications: { some: { status: { in: ["DRAFT", "SUBMITTED", "UNDER_REVIEW"] as const } } } };
+  if (filter === "application-pending") return { applications: { some: { status: { in: ["DRAFT", "SUBMITTED", "UNDER_REVIEW"] } } } };
   if (filter === "approved") return { applications: { some: { status: "APPROVED" as const } } };
   if (filter === "on-hold") return { pipelineStage: { slug: "on-hold" } };
   if (filter === "not-interested") return { OR: [{ status: "LOST" as const }, { pipelineStage: { slug: "not-interested" } }] };
@@ -221,11 +222,7 @@ export async function getBdmDashboard(userId: string) {
 export async function getTelecallerWorkspace(input: { user: Awaited<ReturnType<typeof requireTelecallerUser>>; query?: string; filter?: string }) {
   await ensureDefaultPipeline();
   const { start, end } = dayBounds();
-  const baseWhere = {
-    ...telecallerLeadScope(input.user),
-    ...searchLeadWhere(input.query),
-    ...filterLeadWhere(input.filter, end)
-  };
+  const baseWhere: Prisma.LeadWhereInput = { AND: [telecallerLeadScope(input.user), searchLeadWhere(input.query), filterLeadWhere(input.filter, end)] };
 
   const connectedTypes = [
     "TELECALLER_INTERESTED",
@@ -310,15 +307,10 @@ export async function getCounsellorWorkspace(input: { user: Awaited<ReturnType<t
   const { start, end } = dayBounds();
   const page = Math.max(1, input.page ?? 1);
   const take = 25;
-  const programWhere = input.programId ? { OR: [{ programInterestedId: input.programId }, { applications: { some: { programId: input.programId } } }] } : {};
+  const programWhere: Prisma.LeadWhereInput = input.programId ? { OR: [{ programInterestedId: input.programId }, { applications: { some: { programId: input.programId } } }] } : {};
   const baseScope = counsellorLeadScope(input.user);
-  const baseWhere = {
-    ...baseScope,
-    ...searchLeadWhere(input.query),
-    ...filterCounsellorWhere(input.filter, end),
-    ...programWhere
-  };
-  const activeCounsellingWhere = { ...baseScope, pipelineStage: { slug: { in: ["counselling-scheduled", "qualified", "on-hold", "application-started"] } } };
+  const baseWhere: Prisma.LeadWhereInput = { AND: [baseScope, searchLeadWhere(input.query), filterCounsellorWhere(input.filter, end), programWhere] };
+  const activeCounsellingWhere: Prisma.LeadWhereInput = { AND: [baseScope, { pipelineStage: { slug: { in: ["counselling-scheduled", "qualified", "on-hold", "application-started"] } } }] };
 
   const [leads, total, programs, metrics] = await Promise.all([
     prisma.lead.findMany({
@@ -341,14 +333,14 @@ export async function getCounsellorWorkspace(input: { user: Awaited<ReturnType<t
     prisma.lead.count({ where: baseWhere }),
     prisma.program.findMany({ where: { deletedAt: null, publicVisible: true }, orderBy: [{ displayOrder: "asc" }, { name: "asc" }] }),
     Promise.all([
-      prisma.lead.count({ where: { ...baseScope, pipelineStage: { slug: "counselling-scheduled" }, updatedAt: { gte: start, lt: end } } }),
+      prisma.lead.count({ where: { AND: [baseScope, { pipelineStage: { slug: "counselling-scheduled" }, updatedAt: { gte: start, lt: end } }] } }),
       prisma.counsellingSession.count({ where: { lead: baseScope, scheduledAt: { gte: start, lt: end }, outcome: { in: ["SCHEDULED", "RESCHEDULED"] } } }),
       prisma.communicationLog.count({ where: { lead: baseScope, status: "SCHEDULED", subject: "Counsellor follow-up", scheduledAt: { lte: end } } }),
       prisma.lead.count({ where: { ...activeCounsellingWhere } }),
-      prisma.lead.count({ where: { ...baseScope, pipelineStage: { slug: "qualified" } } }),
+      prisma.lead.count({ where: { AND: [baseScope, { pipelineStage: { slug: "qualified" } }] } }),
       prisma.admissionApplication.count({ where: { lead: baseScope, status: { in: ["DRAFT", "SUBMITTED", "UNDER_REVIEW"] } } }),
       prisma.admissionApplication.count({ where: { lead: baseScope, status: "APPROVED" } }),
-      prisma.lead.count({ where: { ...baseScope, pipelineStage: { slug: "on-hold" } } }),
+      prisma.lead.count({ where: { AND: [baseScope, { pipelineStage: { slug: "on-hold" } }] } }),
       prisma.lead.count({ where: { ...baseScope } }),
       prisma.leadActivity.count({ where: { actorId: input.user.id, type: "COUNSELLOR_COUNSELLING_COMPLETED", createdAt: { gte: start, lt: end } } }),
       prisma.leadActivity.count({ where: { actorId: input.user.id, type: "COUNSELLOR_ADMISSION_RECOMMENDED", createdAt: { gte: start, lt: end } } })
