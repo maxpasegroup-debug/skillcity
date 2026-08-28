@@ -121,6 +121,25 @@ export default async function DashboardPage() {
 
           {journey.today ? <MissionCard day={journey.today} /> : <EmptyJourneyState />}
 
+          <Card>
+            <CardContent className="p-6 md:p-8">
+              <p className="text-sm font-black uppercase tracking-wider text-brand-red">Pending Tasks</p>
+              <h2 className="mt-2 text-2xl font-black text-brand-dark">Work to finish</h2>
+              <div className="mt-5 grid gap-3">
+                {home.pendingTasks.map((task) => (
+                  <Link key={task.id} href={`/my-journey/day/${task.dayId}`} className="rounded-lg bg-white p-4 transition hover:-translate-y-1 hover:shadow-soft">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="font-black text-brand-dark">{task.title}</p>
+                      <span className="rounded-full bg-brand-beige px-3 py-1 text-xs font-black text-brand-dark">{task.status}</span>
+                    </div>
+                    <p className="mt-1 text-sm font-bold text-brand-muted">{task.dueAt ? `Due ${formatDate(task.dueAt)}` : "No due date"}</p>
+                  </Link>
+                ))}
+                {home.pendingTasks.length === 0 ? <p className="font-semibold text-brand-muted">No pending tasks right now.</p> : null}
+              </div>
+            </CardContent>
+          </Card>
+
           <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             <StatCard label="Program Progress" value={`${journey.stats.progressPercent}%`} icon={TrendingUp} />
             <StatCard label="Attendance" value={home.attendance ? `${home.attendance.percent}%` : "Not started"} icon={CalendarClock} />

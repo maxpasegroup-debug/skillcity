@@ -1,13 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
-import { createAttendanceSessionAction, createResourceAction, createStudentConcernAction, createTrainerAnnouncementAction, markAttendanceAction, reviewAssessmentAction, reviewReflectionAction, reviewSubmissionAction, scheduleTrainerClassAction } from "@/actions/trainer";
+import { completeTrainerClassAction, createAttendanceSessionAction, createResourceAction, createStudentConcernAction, createTrainerAnnouncementAction, createTrainerTaskAction, markAttendanceAction, reviewAssessmentAction, reviewReflectionAction, reviewSubmissionAction, scheduleTrainerClassAction } from "@/actions/trainer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DirectorFormMessage } from "@/features/director/components/director-form-message";
 
 const initialState = { ok: false, message: "" };
 type Option = { id: string; name: string };
+type DayOption = Option & { batchId: string };
 
 function Select({ name, label, children, required }: { name: string; label: string; children: React.ReactNode; required?: boolean }) {
   return <label className="block"><span className="mb-2 block text-sm font-bold text-brand-dark">{label}</span><select name={name} required={required} className="h-12 w-full rounded-lg border border-black/10 bg-white px-4 font-semibold text-brand-dark">{children}</select></label>;
@@ -43,6 +44,39 @@ export function TrainerClassScheduleForm({ batches }: { batches: Option[] }) {
       <Input name="location" label="Join Link or Venue" placeholder="Google Meet, Zoom, campus room, or centre location" />
       <Textarea name="description" label="Class Note" />
       <Button disabled={pending || batches.length === 0}>{pending ? "Scheduling..." : "Schedule Class"}</Button>
+    </form>
+  );
+}
+
+export function CompleteClassForm({ eventId }: { eventId: string }) {
+  const [state, action, pending] = useActionState(completeTrainerClassAction, initialState);
+  return (
+    <form action={action} className="mt-4 space-y-3">
+      <DirectorFormMessage message={state.message} ok={state.ok} />
+      <input type="hidden" name="eventId" value={eventId} />
+      <Textarea name="note" label="Completion Note" />
+      <Button disabled={pending}>{pending ? "Saving..." : "Mark Class Completed"}</Button>
+    </form>
+  );
+}
+
+export function TrainerTaskForm({ batches, days }: { batches: Option[]; days: DayOption[] }) {
+  const [state, action, pending] = useActionState(createTrainerTaskAction, initialState);
+  return (
+    <form action={action} className="space-y-5">
+      <DirectorFormMessage message={state.message} ok={state.ok} />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Select name="batchId" label="Batch" required>{batches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</Select>
+        <Select name="dayId" label="Journey Day" required>{days.map((day) => <option key={`${day.batchId}:${day.id}`} value={day.id}>{day.name}</option>)}</Select>
+        <Input name="dueAt" label="Due Date" type="datetime-local" />
+      </div>
+      <Input name="title" label="Task Title" required />
+      <Textarea name="description" label="Instructions" required />
+      <div className="grid gap-4 md:grid-cols-2">
+        <Input name="resourceUrl" label="Resource Link" type="url" />
+        <Input name="points" label="XP Points" type="number" min={0} max={500} defaultValue={20} required />
+      </div>
+      <Button disabled={pending || batches.length === 0 || days.length === 0}>{pending ? "Assigning..." : "Assign Task"}</Button>
     </form>
   );
 }

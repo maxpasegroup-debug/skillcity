@@ -855,9 +855,12 @@ model JourneyDay {
 model Activity {
   id          String       @id @default(uuid()) @db.Uuid
   dayId       String       @db.Uuid
+  batchId     String?      @db.Uuid
   title       String       @db.VarChar(180)
   type        ActivityType
   description String?      @db.Text
+  dueAt       DateTime?
+  resourceUrl String?      @db.VarChar(700)
   duration    Int?
   sortOrder   Int
   required    Boolean      @default(true)
@@ -866,6 +869,7 @@ model Activity {
   updatedAt   DateTime     @updatedAt
 
   day      JourneyDay        @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  batch    Batch?            @relation(fields: [batchId], references: [id], onDelete: Cascade)
   progress StudentProgress[]
   learningSteps LearningStep[]
   submissions Submission[]
@@ -875,6 +879,8 @@ model Activity {
 
   @@unique([dayId, sortOrder])
   @@index([dayId])
+  @@index([batchId])
+  @@index([dueAt])
   @@index([type])
 }
 
@@ -896,6 +902,7 @@ model Batch {
   enrollments   StudentEnrollment[]
   announcements Announcement[]
   trainerAssignments TrainerAssignment[]
+  activities     Activity[]
   calendarEvents CalendarEvent[]
   directorAnnouncements DirectorAnnouncement[]
   counsellingSessions CounsellingSession[]

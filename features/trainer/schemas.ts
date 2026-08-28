@@ -24,6 +24,21 @@ export const trainerClassScheduleSchema = z.object({
   description: z.string().max(800).optional()
 });
 
+export const trainerClassCompletionSchema = z.object({
+  eventId: z.string().uuid(),
+  note: z.string().max(800).optional()
+});
+
+export const trainerTaskSchema = z.object({
+  batchId: z.string().uuid(),
+  dayId: z.string().uuid(),
+  title: z.string().min(2).max(180),
+  description: z.string().min(2).max(1000),
+  dueAt: z.string().optional(),
+  resourceUrl: z.string().url().optional().or(z.literal("")),
+  points: z.coerce.number().int().min(0).max(500).default(20)
+});
+
 export const submissionReviewSchema = z.object({
   submissionId: z.string().uuid(),
   status: z.enum(["APPROVED", "REJECTED", "RETURNED"]),

@@ -76,22 +76,80 @@ export async function saveSubmissionAction(_: ActionState, formData: FormData): 
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check your submission." };
   }
 
-  await prisma.submission.create({
-    data: {
+  const day = await prisma.journeyDay.findUnique({
+    where: { id: parsed.data.dayId },
+    include: { week: { include: { phase: true } } }
+  });
+  if (!day) return { ok: false, message: "Journey day not found." };
+
+  const enrollment = await prisma.studentEnrollment.findFirst({
+    where: { studentId: user.id, journeyId: day.week.phase.journeyId, status: "ACTIVE" },
+    select: { batchId: true }
+  });
+  if (!enrollment) return { ok: false, message: "You do not have access to this journey day." };
+
+  const activityId = emptyToNull(parsed.data.activityId);
+  if (activityId) {
+    const activity = await prisma.activity.findUnique({ where: { id: activityId } });
+    if (!activity || activity.dayId !== parsed.data.dayId) return { ok: false, message: "Task not found for this day." };
+    if (activity.batchId && activity.batchId !== enrollment.batchId) return { ok: false, message: "This task belongs to another batch." };
+  }
+
+  const stepId = emptyToNull(parsed.data.stepId);
+  const existingSubmission = await prisma.submission.findFirst({
+    where: {
       studentId: user.id,
       dayId: parsed.data.dayId,
-      stepId: emptyToNull(parsed.data.stepId),
-      activityId: emptyToNull(parsed.data.activityId),
-      title: parsed.data.title,
-      type: parsed.data.type,
-      content: parsed.data.content,
-      url: emptyToNull(parsed.data.url),
-      status: parsed.data.status,
-      submittedAt: parsed.data.status === "SUBMITTED" ? new Date() : null
-    }
+      stepId,
+      activityId
+    },
+    orderBy: { updatedAt: "desc" }
   });
 
+  const submissionData = {
+    title: parsed.data.title,
+    type: parsed.data.type,
+    content: parsed.data.content,
+    url: emptyToNull(parsed.data.url),
+    status: parsed.data.status,
+    submittedAt: parsed.data.status === "SUBMITTED" ? new Date() : null
+  };
+  const submission = existingSubmission
+    ? await prisma.submission.update({ where: { id: existingSubmission.id }, data: submissionData })
+    : await prisma.submission.create({
+        data: {
+          studentId: user.id,
+          dayId: parsed.data.dayId,
+          stepId,
+          activityId,
+          ...submissionData
+        }
+      });
+
+  if (parsed.data.status === "SUBMITTED" && enrollment.batchId) {
+    const trainerAssignments = await prisma.trainerAssignment.findMany({
+      where: { batchId: enrollment.batchId, status: "ACTIVE" },
+      select: { trainerId: true }
+    });
+    const existingQueue = await prisma.reviewQueue.findFirst({ where: { submissionId: submission.id, status: { in: ["PENDING", "IN_REVIEW"] } } });
+    if (!existingQueue) {
+      await prisma.reviewQueue.create({
+        data: {
+          submissionId: submission.id,
+          studentId: user.id,
+          batchId: enrollment.batchId,
+          trainerId: trainerAssignments[0]?.trainerId ?? null,
+          status: "PENDING"
+        }
+      });
+    }
+  }
+
   revalidatePath(`/learn/day/${parsed.data.dayId}`);
+  revalidatePath(`/my-journey/day/${parsed.data.dayId}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/trainer/assignments");
+  revalidatePath("/trainer/submissions");
   return { ok: true, message: parsed.data.status === "SUBMITTED" ? "Submission sent." : "Draft saved." };
 }
 

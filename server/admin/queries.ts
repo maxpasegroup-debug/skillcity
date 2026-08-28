@@ -5,6 +5,39 @@ import { getCurrentUser } from "@/server/auth/session";
 
 const adminRoles = new Set(["Admin", "Director"]);
 
+function studentAttentionReasons(enrollment: {
+  studentId: string;
+  student: {
+    attendanceRecords: Array<{ status: string }>;
+    submissions: Array<{ status: string; updatedAt: Date }>;
+    progress: Array<{ updatedAt: Date }>;
+  };
+  batch: {
+    activities: Array<{
+      dueAt: Date | null;
+      progress: Array<{ studentId: string; status: string }>;
+    }>;
+  } | null;
+}) {
+  const now = new Date();
+  const attended = enrollment.student.attendanceRecords.filter((record) => record.status === "PRESENT" || record.status === "LATE").length;
+  const attendancePercent = enrollment.student.attendanceRecords.length === 0 ? null : Math.round((attended / enrollment.student.attendanceRecords.length) * 100);
+  const overdueTasks = enrollment.batch?.activities.filter((activity) => activity.dueAt && activity.dueAt < now && !activity.progress.some((progress) => progress.studentId === enrollment.studentId && progress.status === "COMPLETED")).length ?? 0;
+  const pendingSubmissions = enrollment.student.submissions.filter((submission) => submission.status === "SUBMITTED").length;
+  const lastProgressAt = enrollment.student.progress[0]?.updatedAt;
+  const lastSubmissionAt = enrollment.student.submissions[0]?.updatedAt;
+  const lastActivityAt = [lastProgressAt, lastSubmissionAt].filter(Boolean).sort((a, b) => Number(b) - Number(a))[0];
+  const staleDate = new Date(now);
+  staleDate.setDate(staleDate.getDate() - 14);
+
+  return [
+    attendancePercent !== null && attendancePercent < 75,
+    overdueTasks > 1,
+    pendingSubmissions > 0,
+    !lastActivityAt || lastActivityAt < staleDate
+  ].some(Boolean);
+}
+
 export async function requireAdminUser() {
   const user = await getCurrentUser();
   if (!user) redirect("/admin-login");
@@ -52,7 +85,11 @@ export async function getAdminCommandCenter() {
     pendingSubmissions,
     attendanceRecords,
     completedProgress,
-    requiredActivities
+    requiredActivities,
+    overdueTasks,
+    batchAcademicReports,
+    academicHealthStudents,
+    operationalFollowUps
   ] = await Promise.all([
     getAdmissionDashboard(),
     prisma.lead.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
@@ -109,7 +146,39 @@ export async function getAdminCommandCenter() {
     prisma.submission.count({ where: { status: "SUBMITTED" } }),
     prisma.attendanceRecord.findMany({ where: { session: { sessionDate: { gte: today, lt: tomorrow } } }, select: { status: true } }),
     prisma.studentProgress.count({ where: { status: "COMPLETED" } }),
-    prisma.activity.count({ where: { required: true } })
+    prisma.activity.count({ where: { required: true } }),
+    prisma.activity.count({ where: { batchId: { not: null }, dueAt: { lt: new Date() }, progress: { none: { status: "COMPLETED" } } } }),
+    prisma.batch.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: [{ startsAt: "asc" }, { name: "asc" }],
+      take: 8,
+      include: {
+        program: true,
+        trainerAssignments: { where: { status: "ACTIVE" }, include: { trainer: true } },
+        enrollments: { where: { status: "ACTIVE" }, select: { id: true } },
+        activities: { where: { type: { in: ["TASK", "PROJECT", "ASSESSMENT"] } }, select: { id: true, dueAt: true, progress: { select: { status: true } } } },
+        attendanceRecords: { select: { status: true } }
+      }
+    }),
+    prisma.studentEnrollment.findMany({
+      where: { status: "ACTIVE", batchId: { not: null } },
+      take: 100,
+      include: {
+        batch: {
+          include: {
+            activities: { where: { type: { in: ["TASK", "PROJECT", "ASSESSMENT"] } }, select: { dueAt: true, progress: { select: { studentId: true, status: true } } } }
+          }
+        },
+        student: {
+          include: {
+            attendanceRecords: { select: { status: true } },
+            submissions: { orderBy: { updatedAt: "desc" }, take: 20, select: { status: true, updatedAt: true } },
+            progress: { orderBy: { updatedAt: "desc" }, take: 20, select: { updatedAt: true } }
+          }
+        }
+      }
+    }),
+    prisma.communicationLog.count({ where: { subject: "Academic follow-up", status: { in: ["DRAFT", "SCHEDULED"] } } })
   ]);
 
   const presentToday = attendanceRecords.filter((item) => item.status === "PRESENT" || item.status === "LATE").length;
@@ -133,7 +202,8 @@ export async function getAdminCommandCenter() {
       temporaryPins,
       expiredPins,
       openPrograms,
-      waitlistPrograms
+      waitlistPrograms,
+      operationalFollowUps
     },
     whatsappMessages,
     staffUsers,
@@ -147,8 +217,13 @@ export async function getAdminCommandCenter() {
       todaysClasses,
       attendanceToday: attendanceRecords.length === 0 ? null : Math.round((presentToday / attendanceRecords.length) * 100),
       pendingSubmissions,
+      overdueTasks,
       progress: requiredActivities === 0 ? 0 : Math.round((completedProgress / requiredActivities) * 100)
-    }
+    },
+    academicHealthSummary: {
+      needingAttention: academicHealthStudents.filter(studentAttentionReasons).length
+    },
+    batchAcademicReports
   };
 }
 
@@ -178,4 +253,77 @@ export async function getAdminUsersAndRoles(query?: string) {
   ]);
 
   return { users, roles, auditLogs };
+}
+
+export async function getAdminAcademicHealth(filters: { programId?: string; batchId?: string; trainerId?: string }) {
+  const batchWhere = {
+    ...(filters.batchId ? { id: filters.batchId } : {}),
+    ...(filters.programId ? { programId: filters.programId } : {}),
+    ...(filters.trainerId ? { trainerAssignments: { some: { trainerId: filters.trainerId, status: "ACTIVE" as const } } } : {})
+  };
+
+  const [programs, batches, trainers, enrollments] = await Promise.all([
+    prisma.program.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } }),
+    prisma.batch.findMany({ where: { status: "ACTIVE" }, orderBy: { name: "asc" }, include: { program: true, trainerAssignments: { where: { status: "ACTIVE" }, include: { trainer: true } } } }),
+    prisma.user.findMany({ where: { deletedAt: null, roles: { some: { role: { name: "Trainer" } } } }, orderBy: { name: "asc" } }),
+    prisma.studentEnrollment.findMany({
+      where: {
+        status: "ACTIVE",
+        ...(filters.programId ? { programId: filters.programId } : {}),
+        batch: batchWhere
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 100,
+      include: {
+        program: true,
+        batch: {
+          include: {
+            trainerAssignments: { where: { status: "ACTIVE" }, include: { trainer: true } },
+            activities: { where: { type: { in: ["TASK", "PROJECT", "ASSESSMENT"] } }, include: { progress: true, submissions: true } }
+          }
+        },
+        student: {
+          include: {
+            attendanceRecords: true,
+            submissions: { orderBy: { updatedAt: "desc" }, take: 20 },
+            progress: { orderBy: { updatedAt: "desc" }, take: 20 }
+          }
+        }
+      }
+    })
+  ]);
+
+  return { programs, batches, trainers, enrollments };
+}
+
+export async function getAdminFollowUps() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const [health, followUps, owners] = await Promise.all([
+    getAdminAcademicHealth({}),
+    prisma.communicationLog.findMany({
+      where: { subject: "Academic follow-up" },
+      orderBy: [{ scheduledAt: "asc" }, { updatedAt: "desc" }],
+      take: 80,
+      include: { user: true }
+    }),
+    prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        status: "ACTIVE",
+        roles: { some: { role: { name: { in: ["Trainer", "Counsellor", "Admission", "Director", "Admin"] } } } }
+      },
+      orderBy: { name: "asc" },
+      include: { roles: { include: { role: true } } }
+    })
+  ]);
+
+  const dueToday = followUps.filter((item) => item.status !== "SENT" && item.scheduledAt && item.scheduledAt < tomorrow).length;
+  const open = followUps.filter((item) => item.status !== "SENT").length;
+  const resolved = followUps.filter((item) => item.status === "SENT").length;
+
+  return { health, followUps, owners, stats: { open, dueToday, resolved } };
 }

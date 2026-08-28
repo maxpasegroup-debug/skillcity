@@ -17,7 +17,9 @@ export default async function AdminDashboardPage() {
     { label: "Follow-ups due", value: data.stats.followUpsDue, href: "/telecaller?filter=follow-up" },
     { label: "Student activation pending", value: data.stats.approvedWithoutLogin, href: "/admissions/action-queue" },
     { label: "Unassigned leads", value: data.stats.unassignedLeads, href: "/telecaller?filter=new" },
-    { label: "Batch assignment pending", value: data.stats.batchAssignmentPending, href: "/admissions/enrollments" }
+    { label: "Batch assignment pending", value: data.stats.batchAssignmentPending, href: "/admissions/enrollments" },
+    { label: "Students needing attention", value: data.academicHealthSummary.needingAttention, href: "/admin/academic-health" },
+    { label: "Operational follow-ups open", value: data.stats.operationalFollowUps, href: "/admin/follow-ups" }
   ];
 
   const pipeline = [
@@ -52,8 +54,8 @@ export default async function AdminDashboardPage() {
         <DirectorMetricCard label="Today's Classes" value={data.academic.todaysClasses} icon={CalendarCheck} />
         <DirectorMetricCard label="Attendance Today" value={data.academic.attendanceToday === null ? "Not started" : `${data.academic.attendanceToday}%`} icon={ClipboardCheck} />
         <DirectorMetricCard label="Pending Submissions" value={data.academic.pendingSubmissions} icon={FileText} />
+        <DirectorMetricCard label="Overdue Tasks" value={data.academic.overdueTasks} icon={ListChecks} />
         <DirectorMetricCard label="Academic Progress" value={`${data.academic.progress}%`} icon={TrendingUp} />
-        <DirectorMetricCard label="Batch Pending" value={data.stats.batchAssignmentPending} icon={ListChecks} />
       </section>
 
       <Card>
@@ -103,6 +105,7 @@ export default async function AdminDashboardPage() {
                 { label: "Admission Queue", href: "/admissions/action-queue" },
                 { label: "Batch Onboarding", href: "/admissions/enrollments" },
                 { label: "Trainer Calendar", href: "/trainer/calendar" },
+                { label: "Admin Follow-ups", href: "/admin/follow-ups" },
                 { label: "Batch Management", href: "/director/batch-management" },
                 { label: "Users & Roles", href: "/admin/users" },
                 { label: "Security Settings", href: "/admin/settings" }
@@ -117,6 +120,27 @@ export default async function AdminDashboardPage() {
       </section>
 
       <section className="grid gap-5 lg:grid-cols-2">
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-black text-brand-dark">Batch Academic Health</h2>
+            <div className="mt-5 space-y-3">
+              {data.batchAcademicReports.map((batch) => {
+                const attended = batch.attendanceRecords.filter((item) => item.status === "PRESENT" || item.status === "LATE").length;
+                const attendance = batch.attendanceRecords.length === 0 ? "Not started" : `${Math.round((attended / batch.attendanceRecords.length) * 100)}%`;
+                const completedTasks = batch.activities.filter((activity) => activity.progress.some((progress) => progress.status === "COMPLETED")).length;
+                return (
+                  <Link key={batch.id} href="/director/batch-management" className="block rounded-lg bg-white p-4 transition hover:-translate-y-1 hover:shadow-soft">
+                    <p className="font-black text-brand-dark">{batch.name}</p>
+                    <p className="mt-1 text-sm font-bold text-brand-muted">{batch.program.name} - {batch.enrollments.length} students - {batch.trainerAssignments.map((item) => item.trainer.name).join(", ") || "Trainer pending"}</p>
+                    <p className="mt-2 text-sm font-bold text-brand-muted">Attendance {attendance} - Tasks {completedTasks}/{batch.activities.length}</p>
+                  </Link>
+                );
+              })}
+              {data.batchAcademicReports.length === 0 ? <p className="font-semibold text-brand-muted">No active batches yet.</p> : null}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardContent className="p-6">
             <h2 className="text-2xl font-black text-brand-dark">Program Overview</h2>

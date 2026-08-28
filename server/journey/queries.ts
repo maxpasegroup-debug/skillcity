@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import type { Activity, JourneyDay, JourneyPhase, JourneyWeek, StudentProgress } from "@prisma/client";
+import type { Activity, JourneyDay, JourneyPhase, JourneyWeek, StudentProgress, Submission } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/server/auth/session";
 import type { JourneyActivityView, JourneyPhaseView } from "@/types/journey";
@@ -79,6 +79,27 @@ export async function getStudentProgressMap(studentId: string, activityIds: stri
   return new Map(progress.map((item) => [item.activityId, item]));
 }
 
+export async function getStudentSubmissionMap(studentId: string, activityIds: string[]) {
+  if (activityIds.length === 0) {
+    return new Map<string, Submission>();
+  }
+
+  const submissions = await prisma.submission.findMany({
+    where: {
+      studentId,
+      activityId: { in: activityIds }
+    },
+    orderBy: { updatedAt: "desc" }
+  });
+  const map = new Map<string, Submission>();
+  for (const submission of submissions) {
+    if (submission.activityId && !map.has(submission.activityId)) {
+      map.set(submission.activityId, submission);
+    }
+  }
+  return map;
+}
+
 function flattenDays(phases: PhaseWithWeeks[]) {
   return phases.flatMap((phase) => phase.weeks.flatMap((week) => week.days.map((day) => ({ phase, week, day }))));
 }
@@ -91,8 +112,11 @@ export async function getStudentJourney(studentId: string) {
   }
 
   const flatDays = flattenDays(enrollment.journey.phases);
-  const activityIds = flatDays.flatMap(({ day }) => day.activities.map((activity) => activity.id));
-  const progressMap = await getStudentProgressMap(studentId, activityIds);
+  const visibleActivityIds = flatDays.flatMap(({ day }) => day.activities.filter((activity) => !activity.batchId || activity.batchId === enrollment.batchId).map((activity) => activity.id));
+  const [progressMap, submissionMap] = await Promise.all([
+    getStudentProgressMap(studentId, visibleActivityIds),
+    getStudentSubmissionMap(studentId, visibleActivityIds)
+  ]);
 
   let absoluteDay = 0;
   const phases: JourneyPhaseView[] = enrollment.journey.phases.map((phase) => ({
@@ -106,10 +130,12 @@ export async function getStudentJourney(studentId: string) {
       title: week.title,
       days: week.days.map((day) => {
         absoluteDay += 1;
-        const activities: JourneyActivityView[] = day.activities.map((activity) => {
+        const activities: JourneyActivityView[] = day.activities.filter((activity) => !activity.batchId || activity.batchId === enrollment.batchId).map((activity) => {
           const progress = progressMap.get(activity.id);
+          const submission = submissionMap.get(activity.id);
           return {
             id: activity.id,
+            dayId: activity.dayId,
             title: activity.title,
             type: activity.type,
             description: activity.description,
@@ -117,10 +143,14 @@ export async function getStudentJourney(studentId: string) {
             sortOrder: activity.sortOrder,
             required: activity.required,
             points: activity.points,
+            dueAt: activity.dueAt,
+            resourceUrl: activity.resourceUrl,
             progressStatus: progress?.status ?? "NOT_STARTED",
             completedAt: progress?.completedAt ?? null,
             score: progress?.score ?? null,
-            reflection: progress?.reflection ?? null
+            reflection: progress?.reflection ?? null,
+            submissionStatus: submission?.status ?? null,
+            submittedAt: submission?.submittedAt ?? null
           };
         });
         const completedActivityCount = activities.filter((activity) => activity.progressStatus === "COMPLETED").length;
@@ -200,7 +230,8 @@ export async function getStudentOnboardingHome(studentId: string) {
       nextClass: null,
       attendance: null,
       pendingSubmissions: 0,
-      todaysTasks: 0
+      todaysTasks: 0,
+      pendingTasks: []
     };
   }
 
@@ -253,7 +284,18 @@ export async function getStudentOnboardingHome(studentId: string) {
     nextClass,
     attendance,
     pendingSubmissions,
-    todaysTasks: journey.today?.activities.filter((activity) => activity.required && activity.progressStatus !== "COMPLETED").length ?? 0
+    todaysTasks: journey.today?.activities.filter((activity) => activity.required && activity.progressStatus !== "COMPLETED").length ?? 0,
+    pendingTasks: journey.phases
+      .flatMap((phase) => phase.weeks.flatMap((week) => week.days.flatMap((day) => day.activities.map((activity) => ({ day, activity })))))
+      .filter(({ activity }) => ["TASK", "PROJECT", "ASSESSMENT"].includes(activity.type) && activity.progressStatus !== "COMPLETED")
+      .slice(0, 6)
+      .map(({ day, activity }) => ({
+        id: activity.id,
+        dayId: day.id,
+        title: activity.title,
+        dueAt: activity.dueAt,
+        status: activity.submissionStatus === "SUBMITTED" ? "SUBMITTED" : activity.dueAt && activity.dueAt < now ? "OVERDUE" : "PENDING"
+      }))
   };
 }
 

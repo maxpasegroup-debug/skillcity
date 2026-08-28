@@ -27,3 +27,19 @@ export const adminUserStatusSchema = z.object({
 export const adminResetAccessSchema = z.object({
   userId: z.string().uuid()
 });
+
+export const adminFollowUpSchema = z.object({
+  studentId: z.string().uuid(),
+  batchId: z.string().uuid().optional().or(z.literal("")),
+  ownerId: z.string().uuid().optional().or(z.literal("")),
+  priority: z.enum(["HIGH", "NORMAL"]),
+  status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED"]),
+  followUpAt: z.string().optional(),
+  nextAction: z.string().min(2).max(180),
+  note: z.string().min(2).max(1000)
+});
+
+export const adminFollowUpStatusSchema = z.object({
+  followUpId: z.string().uuid(),
+  status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED"])
+});

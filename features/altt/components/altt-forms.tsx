@@ -28,14 +28,15 @@ export function ReflectionForm({ dayId, questions }: { dayId: string; questions:
   );
 }
 
-export function SubmissionForm({ dayId, stepId }: { dayId: string; stepId?: string }) {
+export function SubmissionForm({ dayId, stepId, activityId, defaultTitle }: { dayId: string; stepId?: string; activityId?: string; defaultTitle?: string }) {
   const [state, action, pending] = useActionState(saveSubmissionAction, initialState);
   return (
     <form action={action} className="space-y-4">
       <DirectorFormMessage message={state.message} ok={state.ok} />
       <input type="hidden" name="dayId" value={dayId} />
       <input type="hidden" name="stepId" value={stepId ?? ""} />
-      <Input name="title" label="Submission Title" required />
+      <input type="hidden" name="activityId" value={activityId ?? ""} />
+      <Input name="title" label="Submission Title" defaultValue={defaultTitle} required />
       <label className="block">
         <span className="mb-2 block text-sm font-bold text-brand-dark">Submission Type</span>
         <select name="type" className="h-12 w-full rounded-lg border border-black/10 bg-white px-4 font-semibold">

@@ -16,6 +16,7 @@ import {
   Video
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { SubmissionForm } from "@/features/altt/components/altt-forms";
 import type { JourneyActivityView } from "@/types/journey";
 import { ActivityCompleteButton } from "./activity-complete-button";
 
@@ -56,6 +57,17 @@ const activityLabels: Record<ActivityType, string> = {
 export function ActivityCard({ activity }: { activity: JourneyActivityView }) {
   const Icon = activityIcons[activity.type];
   const completed = activity.progressStatus === "COMPLETED";
+  const needsSubmission = ["TASK", "PROJECT", "ASSESSMENT"].includes(activity.type);
+  const overdue = Boolean(activity.dueAt && activity.dueAt < new Date() && !completed && activity.submissionStatus !== "SUBMITTED");
+  const status = completed
+    ? "COMPLETED"
+    : activity.submissionStatus === "APPROVED"
+      ? "REVIEWED"
+      : activity.submissionStatus === "SUBMITTED"
+        ? "SUBMITTED"
+        : overdue
+          ? "OVERDUE"
+          : "PENDING";
 
   return (
     <Card className={completed ? "bg-white ring-1 ring-black/5" : undefined}>
@@ -73,11 +85,19 @@ export function ActivityCard({ activity }: { activity: JourneyActivityView }) {
                 {activity.duration ? <span>{activity.duration} min</span> : null}
                 <span>{activity.points} XP</span>
                 <span>{activity.required ? "Required" : "Optional"}</span>
+                {activity.dueAt ? <span>Due {activity.dueAt.toLocaleString()}</span> : null}
+                {needsSubmission ? <span>{status}</span> : null}
               </div>
+              {activity.resourceUrl ? <a href={activity.resourceUrl} className="mt-3 block break-all font-bold text-brand-red" target="_blank" rel="noreferrer">Open resource</a> : null}
             </div>
           </div>
-          <ActivityCompleteButton activityId={activity.id} completed={completed} />
+          {needsSubmission ? null : <ActivityCompleteButton activityId={activity.id} completed={completed} />}
         </div>
+        {needsSubmission && !completed && activity.submissionStatus !== "SUBMITTED" ? (
+          <div className="mt-6 rounded-lg bg-brand-card p-5">
+            <SubmissionForm dayId={activity.dayId} activityId={activity.id} defaultTitle={activity.title} />
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

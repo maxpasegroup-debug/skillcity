@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { assessmentReviewSchema, attendanceRecordSchema, attendanceSessionSchema, reflectionReviewSchema, resourceSchema, studentConcernSchema, submissionReviewSchema, trainerAnnouncementSchema, trainerClassScheduleSchema } from "@/features/trainer/schemas";
+import { assessmentReviewSchema, attendanceRecordSchema, attendanceSessionSchema, reflectionReviewSchema, resourceSchema, studentConcernSchema, submissionReviewSchema, trainerAnnouncementSchema, trainerClassCompletionSchema, trainerClassScheduleSchema, trainerTaskSchema } from "@/features/trainer/schemas";
 import { assertTrainerBatchAccess, requireTrainer } from "@/server/trainer/queries";
+import { writeAuditLog } from "@/server/audit/log";
 
 type State = { ok: boolean; message: string };
 const state: State = { ok: false, message: "" };
@@ -117,6 +118,122 @@ export async function scheduleTrainerClassAction(previousState: State = state, f
   return { ok: true, message: `Class scheduled: ${event.title}.` };
 }
 
+export async function createTrainerTaskAction(previousState: State = state, formData: FormData): Promise<State> {
+  void previousState;
+  const trainer = await requireTrainer();
+  const parsed = trainerTaskSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check task details." };
+
+  await assertTrainerBatchAccess(trainer.id, parsed.data.batchId);
+  const batch = await prisma.batch.findUnique({
+    where: { id: parsed.data.batchId },
+    include: { enrollments: { where: { status: "ACTIVE" }, select: { studentId: true } } }
+  });
+  if (!batch) return { ok: false, message: "Batch not found." };
+  if (batch.status !== "ACTIVE") return { ok: false, message: "Assign tasks only to active batches." };
+  if (!batch.journeyId) return { ok: false, message: "Attach a journey to this batch before assigning tasks." };
+
+  const day = await prisma.journeyDay.findUnique({
+    where: { id: parsed.data.dayId },
+    include: { week: { include: { phase: true } } }
+  });
+  if (!day || day.week.phase.journeyId !== batch.journeyId) {
+    return { ok: false, message: "Select a journey day from this batch." };
+  }
+
+  const dueAt = dateOrNull(parsed.data.dueAt);
+  if (parsed.data.dueAt && (!dueAt || Number.isNaN(dueAt.getTime()))) return { ok: false, message: "Enter a valid due date." };
+  const existingTask = await prisma.activity.findFirst({
+    where: { batchId: batch.id, dayId: day.id, title: parsed.data.title, type: "TASK" }
+  });
+  if (existingTask) return { ok: true, message: "This task is already assigned to the batch." };
+
+  const lastActivity = await prisma.activity.findFirst({ where: { dayId: day.id }, orderBy: { sortOrder: "desc" } });
+  const task = await prisma.activity.create({
+    data: {
+      dayId: day.id,
+      batchId: batch.id,
+      title: parsed.data.title,
+      type: "TASK",
+      description: parsed.data.description,
+      dueAt,
+      resourceUrl: parsed.data.resourceUrl?.trim() || null,
+      sortOrder: (lastActivity?.sortOrder ?? 0) + 1,
+      required: true,
+      points: parsed.data.points
+    }
+  });
+
+  if (batch.enrollments.length > 0) {
+    await prisma.notification.createMany({
+      data: batch.enrollments.map((enrollment) => ({
+        userId: enrollment.studentId,
+        type: "ACTIVITY" as const,
+        title: "New task assigned",
+        message: dueAt ? `${task.title} is due on ${dueAt.toLocaleString("en-IN")}.` : `${task.title} is ready in your journey.`,
+        actionUrl: `/my-journey/day/${day.id}`
+      }))
+    });
+  }
+
+  revalidatePath("/trainer/assignments");
+  revalidatePath("/trainer/dashboard");
+  revalidatePath("/dashboard");
+  revalidatePath("/todays-tasks");
+  revalidatePath(`/my-journey/day/${day.id}`);
+  return { ok: true, message: "Task assigned to batch." };
+}
+
+export async function completeTrainerClassAction(previousState: State = state, formData: FormData): Promise<State> {
+  void previousState;
+  const trainer = await requireTrainer();
+  const parsed = trainerClassCompletionSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check class details." };
+
+  const event = await prisma.calendarEvent.findUnique({ where: { id: parsed.data.eventId }, include: { attendanceSessions: true } });
+  if (!event?.batchId) return { ok: false, message: "Class not found." };
+  await assertTrainerBatchAccess(trainer.id, event.batchId);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.calendarEvent.update({
+      where: { id: event.id },
+      data: {
+        status: "COMPLETED",
+        description: parsed.data.note?.trim() ? `${event.description ?? ""}\n\nCompletion note: ${parsed.data.note.trim()}`.trim() : event.description
+      }
+    });
+
+    if (event.attendanceSessions.length === 0) {
+      await tx.attendanceSession.create({
+        data: {
+          batchId: event.batchId!,
+          trainerId: trainer.id,
+          calendarEventId: event.id,
+          title: event.title,
+          sessionDate: event.startsAt,
+          notes: event.description
+        }
+      });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        userId: trainer.id,
+        action: "TRAINER_CLASS_COMPLETED",
+        entity: "CalendarEvent",
+        entityId: event.id,
+        metadata: { batchId: event.batchId, note: parsed.data.note?.trim() || null }
+      }
+    });
+  });
+
+  revalidatePath("/trainer/dashboard");
+  revalidatePath("/trainer/todays-classes");
+  revalidatePath("/trainer/calendar");
+  revalidatePath(`/trainer/batches/${event.batchId}`);
+  return { ok: true, message: "Class marked completed." };
+}
+
 export async function createAttendanceSessionAction(previousState: State = state, formData: FormData): Promise<State> {
   void previousState;
   const trainer = await requireTrainer();
@@ -155,13 +272,32 @@ export async function reviewSubmissionAction(previousState: State = state, formD
   const submission = await prisma.submission.findUnique({ where: { id: parsed.data.submissionId }, include: { student: true } });
   if (!submission) return { ok: false, message: "Submission not found." };
   await ensureStudentAccess(trainer.id, submission.studentId);
-  await prisma.$transaction([
-    prisma.submissionReview.create({ data: { submissionId: submission.id, reviewerId: trainer.id, status: parsed.data.status, score: parsed.data.score, feedback: parsed.data.feedback } }),
-    prisma.submission.update({ where: { id: submission.id }, data: { status: parsed.data.status } }),
-    prisma.trainerFeedback.create({ data: { trainerId: trainer.id, studentId: submission.studentId, submissionId: submission.id, type: "SUBMISSION", score: parsed.data.score, comment: parsed.data.feedback } }),
-    prisma.reviewQueue.updateMany({ where: { submissionId: submission.id }, data: { status: "COMPLETED" } })
-  ]);
+  await prisma.$transaction(async (tx) => {
+    await tx.submissionReview.create({ data: { submissionId: submission.id, reviewerId: trainer.id, status: parsed.data.status, score: parsed.data.score, feedback: parsed.data.feedback } });
+    await tx.submission.update({ where: { id: submission.id }, data: { status: parsed.data.status } });
+    await tx.trainerFeedback.create({ data: { trainerId: trainer.id, studentId: submission.studentId, submissionId: submission.id, type: "SUBMISSION", score: parsed.data.score, comment: parsed.data.feedback } });
+    await tx.reviewQueue.updateMany({ where: { submissionId: submission.id }, data: { status: "COMPLETED" } });
+    if (parsed.data.status === "APPROVED" && submission.activityId) {
+      await tx.studentProgress.upsert({
+        where: { studentId_activityId: { studentId: submission.studentId, activityId: submission.activityId } },
+        update: { status: "COMPLETED", completedAt: new Date(), score: parsed.data.score },
+        create: { studentId: submission.studentId, activityId: submission.activityId, status: "COMPLETED", completedAt: new Date(), score: parsed.data.score }
+      });
+    }
+    await tx.notification.create({
+      data: {
+        userId: submission.studentId,
+        type: "ACTIVITY",
+        title: "Submission reviewed",
+        message: `Your submission "${submission.title}" was marked ${parsed.data.status.toLowerCase()}.`,
+        actionUrl: `/my-journey/day/${submission.dayId}`
+      }
+    });
+  });
   revalidatePath("/trainer/submissions");
+  revalidatePath("/trainer/assignments");
+  revalidatePath("/dashboard");
+  revalidatePath(`/my-journey/day/${submission.dayId}`);
   return { ok: true, message: "Submission reviewed. Trainer approval remains final." };
 }
 
@@ -232,6 +368,14 @@ export async function createStudentConcernAction(previousState: State = state, f
   const batchId = emptyToNull(parsed.data.batchId) ?? await ensureStudentAccess(trainer.id, parsed.data.studentId);
   await assertTrainerBatchAccess(trainer.id, batchId);
   await prisma.studentConcern.create({ data: { trainerId: trainer.id, studentId: parsed.data.studentId, batchId, title: parsed.data.title, notes: parsed.data.notes, taraFollowUpRecommended: parsed.data.taraFollowUpRecommended ?? false } });
+  await writeAuditLog({
+    userId: trainer.id,
+    action: "TRAINER_STUDENT_FOLLOW_UP_CREATED",
+    entity: "StudentConcern",
+    metadata: { studentId: parsed.data.studentId, batchId, title: parsed.data.title }
+  });
   revalidatePath("/trainer/students");
+  revalidatePath(`/trainer/students/${parsed.data.studentId}`);
+  revalidatePath(`/trainer/batches/${batchId}`);
   return { ok: true, message: "Student concern saved." };
 }
