@@ -3,7 +3,7 @@ import { Brain, BriefcaseBusiness, GraduationCap, HeartHandshake, Rocket, Shield
 export const launchPrograms = [
   {
     slug: "genz-builder",
-    title: "GenZ Builder",
+    title: "GenZ Builder - Vibe Coding",
     academy: "AI Skills Academy",
     outcome: "AI-powered full stack creator ready to build real products and portfolio projects.",
     who: ["Students after school or college", "Beginners who want practical tech skills", "Creators who want to build with AI"],
@@ -73,7 +73,7 @@ export const launchPrograms = [
 
 export const academies = [
   { slug: "startup-skool", title: "Startup Skool", icon: Rocket, mission: "Help students and professionals become practical founder-builders.", programs: ["Diploma in & as a Fullstack Entrepreneur", "Solo Founder"], paths: ["Founder", "Product Builder", "Freelancer", "Startup Operator"], roadmap: ["Founder labs", "Demo days", "Investor readiness"] },
-  { slug: "ai-skills-academy", title: "AI Skills Academy", icon: Brain, mission: "Make practical AI skills accessible for study, work, business and creation.", programs: ["GenZ Builder"], paths: ["AI Creator", "Full Stack Builder", "Automation Assistant"], roadmap: ["AI portfolio tracks", "Advanced automation", "AI career tracks"] },
+  { slug: "ai-skills-academy", title: "AI Skills Academy", icon: Brain, mission: "Make practical AI skills accessible for study, work, business and creation.", programs: ["GenZ Builder - Vibe Coding"], paths: ["AI Creator", "Full Stack Builder", "Automation Assistant"], roadmap: ["AI portfolio tracks", "Advanced automation", "AI career tracks"] },
   { slug: "internship-academy", title: "Internship Academy", icon: BriefcaseBusiness, mission: "Prepare students for real workplace contribution through skills, projects and practice.", programs: ["Sales Mastery Live Fellowship"], paths: ["Intern", "BDM Associate", "Operations Assistant"], roadmap: ["Employer partnerships", "Internship marketplace", "Work-readiness bootcamps"] },
   { slug: "care-professionals-academy", title: "Care Professionals Academy", icon: HeartHandshake, comingSoon: true, mission: "Prepare compassionate professionals for care-sector careers.", programs: ["Coming soon"], paths: ["Care Assistant", "Patient Support", "Healthcare Operations"], roadmap: ["Care skills", "Communication", "Placement pathways"] },
   { slug: "teacher-academy", title: "Teacher Academy", icon: GraduationCap, comingSoon: true, mission: "Help educators use AI, content and classroom systems with confidence.", programs: ["Coming soon"], paths: ["AI-enabled Teacher", "Content Educator", "Learning Designer"], roadmap: ["AI teaching tools", "Digital classroom systems", "Teacher certification"] },
@@ -81,7 +81,7 @@ export const academies = [
 ];
 
 export const socialProof = {
-  testimonials: ["SkillCity made learning feel clear and practical.", "Tara helped me understand what to do next.", "The project-first approach gave me confidence."],
+  testimonials: ["Skill City made learning feel clear and practical.", "Tara helped me understand what to do next.", "The project-first approach gave me confidence."],
   faculty: ["Founder mentors", "Project reviewers", "Career coaches"],
   outcomes: ["Portfolio-ready projects", "Interview readiness", "Founder clarity", "Community confidence"],
   partners: ["Placement partners ready for onboarding", "Industry partners ready for launch collaborations"],

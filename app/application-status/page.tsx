@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function ApplicationStatusPage() {
   return (
-    <main className="bg-[#fbfaf7] text-brand-dark">
+    <main className="skillcity-shell-bg text-brand-dark">
       <Navbar />
       <section className="px-5 py-16 sm:px-8 lg:px-10">
         <Container>

@@ -10,7 +10,7 @@ export default async function DirectorProgramsPage() {
 
   return (
     <div className="space-y-10">
-      <DirectorPageHeader eyebrow="Programs" title="Program management" description="Create and maintain the programs that power SkillCity journeys." />
+      <DirectorPageHeader eyebrow="Programs" title="Program management" description="Create and maintain the programs that power Skill City journeys." />
       <Card><CardContent className="p-6 md:p-8"><ProgramForm /></CardContent></Card>
       <section className="space-y-4">
         <h2 className="text-2xl font-black text-brand-dark">Programs</h2>

@@ -5,7 +5,7 @@ export default function CommunityPage() {
   return (
     <StudentEmptyPage
       eyebrow="Community"
-      title="Your SkillCity community"
+      title="Your Skill City community"
       message="Batch discussions and community spaces will appear here when your program community is enabled."
       icon={Users}
     />

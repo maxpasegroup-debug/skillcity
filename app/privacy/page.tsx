@@ -11,14 +11,14 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <main>
+    <main className="skillcity-shell-bg text-brand-dark">
       <Navbar />
       <Section>
         <Container className="max-w-3xl">
           <h1 className="text-4xl font-bold text-brand-dark md:text-5xl">Privacy</h1>
           <div className="mt-8 space-y-6 text-lg leading-8 text-brand-muted">
             <p>
-              SkillCity collects only the account information needed to provide secure access to the platform, including name, email,
+              Skill City collects only the account information needed to provide secure access to the platform, including name, email,
               encrypted password records, session records, verification codes, and security audit logs.
             </p>
             <p>
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
               principle: collect what is needed, protect it carefully, and use it to improve the learner experience.
             </p>
             <p>
-              SkillCity is owned by {siteConfig.owner}. For privacy questions, contact{" "}
+              Skill City is owned by {siteConfig.owner}. For privacy questions, contact{" "}
               <a className="font-bold text-brand-red" href="mailto:contact@skillcity.in">
                 contact@skillcity.in
               </a>

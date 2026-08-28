@@ -32,9 +32,9 @@ const navigation = [
 
 export function DirectorShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white text-brand-dark">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-80 border-r border-black/5 bg-white px-5 py-6 xl:block">
-        <Link href="/director/dashboard" aria-label="SkillCity Director dashboard">
+    <div className="skillcity-shell-bg min-h-screen text-brand-dark">
+      <aside className="skillcity-sidebar fixed inset-y-0 left-0 z-40 hidden w-80 px-5 py-6 xl:block">
+        <Link href="/director/dashboard" aria-label="Skill City Director dashboard">
           <Logo />
         </Link>
         <nav className="mt-10 space-y-2" aria-label="Director navigation">
@@ -50,8 +50,8 @@ export function DirectorShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       </aside>
-      <header className="sticky top-0 z-30 border-b border-black/5 bg-white/95 px-5 py-4 backdrop-blur xl:hidden">
-        <Link href="/director/dashboard" aria-label="SkillCity Director dashboard">
+      <header className="skillcity-mobile-header sticky top-0 z-30 px-5 py-4 xl:hidden">
+        <Link href="/director/dashboard" aria-label="Skill City Director dashboard">
           <Logo />
         </Link>
         <nav className="mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Director mobile navigation">
@@ -67,7 +67,7 @@ export function DirectorShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <main className="xl:pl-80">
-        <div className="mx-auto min-h-screen w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">{children}</div>
+        <div className="skillcity-shell-content mx-auto min-h-screen w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">{children}</div>
       </main>
     </div>
   );

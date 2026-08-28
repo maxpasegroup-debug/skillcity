@@ -41,6 +41,12 @@ export const studentCredentialSchema = z.object({
   whatsapp: z.string().trim().min(7, "Enter a valid WhatsApp number").max(40)
 });
 
+export const studentJourneyActivationSchema = z.object({
+  applicationId: z.string().uuid(),
+  batchId: z.string().uuid("Select a batch"),
+  currentDay: z.coerce.number().int().min(1).default(1)
+});
+
 export const admissionProgramSchema = z.object({
   id: z.string().uuid().optional().or(z.literal("")),
   name: z.string().trim().min(2).max(160),

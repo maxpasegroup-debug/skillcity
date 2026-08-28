@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { submitPublicApplicationAction, submitPublicEnquiryAction, publicApplicationInitialState } from "@/actions/public-application";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
   ReviewStep,
   SubmittedStep,
   TalkToAdmissionsLink,
+  enquiryWhatsAppUrl,
   getProgramDisplay,
   getProgressIndex,
   initialApplicationValues,
@@ -42,6 +43,8 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
   const [applicationState, applicationAction, applicationPending] = useActionState(submitPublicApplicationAction, publicApplicationInitialState);
   const [enquiryState, enquiryAction, enquiryPending] = useActionState(submitPublicEnquiryAction, publicApplicationInitialState);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const openedEnquiryWhatsAppRef = useRef(false);
 
   const progressIndex = getProgressIndex(currentState);
   const selectedProgram = useMemo(
@@ -51,7 +54,6 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
   const selectedDisplay = getProgramDisplay(selectedProgramSlug);
   const progress = Math.round(((progressIndex + 1) / 5) * 100);
   const pending = applicationPending || enquiryPending;
-  const formAction = currentState === "enquiry" ? enquiryAction : applicationAction;
   const requestClose = useCallback(() => {
     if (onClose) {
       onClose();
@@ -83,6 +85,12 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, requestClose]);
+
+  useEffect(() => {
+    if (!enquiryState.ok || openedEnquiryWhatsAppRef.current) return;
+    openedEnquiryWhatsAppRef.current = true;
+    window.open(enquiryWhatsAppUrl(selectedProgramSlug), "_blank", "noopener,noreferrer");
+  }, [enquiryState.ok, selectedProgramSlug]);
 
   function updateValue(field: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -118,6 +126,24 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
   function previousStep() {
     setClientMessage("");
     setCurrentState(getPreviousState(currentState));
+  }
+
+  function submitApplication() {
+    if (!formRef.current) return;
+    if (!canContinue()) {
+      setClientMessage(getValidationMessage(currentState));
+      return;
+    }
+    setClientMessage("");
+    const formData = new FormData(formRef.current);
+    startTransition(() => applicationAction(formData));
+  }
+
+  function submitEnquiry() {
+    if (!formRef.current) return;
+    setClientMessage("");
+    const formData = new FormData(formRef.current);
+    startTransition(() => enquiryAction(formData));
   }
 
   if (!open) return null;
@@ -169,7 +195,7 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
               </div>
             </aside>
 
-            <form action={formAction} className="flex min-h-[620px] flex-col bg-[#fbfaf7] lg:min-h-[720px]">
+            <form ref={formRef} onSubmit={(event) => event.preventDefault()} className="flex min-h-[620px] flex-col bg-[#fbfaf7] lg:min-h-[720px]">
               <HiddenApplicationFields selectedProgramSlug={selectedProgram.slug} referralId={referralId} values={values} />
 
               <header className="border-b border-black/8 px-5 py-5 sm:px-8">
@@ -197,7 +223,7 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
                 {!applicationState.ok && currentState === "city" ? <DetailStep question="Which city are you from?" label="City" value={values.city} onChange={(value) => updateValue("city", value)} autoComplete="address-level2" /> : null}
                 {!applicationState.ok && currentState === "email" ? <DetailStep question="What's your email?" label="Email" value={values.email} onChange={(value) => updateValue("email", value)} type="email" autoComplete="email" required={false} /> : null}
                 {!applicationState.ok && currentState === "counselling" ? <CounsellingStep answer={values.counselled} onSelect={(answer) => updateValue("counselled", answer)} /> : null}
-                {!applicationState.ok && currentState === "enquiry" ? <EnquiryStep programSlug={selectedProgramSlug} enquirySaved={enquiryState.ok} enquiryPending={enquiryPending} enquiryMessage={enquiryState.message} /> : null}
+                {!applicationState.ok && currentState === "enquiry" ? <EnquiryStep programSlug={selectedProgramSlug} enquirySaved={enquiryState.ok} enquiryPending={enquiryPending} enquiryMessage={enquiryState.message} onSubmit={submitEnquiry} /> : null}
                 {!applicationState.ok && currentState === "review" ? <ReviewStep values={values} selectedProgramSlug={selectedProgramSlug} /> : null}
               </div>
 
@@ -212,7 +238,7 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
                       <TalkToAdmissionsLink />
                     </div>
                     {currentState === "review" ? (
-                      <Button disabled={pending} className="h-14 rounded-full px-8">
+                      <Button type="button" onClick={submitApplication} disabled={pending} className="h-14 rounded-full px-8">
                         {pending ? "Sending..." : "Send to Admission Cell"}
                         <ArrowRight className="h-5 w-5" />
                       </Button>

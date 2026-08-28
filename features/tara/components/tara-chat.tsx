@@ -135,7 +135,7 @@ export function TaraChat({
           {messages.length === 0 ? (
             <div className="grid h-full place-items-center">
               <div className="max-w-3xl text-center">
-                <h2 className="text-3xl font-black text-brand-dark">Ask Tara anything about your SkillCity work.</h2>
+                <h2 className="text-3xl font-black text-brand-dark">Ask Tara anything about your Skill City work.</h2>
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
                   {suggestions.map((suggestion) => (
                     <button key={suggestion} type="button" onClick={() => void sendMessage(suggestion)} className="rounded-lg bg-white px-5 py-4 text-left font-bold text-brand-muted transition hover:text-brand-red">

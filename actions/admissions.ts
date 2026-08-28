@@ -227,6 +227,28 @@ export async function generateStudentCredentialAction(_: State, formData: FormDa
       data: { studentId: studentUser.id }
     });
 
+    const applicationData = application.data as Record<string, string> | null;
+    await tx.studentActivationProfile.upsert({
+      where: { studentId: studentUser.id },
+      update: {
+        whatsapp,
+        city: application.lead.city,
+        state: application.lead.state,
+        educationOrWork: applicationData?.educationOrWork ?? null,
+        learningGoal: applicationData?.goal ?? null,
+        availability: applicationData?.preferredCounsellingTime ?? null
+      },
+      create: {
+        studentId: studentUser.id,
+        whatsapp,
+        city: application.lead.city,
+        state: application.lead.state,
+        educationOrWork: applicationData?.educationOrWork ?? null,
+        learningGoal: applicationData?.goal ?? null,
+        availability: applicationData?.preferredCounsellingTime ?? null
+      }
+    });
+
     await tx.lead.update({
       where: { id: application.leadId },
       data: { whatsapp, status: "WON", convertedAt: application.lead.convertedAt ?? new Date() }

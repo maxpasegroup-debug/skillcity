@@ -10,7 +10,7 @@ export default async function BdmReferralsPage() {
 
   return (
     <div className="space-y-10">
-      <DirectorPageHeader eyebrow="Referral Link" title="Share SkillCity" description="Use one trackable link for referral campaigns and partner conversations." />
+      <DirectorPageHeader eyebrow="Referral Link" title="Share Skill City" description="Use one trackable link for referral campaigns and partner conversations." />
       <section className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <Card>
           <CardContent className="p-6">

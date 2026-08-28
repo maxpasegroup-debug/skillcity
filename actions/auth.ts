@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { hashPassword, verifyPassword } from "@/lib/security/password";
 import { createOtp, createToken, hashToken } from "@/lib/security/token";
-import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, resetPinSchema, whatsappPinLoginSchema } from "@/features/auth/schemas";
+import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, resetPinSchema, studentActivationProfileSchema, whatsappPinLoginSchema } from "@/features/auth/schemas";
 import { createSession, getCurrentUser, revokeCurrentSession } from "@/server/auth/session";
 import { sendEmail } from "@/server/email/provider";
 import { otpEmail, resetPasswordEmail, welcomeEmail } from "@/emails/templates";
@@ -255,6 +255,59 @@ export async function resetPinAction(_: ActionState, formData: FormData): Promis
         action: "STUDENT_PIN_RESET",
         entity: "StudentLoginCredential",
         entityId: credential.id
+      }
+    })
+  ]);
+
+  redirect("/profile-setup");
+}
+
+export async function saveStudentActivationProfileAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, message: "Please login before completing your profile." };
+  }
+
+  const parsed = studentActivationProfileSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Check your profile details." };
+  }
+
+  await prisma.$transaction([
+    prisma.studentActivationProfile.upsert({
+      where: { studentId: user.id },
+      update: {
+        whatsapp: normalizeWhatsApp(parsed.data.whatsapp),
+        city: parsed.data.city,
+        state: parsed.data.state,
+        educationOrWork: parsed.data.educationOrWork,
+        learningGoal: parsed.data.learningGoal,
+        preferredLanguage: parsed.data.preferredLanguage,
+        availability: parsed.data.availability,
+        guardianName: parsed.data.guardianName?.trim() || null,
+        guardianPhone: parsed.data.guardianPhone?.trim() || null,
+        completedAt: new Date()
+      },
+      create: {
+        studentId: user.id,
+        whatsapp: normalizeWhatsApp(parsed.data.whatsapp),
+        city: parsed.data.city,
+        state: parsed.data.state,
+        educationOrWork: parsed.data.educationOrWork,
+        learningGoal: parsed.data.learningGoal,
+        preferredLanguage: parsed.data.preferredLanguage,
+        availability: parsed.data.availability,
+        guardianName: parsed.data.guardianName?.trim() || null,
+        guardianPhone: parsed.data.guardianPhone?.trim() || null,
+        completedAt: new Date()
+      }
+    }),
+    prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "STUDENT_ACTIVATION_PROFILE_COMPLETED",
+        entity: "StudentActivationProfile",
+        entityId: user.id
       }
     })
   ]);

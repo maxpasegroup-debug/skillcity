@@ -25,7 +25,7 @@ export default async function DirectorDashboardPage() {
       <DirectorPageHeader
         eyebrow="Director Command Center"
         title="Student transformation at a glance"
-        description="Plan, monitor, and improve every active SkillCity journey from one operational brain."
+        description="Plan, monitor, and improve every active Skill City journey from one operational brain."
       />
 
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">

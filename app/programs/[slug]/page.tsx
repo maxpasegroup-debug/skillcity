@@ -14,20 +14,22 @@ export function generateStaticParams() {
   return launchPrograms.map((program) => ({ slug: program.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const program = launchPrograms.find((item) => item.slug === params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const program = launchPrograms.find((item) => item.slug === slug);
   if (!program) return {};
   return { title: program.title, description: program.outcome, openGraph: { title: program.title, description: program.outcome } };
 }
 
-export default function ProgramDetailPage({ params }: { params: { slug: string } }) {
-  const program = launchPrograms.find((item) => item.slug === params.slug);
+export default async function ProgramDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const program = launchPrograms.find((item) => item.slug === slug);
   if (!program) notFound();
   const related = launchPrograms.filter((item) => item.slug !== program.slug).slice(0, 3);
   const applySlug = getApplicationGatewaySlug(program.slug);
 
   return (
-    <main className="bg-white text-brand-dark">
+    <main className="skillcity-shell-bg text-brand-dark">
       <Navbar />
       <section className="px-5 py-16 sm:px-8 lg:px-10">
         <Container className="grid gap-10 lg:grid-cols-[1fr_360px]">

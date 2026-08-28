@@ -18,7 +18,7 @@ export default async function ExecutiveDashboardPage() {
   return (
     <div className="space-y-10">
       <section className="rounded-lg bg-brand-card p-6 md:p-8">
-        <DirectorPageHeader eyebrow="Founder Command Center" title="Run SkillCity with clarity." description="Admissions, revenue, students, teams, community, marketplace and AI signals in one executive view." />
+        <DirectorPageHeader eyebrow="Founder Command Center" title="Run Skill City with clarity." description="Admissions, revenue, students, teams, community, marketplace and AI signals in one executive view." />
         <div className="mt-6 flex flex-col gap-4 sm:flex-row">
           <Button asChild size="lg"><Link href="/executive/ai-command-center">Ask Tara</Link></Button>
           <Button asChild size="lg" variant="secondary"><Link href="/executive/reports">Generate Report</Link></Button>

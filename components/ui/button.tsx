@@ -10,9 +10,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-brand-red text-white hover:bg-[#cc0017] focus-visible:outline-brand-red",
-        secondary: "border border-black/10 bg-white text-brand-dark hover:border-brand-red hover:text-brand-red focus-visible:outline-brand-red",
-        ghost: "bg-transparent text-brand-dark hover:bg-brand-card"
+        primary: "bg-brand-red text-white shadow-[0_14px_34px_rgba(235,0,27,0.22)] hover:bg-[#cc0017] focus-visible:outline-brand-red",
+        secondary: "border border-black/10 bg-white/90 text-brand-dark hover:border-brand-red hover:text-brand-red focus-visible:outline-brand-red",
+        ghost: "bg-transparent text-brand-dark hover:bg-brand-card/80"
       },
       size: {
         md: "h-12 px-6 text-base",

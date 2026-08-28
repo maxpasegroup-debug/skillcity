@@ -20,9 +20,9 @@ const navigation = [
 
 export function StudentShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white text-brand-dark">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-black/5 bg-white px-5 py-6 lg:block">
-        <Link href="/dashboard" aria-label="SkillCity dashboard">
+    <div className="skillcity-shell-bg min-h-screen text-brand-dark">
+      <aside className="skillcity-sidebar fixed inset-y-0 left-0 z-40 hidden w-72 px-5 py-6 lg:block">
+        <Link href="/dashboard" aria-label="Skill City dashboard">
           <Logo />
         </Link>
         <nav className="mt-10 space-y-2" aria-label="Student navigation">
@@ -31,9 +31,9 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       </aside>
-      <header className="sticky top-0 z-30 border-b border-black/5 bg-white/95 px-5 py-4 backdrop-blur lg:hidden">
+      <header className="skillcity-mobile-header sticky top-0 z-30 px-5 py-4 lg:hidden">
         <div className="flex items-center justify-between">
-          <Link href="/dashboard" aria-label="SkillCity dashboard">
+          <Link href="/dashboard" aria-label="Skill City dashboard">
             <Logo />
           </Link>
           <Button asChild variant="secondary" className="px-4">
@@ -53,7 +53,7 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <main className="lg:pl-72">
-        <div className="mx-auto min-h-screen w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">{children}</div>
+        <div className="skillcity-shell-content mx-auto min-h-screen w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">{children}</div>
       </main>
       <Button asChild className="fixed bottom-5 right-5 z-50 shadow-soft" size="lg">
         <Link href="/tara">

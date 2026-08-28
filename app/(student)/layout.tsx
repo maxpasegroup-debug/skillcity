@@ -7,6 +7,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
   const user = await getCurrentUser();
 
   if (user) {
+    const isStudent = user.roles.some((item) => item.role.name === "Student");
     const temporaryCredential = await prisma.studentLoginCredential.findFirst({
       where: {
         userId: user.id,
@@ -18,6 +19,15 @@ export default async function StudentLayout({ children }: { children: React.Reac
     });
 
     if (temporaryCredential) redirect("/reset-pin");
+
+    if (isStudent) {
+      const activationProfile = await prisma.studentActivationProfile.findUnique({
+        where: { studentId: user.id },
+        select: { completedAt: true }
+      });
+
+      if (!activationProfile?.completedAt) redirect("/profile-setup");
+    }
   }
 
   return <StudentShell>{children}</StudentShell>;

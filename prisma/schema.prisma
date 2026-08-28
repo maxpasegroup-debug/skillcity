@@ -707,6 +707,7 @@ model User {
   alumniProfile AlumniProfile?
   missionCompletions MissionCompletion[]
   employeeProfile Employee?
+  activationProfile StudentActivationProfile?
   executiveReports ExecutiveReport[] @relation("ExecutiveReportCreator")
   executiveInsights ExecutiveInsight[] @relation("ExecutiveInsightOwner")
   platformAudits PlatformAudit[] @relation("PlatformAuditActor")
@@ -941,6 +942,27 @@ model StudentEnrollment {
   @@index([programId])
   @@index([journeyId])
   @@index([batchId])
+}
+
+model StudentActivationProfile {
+  id            String   @id @default(uuid()) @db.Uuid
+  studentId     String   @unique @db.Uuid
+  whatsapp      String?  @db.VarChar(40)
+  city          String?  @db.VarChar(120)
+  state         String?  @db.VarChar(120)
+  educationOrWork String? @db.VarChar(180)
+  learningGoal  String?  @db.Text
+  preferredLanguage String? @db.VarChar(80)
+  availability  String? @db.VarChar(160)
+  guardianName  String? @db.VarChar(160)
+  guardianPhone String? @db.VarChar(40)
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([completedAt])
 }
 
 model StudentProgress {

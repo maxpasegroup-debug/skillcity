@@ -256,7 +256,19 @@ export function CounsellingStep({ answer, onSelect }: { answer: CounsellingAnswe
   );
 }
 
-export function EnquiryStep({ programSlug, enquirySaved, enquiryPending, enquiryMessage }: { programSlug: LaunchApplicationProgramSlug; enquirySaved: boolean; enquiryPending: boolean; enquiryMessage: string }) {
+export function EnquiryStep({
+  programSlug,
+  enquirySaved,
+  enquiryPending,
+  enquiryMessage,
+  onSubmit
+}: {
+  programSlug: LaunchApplicationProgramSlug;
+  enquirySaved: boolean;
+  enquiryPending: boolean;
+  enquiryMessage: string;
+  onSubmit: () => void;
+}) {
   return (
     <section>
       <div className="space-y-5">
@@ -273,7 +285,7 @@ export function EnquiryStep({ programSlug, enquirySaved, enquiryPending, enquiry
             </a>
           </Button>
         ) : (
-          <Button disabled={enquiryPending} className="h-14 rounded-full px-8">
+          <Button type="button" onClick={onSubmit} disabled={enquiryPending} className="h-14 rounded-full px-8">
             {enquiryPending ? "Saving..." : "Talk to Admissions on WhatsApp"}
             <MessageCircle className="h-5 w-5" />
           </Button>

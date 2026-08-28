@@ -16,8 +16,8 @@ const nav = [
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white text-brand-dark">
-      <aside className="fixed inset-y-0 left-0 hidden w-80 border-r border-black/5 bg-white px-5 py-6 xl:block">
+    <div className="skillcity-shell-bg min-h-screen text-brand-dark">
+      <aside className="skillcity-sidebar fixed inset-y-0 left-0 hidden w-80 px-5 py-6 xl:block">
         <Link href="/admin/dashboard" aria-label="AIRA Skill City admin">
           <Logo />
         </Link>
@@ -30,7 +30,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       </aside>
-      <header className="sticky top-0 z-30 border-b border-black/5 bg-white/95 px-5 py-4 backdrop-blur xl:hidden">
+      <header className="skillcity-mobile-header sticky top-0 z-30 px-5 py-4 xl:hidden">
         <Link href="/admin/dashboard" aria-label="AIRA Skill City admin">
           <Logo />
         </Link>
@@ -43,7 +43,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <main className="xl:pl-80">
-        <div className="mx-auto min-h-screen max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">{children}</div>
+        <div className="skillcity-shell-content mx-auto min-h-screen max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">{children}</div>
       </main>
     </div>
   );
