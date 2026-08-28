@@ -1,16 +1,24 @@
 import Link from "next/link";
 import type React from "react";
-import { Building2, CheckCircle2, FileText, Gauge, KeyRound, Settings, ShieldCheck, Users } from "lucide-react";
+import { Building2, CheckCircle2, CreditCard, FileText, Gauge, GraduationCap, KeyRound, ListChecks, PhoneCall, Settings, ShieldCheck, UserCheck, Users } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 
 const nav = [
-  { href: "/admin/dashboard", label: "Command Center", icon: Gauge },
-  { href: "/admin/admission-cell", label: "Admission Cell", icon: FileText },
-  { href: "/admin/access", label: "Student Access", icon: KeyRound },
-  { href: "/admissions/review", label: "Review", icon: CheckCircle2 },
-  { href: "/admissions/payments", label: "Fee", icon: ShieldCheck },
+  { href: "/admin/dashboard", label: "Dashboard", icon: Gauge },
+  { href: "/admissions/action-queue", label: "Action Required", icon: ListChecks },
+  { href: "/admissions/leads", label: "CRM Leads", icon: Users },
+  { href: "/telecaller", label: "Telecallers", icon: PhoneCall },
+  { href: "/counsellor", label: "Counsellors", icon: UserCheck },
+  { href: "/admissions/applications", label: "Applications", icon: FileText },
+  { href: "/admissions/payments", label: "Payments", icon: CreditCard },
+  { href: "/admissions/enrollments", label: "Students", icon: GraduationCap },
   { href: "/admissions/programs", label: "Programs", icon: Building2 },
-  { href: "/admissions/leads", label: "Leads", icon: Users },
+  { href: "/director/batch-management", label: "Batches", icon: GraduationCap },
+  { href: "/trainer/my-batches", label: "Trainers", icon: Users },
+  { href: "/admin/users", label: "Users & Roles", icon: ShieldCheck },
+  { href: "/admin/access", label: "Student Access", icon: KeyRound },
+  { href: "/admissions/reports", label: "Reports", icon: CheckCircle2 },
+  { href: "/admin/admission-cell", label: "Admission Cell", icon: FileText },
   { href: "/admin/settings", label: "Settings", icon: Settings }
 ];
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, ListChecks, ShieldCheck } from "lucide-react";
+import { Building2, KeyRound, ListChecks, ShieldCheck, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
 import { ensureDefaultPipeline } from "@/server/admissions/queries";
@@ -28,6 +28,24 @@ export default async function AdminSettingsPage() {
               <ListChecks className="h-8 w-8 text-brand-red" />
               <h2 className="mt-5 text-2xl font-black text-brand-dark">Pipeline</h2>
               <p className="mt-3 font-semibold leading-7 text-brand-muted">Review the standard acquisition path from new lead to active student.</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/users">
+          <Card className="h-full transition hover:-translate-y-1 hover:shadow-soft">
+            <CardContent className="p-6">
+              <Users className="h-8 w-8 text-brand-red" />
+              <h2 className="mt-5 text-2xl font-black text-brand-dark">Users & Roles</h2>
+              <p className="mt-3 font-semibold leading-7 text-brand-muted">Assign existing roles, deactivate users, and reset access securely.</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/settings/security">
+          <Card className="h-full transition hover:-translate-y-1 hover:shadow-soft">
+            <CardContent className="p-6">
+              <KeyRound className="h-8 w-8 text-brand-red" />
+              <h2 className="mt-5 text-2xl font-black text-brand-dark">Security</h2>
+              <p className="mt-3 font-semibold leading-7 text-brand-muted">Change the admin PIN and keep high privilege access protected.</p>
             </CardContent>
           </Card>
         </Link>
