@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createAttendanceSessionAction, createResourceAction, createStudentConcernAction, createTrainerAnnouncementAction, markAttendanceAction, reviewAssessmentAction, reviewReflectionAction, reviewSubmissionAction } from "@/actions/trainer";
+import { createAttendanceSessionAction, createResourceAction, createStudentConcernAction, createTrainerAnnouncementAction, markAttendanceAction, reviewAssessmentAction, reviewReflectionAction, reviewSubmissionAction, scheduleTrainerClassAction } from "@/actions/trainer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DirectorFormMessage } from "@/features/director/components/director-form-message";
@@ -20,6 +20,31 @@ function Textarea({ name, label, required }: { name: string; label: string; requ
 export function AttendanceSessionForm({ batches }: { batches: Option[] }) {
   const [state, action, pending] = useActionState(createAttendanceSessionAction, initialState);
   return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-3"><Select name="batchId" label="Batch" required>{batches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</Select><Input name="title" label="Class Title" required /><Input name="sessionDate" label="Date and Time" type="datetime-local" required /></div><Textarea name="notes" label="Notes" /><Button disabled={pending}>Create Session</Button></form>;
+}
+
+export function TrainerClassScheduleForm({ batches }: { batches: Option[] }) {
+  const [state, action, pending] = useActionState(scheduleTrainerClassAction, initialState);
+  return (
+    <form action={action} className="space-y-5">
+      <DirectorFormMessage message={state.message} ok={state.ok} />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Select name="batchId" label="Batch" required>{batches.map((batch) => <option key={batch.id} value={batch.id}>{batch.name}</option>)}</Select>
+        <Select name="type" label="Class Type" required>
+          <option value="LIVE_CLASS">Online class</option>
+          <option value="OFFLINE_WORKSHOP">Offline class</option>
+          <option value="MEETING">Hybrid / meeting</option>
+        </Select>
+        <Input name="startsAt" label="Starts At" type="datetime-local" required />
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Input name="title" label="Topic" required />
+        <Input name="endsAt" label="Ends At" type="datetime-local" />
+      </div>
+      <Input name="location" label="Join Link or Venue" placeholder="Google Meet, Zoom, campus room, or centre location" />
+      <Textarea name="description" label="Class Note" />
+      <Button disabled={pending || batches.length === 0}>{pending ? "Scheduling..." : "Schedule Class"}</Button>
+    </form>
+  );
 }
 
 export function AttendanceRecordForm({ sessions, students }: { sessions: Option[]; students: Option[] }) {

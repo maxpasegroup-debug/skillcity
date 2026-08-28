@@ -14,6 +14,16 @@ export const attendanceRecordSchema = z.object({
   note: z.string().optional()
 });
 
+export const trainerClassScheduleSchema = z.object({
+  batchId: z.string().uuid(),
+  title: z.string().min(2).max(180),
+  type: z.enum(["LIVE_CLASS", "OFFLINE_WORKSHOP", "MEETING"]),
+  startsAt: z.string().min(1),
+  endsAt: z.string().optional(),
+  location: z.string().max(240).optional(),
+  description: z.string().max(800).optional()
+});
+
 export const submissionReviewSchema = z.object({
   submissionId: z.string().uuid(),
   status: z.enum(["APPROVED", "REJECTED", "RETURNED"]),

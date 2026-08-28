@@ -44,7 +44,15 @@ export async function getAdminCommandCenter() {
     waitlistPrograms,
     staffUsers,
     programOverview,
-    auditLogs
+    auditLogs,
+    activeBatches,
+    activePrograms,
+    trainers,
+    todaysClasses,
+    pendingSubmissions,
+    attendanceRecords,
+    completedProgress,
+    requiredActivities
   ] = await Promise.all([
     getAdmissionDashboard(),
     prisma.lead.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
@@ -93,8 +101,18 @@ export async function getAdminCommandCenter() {
         }
       }
     }),
-    prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 12, include: { user: true } })
+    prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 12, include: { user: true } }),
+    prisma.batch.count({ where: { status: "ACTIVE" } }),
+    prisma.program.count({ where: { status: "ACTIVE", deletedAt: null } }),
+    prisma.user.count({ where: { deletedAt: null, roles: { some: { role: { name: "Trainer" } } } } }),
+    prisma.calendarEvent.count({ where: { startsAt: { gte: today, lt: tomorrow }, status: { in: ["SCHEDULED", "RESCHEDULED"] } } }),
+    prisma.submission.count({ where: { status: "SUBMITTED" } }),
+    prisma.attendanceRecord.findMany({ where: { session: { sessionDate: { gte: today, lt: tomorrow } } }, select: { status: true } }),
+    prisma.studentProgress.count({ where: { status: "COMPLETED" } }),
+    prisma.activity.count({ where: { required: true } })
   ]);
+
+  const presentToday = attendanceRecords.filter((item) => item.status === "PRESENT" || item.status === "LATE").length;
 
   return {
     admissions,
@@ -120,7 +138,17 @@ export async function getAdminCommandCenter() {
     whatsappMessages,
     staffUsers,
     programOverview,
-    auditLogs
+    auditLogs,
+    academic: {
+      activePrograms,
+      activeBatches,
+      activeStudents,
+      trainers,
+      todaysClasses,
+      attendanceToday: attendanceRecords.length === 0 ? null : Math.round((presentToday / attendanceRecords.length) * 100),
+      pendingSubmissions,
+      progress: requiredActivities === 0 ? 0 : Math.round((completedProgress / requiredActivities) * 100)
+    }
   };
 }
 

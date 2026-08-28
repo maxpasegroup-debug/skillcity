@@ -190,6 +190,73 @@ export async function getStudentJourney(studentId: string) {
   };
 }
 
+export async function getStudentOnboardingHome(studentId: string) {
+  const journey = await getStudentJourney(studentId);
+
+  if (!journey) {
+    return {
+      journey: null,
+      onboardingState: "NO_ENROLLMENT" as const,
+      nextClass: null,
+      attendance: null,
+      pendingSubmissions: 0,
+      todaysTasks: 0
+    };
+  }
+
+  const now = new Date();
+  const [nextClass, attendanceRecords, pendingSubmissions, completedProgress] = await Promise.all([
+    journey.enrollment.batchId
+      ? prisma.calendarEvent.findFirst({
+          where: {
+            batchId: journey.enrollment.batchId,
+            startsAt: { gte: now },
+            status: { in: ["SCHEDULED", "RESCHEDULED"] },
+            type: { in: ["LIVE_CLASS", "OFFLINE_WORKSHOP", "MEETING"] }
+          },
+          orderBy: { startsAt: "asc" },
+          include: { batch: { include: { trainerAssignments: { where: { status: "ACTIVE" }, include: { trainer: true } } } }, program: true }
+        })
+      : null,
+    journey.enrollment.batchId
+      ? prisma.attendanceRecord.findMany({
+          where: { studentId, batchId: journey.enrollment.batchId },
+          select: { status: true }
+        })
+      : [],
+    prisma.submission.count({
+      where: { studentId, status: { in: ["DRAFT", "RETURNED"] } }
+    }),
+    prisma.studentProgress.count({
+      where: { studentId, status: "COMPLETED" }
+    })
+  ]);
+
+  const present = attendanceRecords.filter((item) => item.status === "PRESENT" || item.status === "LATE").length;
+  const attendance = attendanceRecords.length === 0
+    ? null
+    : {
+        total: attendanceRecords.length,
+        attended: present,
+        percent: Math.round((present / attendanceRecords.length) * 100)
+      };
+
+  const onboardingState = !journey.enrollment.batchId
+    ? "BATCH_PENDING"
+    : attendanceRecords.length === 0 && completedProgress === 0
+      ? "ORIENTATION_PENDING"
+      : "ACTIVE";
+
+  return {
+    journey,
+    onboardingState,
+    nextClass,
+    attendance,
+    pendingSubmissions,
+    todaysTasks: journey.today?.activities.filter((activity) => activity.required && activity.progressStatus !== "COMPLETED").length ?? 0
+  };
+}
+
 export async function getStudentDay(studentId: string, dayId: string) {
   const journey = await getStudentJourney(studentId);
 
@@ -235,4 +302,32 @@ export async function getStudentAnnouncements(studentId: string) {
     orderBy: { publishedAt: "desc" },
     take: 5
   });
+}
+
+export async function getStudentCalendar(studentId: string) {
+  const enrollment = await prisma.studentEnrollment.findFirst({
+    where: { studentId, status: "ACTIVE", batchId: { not: null } },
+    orderBy: { startedAt: "desc" },
+    include: { batch: true, program: true }
+  });
+
+  if (!enrollment?.batchId) {
+    return { enrollment, events: [] };
+  }
+
+  const now = new Date();
+  const monthAhead = new Date(now);
+  monthAhead.setDate(monthAhead.getDate() + 30);
+
+  const events = await prisma.calendarEvent.findMany({
+    where: {
+      batchId: enrollment.batchId,
+      startsAt: { gte: now, lte: monthAhead },
+      status: { in: ["SCHEDULED", "RESCHEDULED"] }
+    },
+    orderBy: { startsAt: "asc" },
+    include: { batch: { include: { trainerAssignments: { where: { status: "ACTIVE" }, include: { trainer: true } } } }, program: true }
+  });
+
+  return { enrollment, events };
 }

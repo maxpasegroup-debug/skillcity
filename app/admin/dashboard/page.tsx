@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarCheck, CreditCard, FileText, GraduationCap, ListChecks, PhoneCall, UserCheck, Users } from "lucide-react";
+import { BookOpen, CalendarCheck, ClipboardCheck, CreditCard, FileText, GraduationCap, ListChecks, PhoneCall, TrendingUp, UserCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DirectorMetricCard } from "@/features/director/components/director-metric-card";
@@ -43,6 +43,17 @@ export default async function AdminDashboardPage() {
         <DirectorMetricCard label="Payment Verification" value={data.stats.paymentVerificationPending} icon={ListChecks} />
         <DirectorMetricCard label="Admissions Confirmed" value={data.stats.admissionsConfirmed} icon={GraduationCap} />
         <DirectorMetricCard label="Active Students" value={data.stats.activeStudents} icon={UserCheck} />
+      </section>
+
+      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <DirectorMetricCard label="Active Programs" value={data.academic.activePrograms} icon={BookOpen} />
+        <DirectorMetricCard label="Active Batches" value={data.academic.activeBatches} icon={GraduationCap} />
+        <DirectorMetricCard label="Trainers" value={data.academic.trainers} icon={Users} />
+        <DirectorMetricCard label="Today's Classes" value={data.academic.todaysClasses} icon={CalendarCheck} />
+        <DirectorMetricCard label="Attendance Today" value={data.academic.attendanceToday === null ? "Not started" : `${data.academic.attendanceToday}%`} icon={ClipboardCheck} />
+        <DirectorMetricCard label="Pending Submissions" value={data.academic.pendingSubmissions} icon={FileText} />
+        <DirectorMetricCard label="Academic Progress" value={`${data.academic.progress}%`} icon={TrendingUp} />
+        <DirectorMetricCard label="Batch Pending" value={data.stats.batchAssignmentPending} icon={ListChecks} />
       </section>
 
       <Card>
@@ -90,6 +101,9 @@ export default async function AdminDashboardPage() {
                 { label: "Telecaller OS", href: "/telecaller" },
                 { label: "Counsellor OS", href: "/counsellor" },
                 { label: "Admission Queue", href: "/admissions/action-queue" },
+                { label: "Batch Onboarding", href: "/admissions/enrollments" },
+                { label: "Trainer Calendar", href: "/trainer/calendar" },
+                { label: "Batch Management", href: "/director/batch-management" },
                 { label: "Users & Roles", href: "/admin/users" },
                 { label: "Security Settings", href: "/admin/settings" }
               ].map((item) => (
