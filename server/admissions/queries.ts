@@ -122,6 +122,7 @@ export async function ensureDefaultPipeline() {
     "Application Submitted",
     "Documents Verified",
     "Payment Pending",
+    "Payment Verification Pending",
     "Enrolled",
     "Batch Assigned",
     "Active Student",
@@ -132,20 +133,25 @@ export async function ensureDefaultPipeline() {
     "Admission Confirmed",
     "Account Created",
     "Onboarding",
+    "Batch Assignment Pending",
     "Not Interested",
     "Not Qualified",
     "Withdrawn",
     "On Hold"
   ];
-  await Promise.all(
-    stages.map((name, index) =>
-      prisma.pipelineStage.upsert({
-        where: { slug: name.toLowerCase().replaceAll(" ", "-") },
-        update: { name, order: index + 1, active: true },
-        create: { name, slug: name.toLowerCase().replaceAll(" ", "-"), order: index + 1 }
-      })
-    )
-  );
+  const existingStages = await prisma.pipelineStage.findMany({ select: { slug: true, order: true } });
+  const existingBySlug = new Map(existingStages.map((stage) => [stage.slug, stage]));
+  let nextOrder = existingStages.reduce((max, stage) => Math.max(max, stage.order), 0) + 1;
+
+  for (const name of stages) {
+    const slug = name.toLowerCase().replaceAll(" ", "-");
+    if (existingBySlug.has(slug)) {
+      await prisma.pipelineStage.update({ where: { slug }, data: { name, active: true } });
+    } else {
+      await prisma.pipelineStage.create({ data: { name, slug, order: nextOrder } });
+      nextOrder += 1;
+    }
+  }
   await prisma.leadSource.upsert({ where: { name: "Website" }, update: {}, create: { name: "Website" } });
   return prisma.pipelineStage.findMany({ orderBy: { order: "asc" } });
 }

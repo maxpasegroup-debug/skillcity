@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type React from "react";
-import { BarChart3, Bot, CalendarClock, CheckCircle2, CreditCard, FileCheck2, FileText, Gauge, GraduationCap, MessageSquare, Settings, Users, XCircle, BookOpen, ShieldCheck } from "lucide-react";
+import { BarChart3, Bot, CalendarClock, CheckCircle2, CreditCard, FileCheck2, FileText, Gauge, GraduationCap, ListChecks, MessageSquare, Settings, Users, XCircle, BookOpen, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 
 const nav = [
   { href: "/admissions/dashboard", label: "Dashboard", icon: Gauge },
+  { href: "/admissions/action-queue", label: "Action Queue", icon: ListChecks },
   { href: "/admissions/leads", label: "Leads", icon: Users },
   { href: "/admissions/applications", label: "Applications", icon: FileText },
   { href: "/admissions/review", label: "Review Queue", icon: CheckCircle2 },

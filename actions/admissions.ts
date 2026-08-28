@@ -107,7 +107,7 @@ export async function reviewApplicationAction(_: State, formData: FormData): Pro
       data: {
         pipelineStageId: targetStage?.id ?? application.lead.pipelineStageId,
         status: parsed.data.status === "REJECTED" ? "LOST" : "OPEN",
-        convertedAt: parsed.data.status === "APPROVED" ? new Date() : application.lead.convertedAt
+        convertedAt: application.lead.convertedAt
       }
     });
     await tx.leadActivity.create({
@@ -130,6 +130,7 @@ export async function reviewApplicationAction(_: State, formData: FormData): Pro
   });
 
   revalidatePath("/admissions/dashboard");
+  revalidatePath("/admissions/action-queue");
   revalidatePath("/admissions/applications");
   revalidatePath("/admissions/review");
   revalidatePath("/admissions/approved");
@@ -186,6 +187,12 @@ export async function generateStudentCredentialAction(_: State, formData: FormDa
 
   if (!application) return { ok: false, message: "Application not found." };
   if (application.status !== "APPROVED") return { ok: false, message: "Approve the application before generating login credentials." };
+  const paidInvoice = await prisma.feeInvoice.findFirst({
+    where: { leadId: application.leadId, programId: application.programId, status: "PAID" }
+  });
+  if (application.program.feeType !== "FREE" && !paidInvoice) {
+    return { ok: false, message: "Verify payment before generating student credentials." };
+  }
 
   const existingCredential = await prisma.studentLoginCredential.findUnique({ where: { whatsapp } });
   if (existingCredential && existingCredential.applicationId && existingCredential.applicationId !== application.id) {
@@ -366,11 +373,9 @@ export async function recordPaymentAction(_: State, formData: FormData): Promise
   const parsed = paymentSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check payment details." };
   await prisma.paymentTransaction.create({ data: { ...parsed.data, paidAt: parsed.data.status === "SUCCESS" ? new Date() : null } });
-  if (parsed.data.status === "SUCCESS") {
-    await prisma.feeInvoice.update({ where: { id: parsed.data.invoiceId }, data: { status: "PAID", paidAt: new Date() } });
-  }
   revalidatePath("/admissions/payments");
-  return { ok: true, message: "Payment recorded." };
+  revalidatePath("/admissions/action-queue");
+  return { ok: true, message: "Payment recorded. Verify it before confirming admission." };
 }
 
 export async function createCommissionAction(_: State, formData: FormData): Promise<State> {

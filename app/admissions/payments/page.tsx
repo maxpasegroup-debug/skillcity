@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { ConvertEnrollmentButton } from "@/features/admissions/components/convert-enrollment-button";
+import { Button } from "@/components/ui/button";
 import { InvoiceForm, PaymentForm } from "@/features/admissions/components/admission-forms";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
 import { prisma } from "@/lib/prisma";
@@ -44,11 +45,9 @@ export default async function PaymentsPage() {
               <p className="mt-2 font-bold text-brand-muted">
                 INR {invoice.total} - {invoice.lead?.name ?? invoice.student?.name ?? "Unlinked"}
               </p>
-              {invoice.status === "PAID" && invoice.lead && invoice.batchId ? (
-                <div className="mt-4">
-                  <ConvertEnrollmentButton invoiceId={invoice.id} />
-                </div>
-              ) : null}
+              <Button asChild variant="secondary" className="mt-4">
+                <Link href="/admissions/action-queue">Open admission action queue</Link>
+              </Button>
             </CardContent>
           </Card>
         ))}

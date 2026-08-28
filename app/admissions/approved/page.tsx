@@ -1,8 +1,9 @@
+import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
-import { GenerateStudentCredentialForm } from "@/features/admissions/components/credential-forms";
 
 export default async function ApprovedAdmissionsPage() {
   const applications = await prisma.admissionApplication.findMany({
@@ -37,7 +38,9 @@ export default async function ApprovedAdmissionsPage() {
                   <p>Login: {credential ? `${credential.status}${credential.mustResetPin ? " - PIN reset required" : ""}` : "Not generated"}</p>
                   <p>Last message: {message ? `${message.status} through ${message.provider ?? "provider"}` : "No WhatsApp message yet"}</p>
                 </div>
-                <GenerateStudentCredentialForm applicationId={application.id} whatsapp={whatsapp} hasCredential={Boolean(credential)} />
+                <Button asChild className="mt-5 w-full">
+                  <Link href={`/admissions/applications/${application.id}`}>Open payment and activation flow</Link>
+                </Button>
               </CardContent>
             </Card>
           );
