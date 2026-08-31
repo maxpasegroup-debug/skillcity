@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, CalendarCheck, ClipboardCheck, CreditCard, FileText, GraduationCap, ListChecks, PhoneCall, TrendingUp, UserCheck, Users } from "lucide-react";
+import { BookOpen, BriefcaseBusiness, CalendarCheck, ClipboardCheck, CreditCard, FileText, GraduationCap, ListChecks, PhoneCall, TrendingUp, UserCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DirectorMetricCard } from "@/features/director/components/director-metric-card";
@@ -45,6 +45,8 @@ export default async function AdminDashboardPage() {
         <DirectorMetricCard label="Payment Verification" value={data.stats.paymentVerificationPending} icon={ListChecks} />
         <DirectorMetricCard label="Admissions Confirmed" value={data.stats.admissionsConfirmed} icon={GraduationCap} />
         <DirectorMetricCard label="Active Students" value={data.stats.activeStudents} icon={UserCheck} />
+        <DirectorMetricCard label="Career Applications" value={data.careers.stats.total} icon={BriefcaseBusiness} />
+        <DirectorMetricCard label="Recruitment Pending" value={data.careers.stats.screeningPending + data.careers.stats.interviewPending} icon={BriefcaseBusiness} />
       </section>
 
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -106,6 +108,7 @@ export default async function AdminDashboardPage() {
                 { label: "Batch Onboarding", href: "/admissions/enrollments" },
                 { label: "Trainer Calendar", href: "/trainer/calendar" },
                 { label: "Admin Follow-ups", href: "/admin/follow-ups" },
+                { label: "Careers / Recruitment", href: "/admin/careers" },
                 { label: "Batch Management", href: "/director/batch-management" },
                 { label: "Users & Roles", href: "/admin/users" },
                 { label: "Security Settings", href: "/admin/settings" }
@@ -154,6 +157,36 @@ export default async function AdminDashboardPage() {
                 </div>
               ))}
               {data.programOverview.length === 0 ? <p className="font-semibold text-brand-muted">No public programs configured.</p> : null}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-black text-brand-dark">Recruitment Overview</h2>
+            <div className="mt-5 space-y-3">
+              {data.careers.byRole.map((item) => (
+                <Link key={item.roleTitle} href="/admin/careers" className="block rounded-lg bg-white p-4 transition hover:-translate-y-1 hover:shadow-soft">
+                  <p className="font-black text-brand-dark">{item.roleTitle}</p>
+                  <p className="mt-1 text-sm font-bold text-brand-muted">{item._count} career applications</p>
+                </Link>
+              ))}
+              {data.careers.byRole.length === 0 ? <p className="font-semibold text-brand-muted">No career applications yet.</p> : null}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-black text-brand-dark">RM Development Status</h2>
+            <div className="mt-5 space-y-3">
+              {data.rmPerformance.slice(0, 6).map((item) => (
+                <Link key={item.development.id} href="/admin/careers" className="block rounded-lg bg-white p-4 transition hover:-translate-y-1 hover:shadow-soft">
+                  <p className="font-black text-brand-dark">{item.development.employee?.user.name ?? item.development.application.candidateName}</p>
+                  <p className="mt-1 text-sm font-bold text-brand-muted">{item.performance.actual}/{item.performance.target} admissions - {item.performance.performanceStatus.replaceAll("_", " ")}</p>
+                </Link>
+              ))}
+              {data.rmPerformance.length === 0 ? <p className="font-semibold text-brand-muted">No RM development records yet.</p> : null}
             </div>
           </CardContent>
         </Card>

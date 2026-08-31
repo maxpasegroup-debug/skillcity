@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/server/auth/session";
 
 const admissionRoles = new Set(["Admission", "Director", "Admin"]);
-const bdmRoles = new Set(["Business Development", "Director", "Admin"]);
+const bdmRoles = new Set(["Business Development", "Relationship Manager", "Director", "Admin"]);
 const telecallerRoles = new Set(["Telecaller", "Admission", "Director", "Admin"]);
 const counsellorRoles = new Set(["Counsellor", "Admission", "Director", "Admin"]);
 

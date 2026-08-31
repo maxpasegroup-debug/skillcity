@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type React from "react";
-import { Activity, Bell, Building2, CheckCircle2, CreditCard, FileText, Gauge, GraduationCap, KeyRound, ListChecks, PhoneCall, Settings, ShieldCheck, UserCheck, Users } from "lucide-react";
+import { Activity, Bell, BriefcaseBusiness, Building2, CheckCircle2, CreditCard, FileText, Gauge, GraduationCap, KeyRound, ListChecks, PhoneCall, Settings, ShieldCheck, UserCheck, Users } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 
 const nav = [
@@ -17,6 +17,7 @@ const nav = [
   { href: "/trainer/my-batches", label: "Trainers", icon: Users },
   { href: "/admin/academic-health", label: "Academic Health", icon: Activity },
   { href: "/admin/follow-ups", label: "Follow-ups", icon: Bell },
+  { href: "/admin/careers", label: "Careers / Recruitment", icon: BriefcaseBusiness },
   { href: "/admin/users", label: "Users & Roles", icon: ShieldCheck },
   { href: "/admin/access", label: "Student Access", icon: KeyRound },
   { href: "/admissions/reports", label: "Reports", icon: CheckCircle2 },

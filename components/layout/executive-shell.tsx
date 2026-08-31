@@ -11,7 +11,7 @@ const nav = [
   { href: "/executive/students", label: "Students", icon: Users },
   { href: "/executive/admissions", label: "Admissions", icon: BriefcaseBusiness },
   { href: "/executive/finance", label: "Finance", icon: CreditCard },
-  { href: "/executive/hr", label: "HR", icon: Network },
+  { href: "/executive/hr", label: "HR / Recruitment", icon: Network },
   { href: "/executive/departments", label: "Departments", icon: Landmark },
   { href: "/executive/automation-center", label: "Automation Center", icon: Workflow },
   { href: "/executive/ai-command-center", label: "AI Command Center", icon: Bot },

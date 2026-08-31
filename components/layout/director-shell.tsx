@@ -3,6 +3,7 @@ import type React from "react";
 import {
   BarChart3,
   Bot,
+  BriefcaseBusiness,
   CalendarDays,
   ClipboardList,
   Gauge,
@@ -24,6 +25,7 @@ const navigation = [
   { href: "/director/batch-management", label: "Batch Management", icon: ClipboardList },
   { href: "/director/trainer-assignment", label: "Trainer Assignment", icon: Users },
   { href: "/director/communications", label: "Communications", icon: Megaphone },
+  { href: "/director/careers", label: "Careers", icon: BriefcaseBusiness },
   { href: "/director/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/director/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/director/tara", label: "Tara AI", icon: Bot },

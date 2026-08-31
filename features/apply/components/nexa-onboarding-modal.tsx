@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { launchApplicationPrograms, type LaunchApplicationProgramSlug } from "@/features/apply/programs";
 import { NexaOrb } from "./nexa-orb";
 import {
+  CareerOpportunitiesStep,
   CounsellingStep,
   DetailStep,
   EnquiryStep,
@@ -120,6 +121,10 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
       return;
     }
     setClientMessage("");
+    if (currentState === "intent" && values.intent === "career") {
+      setCurrentState("career");
+      return;
+    }
     setCurrentState(getNextState(currentState, values.counselled));
   }
 
@@ -186,8 +191,8 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
 
                 <div className="rounded-lg border border-white/10 bg-white/8 p-5 backdrop-blur">
                   <p className="text-xs font-black uppercase tracking-[0.2em] text-brand-gold">Selected path</p>
-                  <p className="mt-2 text-2xl font-black">{programSelectedOnce ? selectedDisplay.label : "Waiting for you"}</p>
-                  <p className="mt-2 text-sm font-semibold leading-6 text-white/62">{programSelectedOnce ? selectedDisplay.line : "Choose what you want to build."}</p>
+                  <p className="mt-2 text-2xl font-black">{values.intent === "career" ? "CAREERS" : programSelectedOnce ? selectedDisplay.label : "Waiting for you"}</p>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-white/62">{values.intent === "career" ? "Explore work and growth paths." : programSelectedOnce ? selectedDisplay.line : "Choose what you want to build."}</p>
                   <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full rounded-full bg-brand-red transition-all duration-300" style={{ width: `${progress}%` }} />
                   </div>
@@ -217,6 +222,7 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
 
                 {applicationState.ok ? <SubmittedStep programSlug={selectedProgramSlug} applicationId={applicationState.applicationId} message={applicationState.message} /> : null}
                 {!applicationState.ok && currentState === "intent" ? <IntentStep selectedIntent={values.intent} onSelect={(intent) => updateValue("intent", intent)} /> : null}
+                {!applicationState.ok && currentState === "career" ? <CareerOpportunitiesStep /> : null}
                 {!applicationState.ok && currentState === "program" ? <ProgramStep selectedProgramSlug={selectedProgramSlug} selectedOnce={programSelectedOnce} onSelect={selectProgram} /> : null}
                 {!applicationState.ok && currentState === "name" ? <DetailStep question="What's your full name?" label="Full Name" value={values.name} onChange={(value) => updateValue("name", value)} autoComplete="name" /> : null}
                 {!applicationState.ok && currentState === "whatsapp" ? <DetailStep question="What's the best WhatsApp number to reach you?" label="WhatsApp Number" value={values.whatsapp} onChange={(value) => updateValue("whatsapp", value)} autoComplete="tel" /> : null}
@@ -235,14 +241,14 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
                         <ArrowLeft className="h-5 w-5" />
                         Back
                       </Button>
-                      <TalkToAdmissionsLink />
+                      {currentState === "career" ? null : <TalkToAdmissionsLink />}
                     </div>
                     {currentState === "review" ? (
                       <Button type="button" onClick={submitApplication} disabled={pending} className="h-14 rounded-full px-8">
                         {pending ? "Sending..." : "Send to Admission Cell"}
                         <ArrowRight className="h-5 w-5" />
                       </Button>
-                    ) : currentState === "enquiry" ? null : (
+                    ) : currentState === "enquiry" || currentState === "career" ? null : (
                       <Button type="button" className="h-14 rounded-full px-8" onClick={nextStep}>
                         Continue
                         <ArrowRight className="h-5 w-5" />
@@ -271,6 +277,7 @@ function getNextState(currentState: OnboardingState, counselled: string): Onboar
 }
 
 function getPreviousState(currentState: OnboardingState): OnboardingState {
+  if (currentState === "career") return "intent";
   if (currentState === "program") return "intent";
   if (currentState === "name") return "program";
   if (currentState === "whatsapp") return "name";

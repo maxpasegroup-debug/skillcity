@@ -11,6 +11,9 @@ export function Navbar() {
           <Logo />
         </Link>
         <div className="flex items-center gap-3">
+          <Link href="/careers" className="hidden text-sm font-black text-brand-muted transition hover:text-brand-red md:inline-flex">
+            Careers
+          </Link>
           <Button asChild variant="secondary" className="hidden min-w-24 sm:inline-flex">
             <Link href="/login">Login</Link>
           </Button>

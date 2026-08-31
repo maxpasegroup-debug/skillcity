@@ -618,6 +618,38 @@ enum WhatsAppMessageStatus {
   FAILED
 }
 
+enum CareerRecruitmentStage {
+  NEW_APPLICATION
+  SCREENING
+  SHORTLISTED
+  INTERVIEW_SCHEDULED
+  INTERVIEW_COMPLETED
+  SELECTED
+  OFFER_SENT
+  OFFER_ACCEPTED
+  JOINED
+  TRAINING
+  ACTIVE
+  REJECTED
+  ON_HOLD
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum RMDevelopmentStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  EVALUATION_PENDING
+  ELIGIBLE
+  NOT_ELIGIBLE
+  COMPLETED
+}
+
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   name         String     @db.VarChar(120)
@@ -707,6 +739,11 @@ model User {
   alumniProfile AlumniProfile?
   missionCompletions MissionCompletion[]
   employeeProfile Employee?
+  careerApplicationsReviewed CareerApplication[] @relation("CareerApplicationReviewer")
+  careerApplicationsAssigned CareerApplication[] @relation("CareerApplicationAssignedHr")
+  careerInterviews CareerInterview[] @relation("CareerInterviewInterviewer")
+  careerActivities CareerApplicationActivity[] @relation("CareerActivityActor")
+  rmEvaluations RelationshipManagerDevelopment[] @relation("RMEvaluationActor")
   activationProfile StudentActivationProfile?
   executiveReports ExecutiveReport[] @relation("ExecutiveReportCreator")
   executiveInsights ExecutiveInsight[] @relation("ExecutiveInsightOwner")
@@ -2054,10 +2091,129 @@ model Employee {
   institution Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
   campus Campus? @relation(fields: [campusId], references: [id], onDelete: SetNull)
   department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  careerApplications CareerApplication[]
+  rmDevelopmentRecords RelationshipManagerDevelopment[]
 
   @@index([institutionId, status])
   @@index([campusId])
   @@index([departmentId])
+}
+
+model CareerApplication {
+  id                String                 @id @default(uuid()) @db.Uuid
+  candidateName     String                 @db.VarChar(160)
+  mobile            String                 @db.VarChar(40)
+  whatsapp          String                 @db.VarChar(40)
+  email             String                 @db.VarChar(255)
+  district          String                 @db.VarChar(120)
+  roleSlug          String                 @db.VarChar(140)
+  roleTitle         String                 @db.VarChar(160)
+  categorySlug      String                 @db.VarChar(140)
+  categoryTitle     String                 @db.VarChar(160)
+  education         String                 @db.VarChar(180)
+  experience        String?                @db.Text
+  currentStatus     String                 @db.VarChar(180)
+  relevantSkills    String?                @db.Text
+  resumeUrl         String?                @db.VarChar(600)
+  profileUrl        String?                @db.VarChar(600)
+  shortIntro        String                 @db.Text
+  availability      String                 @db.VarChar(120)
+  preferredLocation String                 @db.VarChar(120)
+  consentAt         DateTime
+  stage             CareerRecruitmentStage @default(NEW_APPLICATION)
+  reviewedById      String?                @db.Uuid
+  assignedHrId      String?                @db.Uuid
+  employeeId        String?                @db.Uuid
+  offerStatus       String?                @db.VarChar(120)
+  joiningStatus     String?                @db.VarChar(120)
+  source            String                 @default("PUBLIC_CAREERS") @db.VarChar(120)
+  metadata          Json?
+  submittedAt       DateTime               @default(now())
+  reviewedAt        DateTime?
+  joinedAt          DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  reviewedBy User? @relation("CareerApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  assignedHr User? @relation("CareerApplicationAssignedHr", fields: [assignedHrId], references: [id], onDelete: SetNull)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  interviews CareerInterview[]
+  activities CareerApplicationActivity[]
+  rmDevelopment RelationshipManagerDevelopment?
+
+  @@index([stage, submittedAt])
+  @@index([roleSlug, stage])
+  @@index([categorySlug, stage])
+  @@index([district])
+  @@index([mobile])
+  @@index([whatsapp])
+  @@index([email])
+}
+
+model CareerInterview {
+  id            String          @id @default(uuid()) @db.Uuid
+  applicationId String          @db.Uuid
+  interviewerId String?         @db.Uuid
+  scheduledAt   DateTime
+  mode          String          @db.VarChar(80)
+  meetingLink   String?         @db.VarChar(600)
+  status        InterviewStatus @default(SCHEDULED)
+  result        String?         @db.VarChar(80)
+  feedback      String?         @db.Text
+  notes         String?         @db.Text
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  application CareerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  interviewer User? @relation("CareerInterviewInterviewer", fields: [interviewerId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId])
+  @@index([interviewerId, scheduledAt])
+  @@index([status, scheduledAt])
+}
+
+model CareerApplicationActivity {
+  id            String   @id @default(uuid()) @db.Uuid
+  applicationId String   @db.Uuid
+  actorId       String?  @db.Uuid
+  action        String   @db.VarChar(120)
+  note          String?  @db.Text
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  application CareerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  actor User? @relation("CareerActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, createdAt])
+  @@index([actorId])
+  @@index([action])
+}
+
+model RelationshipManagerDevelopment {
+  id                    String              @id @default(uuid()) @db.Uuid
+  applicationId          String              @unique @db.Uuid
+  employeeId             String?             @db.Uuid
+  targetAdmissions       Int                 @default(120)
+  admissionsGenerated    Int                 @default(0)
+  developmentStart       DateTime?
+  developmentEnd         DateTime?
+  status                 RMDevelopmentStatus @default(NOT_STARTED)
+  evaluationNotes        String?             @db.Text
+  evaluationById         String?             @db.Uuid
+  finalEvaluationAt      DateTime?
+  finalDecision          String?             @db.VarChar(180)
+  checkpointNotes        Json?
+  franchiseEligibleAt    DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  application CareerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  evaluationBy User? @relation("RMEvaluationActor", fields: [evaluationById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId])
+  @@index([evaluationById])
+  @@index([status])
 }
 
 model AutomationRule {

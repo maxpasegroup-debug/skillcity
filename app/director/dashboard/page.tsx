@@ -2,6 +2,7 @@ import {
   Activity,
   BarChart3,
   Bell,
+  BriefcaseBusiness,
   CalendarClock,
   CheckCircle2,
   ClipboardCheck,
@@ -15,10 +16,12 @@ import { Button } from "@/components/ui/button";
 import { DirectorMetricCard } from "@/features/director/components/director-metric-card";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
 import { getDirectorDashboard } from "@/server/director/queries";
+import { getRecruitmentOverview } from "@/server/careers/queries";
 import Link from "next/link";
 
 export default async function DirectorDashboardPage() {
   const dashboard = await getDirectorDashboard();
+  const careers = await getRecruitmentOverview();
 
   return (
     <div className="space-y-10">
@@ -39,6 +42,8 @@ export default async function DirectorDashboardPage() {
         <DirectorMetricCard label="Student Completion %" value={`${dashboard.stats.studentCompletion}%`} icon={BarChart3} />
         <DirectorMetricCard label="Journey Health" value={`${dashboard.stats.journeyHealth}%`} icon={HeartPulse} />
         <DirectorMetricCard label="Attendance %" value={`${dashboard.stats.attendance}%`} icon={CalendarClock} />
+        <DirectorMetricCard label="Career Applications" value={careers.stats.total} icon={BriefcaseBusiness} />
+        <DirectorMetricCard label="Selected Candidates" value={careers.stats.selected} icon={BriefcaseBusiness} />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
@@ -66,6 +71,7 @@ export default async function DirectorDashboardPage() {
               <Button asChild size="lg"><Link href="/director/programs">Create Program</Link></Button>
               <Button asChild size="lg" variant="secondary"><Link href="/director/journey-planner">Plan a Day</Link></Button>
               <Button asChild size="lg" variant="secondary"><Link href="/director/communications">Send Announcement</Link></Button>
+              <Button asChild size="lg" variant="secondary"><Link href="/director/careers">Recruitment Status</Link></Button>
             </div>
           </CardContent>
         </Card>

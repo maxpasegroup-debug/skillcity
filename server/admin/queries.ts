@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAdmissionDashboard, ensureDefaultPipeline } from "@/server/admissions/queries";
+import { getRecruitmentOverview } from "@/server/careers/queries";
+import { getRMPerformanceManagement } from "@/server/careers/rm-performance";
 import { getCurrentUser } from "@/server/auth/session";
 
 const adminRoles = new Set(["Admin", "Director"]);
@@ -89,7 +91,9 @@ export async function getAdminCommandCenter() {
     overdueTasks,
     batchAcademicReports,
     academicHealthStudents,
-    operationalFollowUps
+    operationalFollowUps,
+    careers,
+    rmPerformance
   ] = await Promise.all([
     getAdmissionDashboard(),
     prisma.lead.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
@@ -178,7 +182,9 @@ export async function getAdminCommandCenter() {
         }
       }
     }),
-    prisma.communicationLog.count({ where: { subject: "Academic follow-up", status: { in: ["DRAFT", "SCHEDULED"] } } })
+    prisma.communicationLog.count({ where: { subject: "Academic follow-up", status: { in: ["DRAFT", "SCHEDULED"] } } }),
+    getRecruitmentOverview(),
+    getRMPerformanceManagement()
   ]);
 
   const presentToday = attendanceRecords.filter((item) => item.status === "PRESENT" || item.status === "LATE").length;
@@ -223,7 +229,9 @@ export async function getAdminCommandCenter() {
     academicHealthSummary: {
       needingAttention: academicHealthStudents.filter(studentAttentionReasons).length
     },
-    batchAcademicReports
+    batchAcademicReports,
+    careers,
+    rmPerformance
   };
 }
 

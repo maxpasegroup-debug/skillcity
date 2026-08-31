@@ -1,12 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import type React from "react";
-import { ArrowRight, Bot, CheckCircle2, Code2, LineChart, MessageCircle, Rocket } from "lucide-react";
+import { ArrowRight, Bot, BriefcaseBusiness, CheckCircle2, Code2, LineChart, MessageCircle, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buildAdmissionsWhatsAppUrl } from "@/config/admissions";
+import { careerCategories } from "@/features/careers/catalog";
 import { launchApplicationPrograms, type LaunchApplicationProgramSlug } from "@/features/apply/programs";
 
-export type IntentId = "business" | "income" | "own" | "exploring";
+export type IntentId = "business" | "income" | "own" | "career" | "exploring";
 export type CounsellingAnswer = "YES" | "NO" | "";
 
 export type FormValues = {
@@ -27,12 +29,13 @@ export const initialApplicationValues: FormValues = {
   counselled: ""
 };
 
-export type OnboardingState = "intent" | "program" | "name" | "whatsapp" | "city" | "email" | "counselling" | "enquiry" | "review";
+export type OnboardingState = "intent" | "career" | "program" | "name" | "whatsapp" | "city" | "email" | "counselling" | "enquiry" | "review";
 
 export const progressStages = ["Welcome", "Your Path", "Your Details", "Counselling", "Application"] as const;
 
 export function getProgressIndex(state: OnboardingState) {
   if (state === "intent") return 0;
+  if (state === "career") return 1;
   if (state === "program") return 1;
   if (state === "name" || state === "whatsapp" || state === "city" || state === "email") return 2;
   if (state === "counselling" || state === "enquiry") return 3;
@@ -59,8 +62,14 @@ export const intentOptions = [
     response: "That's exactly what we're here for. Let's find your path."
   },
   {
-    id: "exploring",
+    id: "career",
     number: "04",
+    label: "I want to build my career",
+    response: "Great. Let me show you the career opportunities at AIRA Skill City."
+  },
+  {
+    id: "exploring",
+    number: "05",
     label: "I'm exploring my options",
     response: "No problem. I'll help you understand the options first."
   }
@@ -206,6 +215,43 @@ export function ProgramStep({ selectedProgramSlug, selectedOnce, onSelect }: { s
           );
         })}
       </div>
+    </section>
+  );
+}
+
+export function CareerOpportunitiesStep() {
+  return (
+    <section>
+      <div className="space-y-5">
+        <NexaLine tone="warm">Great. Let me show you the career opportunities at AIRA Skill City.</NexaLine>
+        <NexaLine>Career opportunities</NexaLine>
+      </div>
+
+      <div className="mt-8 grid gap-3">
+        {careerCategories.map((category) => {
+          const Icon = category.icon;
+          return (
+            <Link key={category.slug} href="/careers" className="group grid min-h-24 grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg border border-black/8 bg-white p-4 text-left text-brand-dark transition hover:-translate-y-1 hover:border-brand-gold/70 hover:shadow-soft">
+              <span className="text-sm font-black text-brand-red">{category.number}</span>
+              <span>
+                <span className="flex items-center gap-3 text-lg font-black leading-tight">
+                  <Icon className="h-5 w-5 text-brand-red" />
+                  {category.title}
+                </span>
+                <span className="mt-2 block text-sm font-semibold leading-6 text-brand-muted">{category.roles.map((role) => role.title).join(", ")}</span>
+              </span>
+              <ArrowRight className="h-5 w-5 text-brand-red transition group-hover:translate-x-1" />
+            </Link>
+          );
+        })}
+      </div>
+
+      <Button asChild className="mt-7 rounded-full" size="lg">
+        <Link href="/careers">
+          Open Careers
+          <BriefcaseBusiness className="h-5 w-5" />
+        </Link>
+      </Button>
     </section>
   );
 }
