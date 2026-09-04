@@ -106,6 +106,20 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
     setClientMessage("");
   }
 
+  function selectIntent(intent: FormValues["intent"]) {
+    if (!intent) return;
+    updateValue("intent", intent);
+    setClientMessage("");
+
+    if (intent === "career") {
+      setCurrentState("career");
+      return;
+    }
+
+    selectProgram(intent);
+    setCurrentState("program");
+  }
+
   function canContinue() {
     if (currentState === "name") return values.name.trim().length >= 2;
     if (currentState === "explore") return Boolean(values.intent);
@@ -233,7 +247,7 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
 
                 {applicationState.ok ? <SubmittedStep programSlug={selectedProgramSlug} applicationId={applicationState.applicationId} message={applicationState.message} /> : null}
                 {!applicationState.ok && currentState === "name" ? <NameStep value={values.name} onChange={(value) => updateValue("name", value)} /> : null}
-                {!applicationState.ok && currentState === "explore" ? <IntentStep selectedIntent={values.intent} onSelect={(intent) => updateValue("intent", intent)} /> : null}
+                {!applicationState.ok && currentState === "explore" ? <IntentStep selectedIntent={values.intent} onSelect={selectIntent} /> : null}
                 {!applicationState.ok && currentState === "career" ? <CareerOpportunitiesStep /> : null}
                 {!applicationState.ok && currentState === "program" ? <ProgramStep selectedProgramSlug={selectedProgramSlug} selectedOnce={programSelectedOnce} onSelect={selectProgram} /> : null}
                 {!applicationState.ok && currentState === "whatsapp" ? <DetailStep question="What's the best WhatsApp number to reach you?" label="WhatsApp Number" value={values.whatsapp} onChange={(value) => updateValue("whatsapp", value)} autoComplete="tel" /> : null}

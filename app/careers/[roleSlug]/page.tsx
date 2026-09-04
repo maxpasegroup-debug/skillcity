@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
-import { getCareerRole } from "@/features/careers/catalog";
+import { getCareerRole, isCareerRoleOpen } from "@/features/careers/catalog";
 import { buildAdmissionsWhatsAppUrl } from "@/config/admissions";
 
 type Props = { params: Promise<{ roleSlug: string }> };
@@ -22,6 +22,7 @@ export default async function CareerRolePage({ params }: Props) {
   const role = getCareerRole(roleSlug);
   if (!role) notFound();
   const isRelationshipManager = role.slug === "relationship-manager";
+  const isOpen = isCareerRoleOpen(role.slug);
 
   return (
     <main className="skillcity-shell-bg min-h-screen text-brand-dark">
@@ -32,12 +33,16 @@ export default async function CareerRolePage({ params }: Props) {
           <h1 className="mt-5 max-w-4xl text-5xl font-black uppercase leading-none sm:text-7xl">{role.title}</h1>
           <p className="mt-6 max-w-3xl text-xl font-semibold leading-8 text-white/68">{role.intro}</p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" className="rounded-full">
-              <Link href={`/careers/${role.slug}/apply`}>
-                Apply for this role
-                <ArrowRight className="h-5 w-5" />
-              </Link>
-            </Button>
+            {isOpen ? (
+              <Button asChild size="lg" className="rounded-full">
+                <Link href={`/careers/${role.slug}/apply`}>
+                  Apply for this role
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              </Button>
+            ) : (
+              <Button size="lg" disabled className="rounded-full">Opening later</Button>
+            )}
             <Button asChild size="lg" variant="secondary" className="rounded-full border-white/15 bg-white/10 text-white hover:bg-white hover:text-brand-dark">
               <a href={buildAdmissionsWhatsAppUrl(`Hi AIRA Skill City, I want to know more about the ${role.title} career opportunity.`)} target="_blank" rel="noreferrer">
                 Talk to AIRA Skill City
@@ -73,9 +78,13 @@ export default async function CareerRolePage({ params }: Props) {
               <CardContent className="p-6">
                 <p className="text-sm font-black uppercase text-brand-red">Application</p>
                 <p className="mt-3 font-semibold leading-7 text-brand-muted">Your application goes to the dedicated HR recruitment workflow, not student admissions.</p>
-                <Button asChild className="mt-5 w-full rounded-full">
-                  <Link href={`/careers/${role.slug}/apply`}>Apply for this role</Link>
-                </Button>
+                {isOpen ? (
+                  <Button asChild className="mt-5 w-full rounded-full">
+                    <Link href={`/careers/${role.slug}/apply`}>Apply for this role</Link>
+                  </Button>
+                ) : (
+                  <Button disabled className="mt-5 w-full rounded-full">Opening later</Button>
+                )}
               </CardContent>
             </Card>
           </aside>

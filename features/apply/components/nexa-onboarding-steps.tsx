@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import type React from "react";
-import { ArrowRight, Bot, BrainCircuit, BriefcaseBusiness, CheckCircle2, MessageCircle, Rocket } from "lucide-react";
+import { ArrowRight, Bot, BrainCircuit, CheckCircle2, Clock3, Lock, MessageCircle, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buildAdmissionsWhatsAppUrl } from "@/config/admissions";
-import { careerCategories, getCareerRole } from "@/features/careers/catalog";
+import { careerCategories, isCareerRoleOpen } from "@/features/careers/catalog";
 import { nexaProgramOptions, type LaunchApplicationProgramSlug } from "@/features/apply/programs";
 
 export type IntentId = "startup-skool" | "aira-labs" | "career";
@@ -149,36 +149,26 @@ export function IntentStep({ selectedIntent, onSelect }: { selectedIntent: Inten
         {selected ? <NexaLine tone="warm">{selected.response}</NexaLine> : null}
       </div>
 
-      <div className="mt-8 grid gap-3">
+      <div className="mt-8 flex flex-wrap gap-3">
         {intentOptions.map((option) => {
           const active = option.id === selectedIntent;
-          const href = getExploreHref(option.id);
           return (
-            <Link
+            <button
               key={option.id}
-              href={href}
+              type="button"
               onClick={() => onSelect(option.id)}
-              className={`grid min-h-20 grid-cols-[auto_1fr] items-center gap-4 rounded-lg border p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-brand-gold/70 hover:shadow-soft ${
+              className={`inline-flex min-h-14 items-center gap-3 rounded-full border px-5 py-3 text-left transition duration-300 hover:-translate-y-0.5 hover:border-brand-gold/70 hover:shadow-soft ${
                 active ? "border-brand-red bg-brand-dark text-white shadow-[0_24px_70px_rgba(235,0,27,0.18)]" : "border-black/8 bg-white text-brand-dark"
               }`}
             >
               <span className={`text-sm font-black ${active ? "text-brand-gold" : "text-brand-red"}`}>{option.number}</span>
-              <span>
-                <span className="block text-lg font-black leading-tight">{option.label}</span>
-                <span className={`mt-1 block text-sm font-semibold leading-6 ${active ? "text-white/72" : "text-brand-muted"}`}>{option.response}</span>
-              </span>
-            </Link>
+              <span className="text-base font-black leading-tight">{option.label}</span>
+            </button>
           );
         })}
       </div>
     </section>
   );
-}
-
-function getExploreHref(intent: IntentId) {
-  if (intent === "startup-skool") return "/programs/startup-skool";
-  if (intent === "aira-labs") return "/programs/aira-labs";
-  return "/careers";
 }
 
 export function NameStep({ value, onChange }: { value: string; onChange: (value: string) => void }) {
@@ -189,9 +179,7 @@ export function NameStep({ value, onChange }: { value: string; onChange: (value:
         <NexaLine delay="delay-300">I&apos;ll help you find the right path at AIRA Skill City.</NexaLine>
         <NexaLine>What should I call you?</NexaLine>
       </div>
-      <div className="mt-9 max-w-xl">
-        <TextInput label="Your Name" value={value} onChange={onChange} autoComplete="name" required />
-      </div>
+      <UserReplyInput label="Your Name" placeholder="Type your name..." value={value} onChange={onChange} autoComplete="name" required />
     </section>
   );
 }
@@ -239,53 +227,56 @@ export function ProgramStep({ selectedProgramSlug, selectedOnce, onSelect }: { s
 }
 
 export function CareerOpportunitiesStep() {
-  const academicAdvisor = getCareerRole("academic-advisor");
-
   return (
     <section>
       <div className="space-y-5">
-        <NexaLine tone="warm">Great. Let me show you the career opportunities at AIRA Skill City.</NexaLine>
-        <NexaLine>Career opportunities</NexaLine>
+        <NexaLine tone="warm">Great. I&apos;ll keep this inside our chat.</NexaLine>
+        <NexaLine>Here are the vacancy categories. Only open positions are active right now.</NexaLine>
       </div>
 
-      <div className="mt-8 grid gap-3">
-        {academicAdvisor ? (
-          <Link href="/careers/academic-advisor" className="group grid min-h-24 grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg border border-brand-red bg-brand-dark p-4 text-left text-white shadow-[0_24px_70px_rgba(235,0,27,0.18)] transition hover:-translate-y-1 hover:border-brand-gold/70">
-            <span className="text-sm font-black text-brand-gold">01</span>
-            <span>
-              <span className="flex items-center gap-3 text-lg font-black leading-tight">
-                <BriefcaseBusiness className="h-5 w-5 text-brand-gold" />
-                {academicAdvisor.title}
-              </span>
-              <span className="mt-2 block text-sm font-semibold leading-6 text-white/72">First available position in Career Hub.</span>
-            </span>
-            <ArrowRight className="h-5 w-5 text-brand-gold transition group-hover:translate-x-1" />
-          </Link>
-        ) : null}
+      <div className="mt-8 grid gap-4">
         {careerCategories.map((category) => {
           const Icon = category.icon;
           return (
-            <Link key={category.slug} href="/careers" className="group grid min-h-24 grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg border border-black/8 bg-white p-4 text-left text-brand-dark transition hover:-translate-y-1 hover:border-brand-gold/70 hover:shadow-soft">
-              <span className="text-sm font-black text-brand-red">{category.number}</span>
-              <span>
-                <span className="flex items-center gap-3 text-lg font-black leading-tight">
-                  <Icon className="h-5 w-5 text-brand-red" />
-                  {category.title}
+            <div key={category.slug} className="rounded-2xl border border-black/8 bg-white p-4 shadow-[0_18px_46px_rgba(16,16,20,0.06)]">
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-red/10 text-brand-red">
+                  <Icon className="h-5 w-5" />
                 </span>
-                <span className="mt-2 block text-sm font-semibold leading-6 text-brand-muted">{category.roles.map((role) => role.title).join(", ")}</span>
-              </span>
-              <ArrowRight className="h-5 w-5 text-brand-red transition group-hover:translate-x-1" />
-            </Link>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-brand-red">Category {category.number}</p>
+                  <h3 className="text-lg font-black text-brand-dark">{category.title}</h3>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {category.roles.map((role) => {
+                  const active = isCareerRoleOpen(role.slug);
+                  const content = (
+                    <>
+                      <span>{role.title}</span>
+                      {active ? <ArrowRight className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                    </>
+                  );
+
+                  return active ? (
+                    <Link key={role.slug} href={`/careers/${role.slug}/apply`} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-dark px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-brand-red">
+                      {content}
+                    </Link>
+                  ) : (
+                    <span key={role.slug} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-black/8 bg-brand-beige/70 px-4 py-2 text-sm font-black text-brand-muted">
+                      {content}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>
-
-      <Button asChild className="mt-7 rounded-full" size="lg">
-        <Link href="/careers">
-          Open Careers
-          <BriefcaseBusiness className="h-5 w-5" />
-        </Link>
-      </Button>
+      <div className="mt-6 flex items-center gap-2 rounded-2xl bg-brand-gold/10 px-4 py-3 text-sm font-bold text-brand-muted">
+        <Clock3 className="h-4 w-4 shrink-0 text-brand-gold" />
+        More vacancies will open in later hiring rounds.
+      </div>
     </section>
   );
 }
@@ -313,9 +304,7 @@ export function DetailStep({
         <NexaLine tone="warm">No long form. Just the details our Admissions Team needs to contact you.</NexaLine>
         <NexaLine>{question}</NexaLine>
       </div>
-      <div className="mt-9 max-w-xl">
-        <TextInput label={label} value={value} onChange={onChange} type={type} autoComplete={autoComplete} required={required} />
-      </div>
+      <UserReplyInput label={label} placeholder={`Type ${label.toLowerCase()}...`} value={value} onChange={onChange} type={type} autoComplete={autoComplete} required={required} />
     </section>
   );
 }
@@ -456,31 +445,33 @@ function ChoiceButton({ number, title, active, onClick }: { number: string; titl
 
 function NexaLine({ children, tone = "plain", delay = "" }: { children: React.ReactNode; tone?: "plain" | "warm"; delay?: string }) {
   return (
-    <div className={`skillcity-nexa-say ${delay} rounded-lg border px-5 py-4 ${tone === "warm" ? "border-brand-gold/35 bg-brand-gold/10 text-brand-dark" : "border-black/8 bg-white text-brand-dark"}`}>
-      <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-brand-red">
-        <Bot className="h-4 w-4" />
-        Nexa
+    <div className={`skillcity-nexa-say ${delay} flex items-start gap-3`}>
+      <div className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-dark text-[10px] font-black text-brand-gold">NX</div>
+      <div className={`max-w-[760px] rounded-[1.4rem] rounded-tl-sm px-5 py-4 shadow-[0_14px_40px_rgba(16,16,20,0.07)] ${tone === "warm" ? "bg-brand-gold/14 text-brand-dark ring-1 ring-brand-gold/25" : "bg-white text-brand-dark ring-1 ring-black/8"}`}>
+        <p className="text-lg font-semibold leading-8">{children}</p>
       </div>
-      <p className="text-xl font-semibold leading-8">{children}</p>
     </div>
   );
 }
 
-function TextInput({ label, value, onChange, type = "text", autoComplete, required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; autoComplete?: string; required?: boolean }) {
+function UserReplyInput({ label, placeholder, value, onChange, type = "text", autoComplete, required = false }: { label: string; placeholder: string; value: string; onChange: (value: string) => void; type?: string; autoComplete?: string; required?: boolean }) {
   const id = `nexa-${label.toLowerCase().replaceAll(" ", "-")}`;
   return (
-    <label className="block" htmlFor={id}>
-      <span className="mb-2 block text-sm font-bold text-brand-dark">{label}</span>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        autoComplete={autoComplete}
-        required={required}
-        className="h-14 w-full rounded-lg border border-black/10 bg-white px-4 text-lg font-semibold text-brand-dark placeholder:text-brand-muted/65 focus:border-brand-red focus:outline-none focus:ring-4 focus:ring-brand-red/10"
-      />
-    </label>
+    <div className="mt-8 flex justify-end">
+      <label className="block w-full max-w-xl rounded-[1.4rem] rounded-tr-sm bg-brand-dark p-3 shadow-[0_18px_48px_rgba(16,16,20,0.16)]" htmlFor={id}>
+        <span className="sr-only">{label}</span>
+        <input
+          id={id}
+          type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          autoComplete={autoComplete}
+          required={required}
+          placeholder={placeholder}
+          className="h-12 w-full rounded-full border border-white/10 bg-white px-5 text-base font-semibold text-brand-dark placeholder:text-brand-muted/65 focus:border-brand-gold focus:outline-none focus:ring-4 focus:ring-brand-gold/20"
+        />
+      </label>
+    </div>
   );
 }
 

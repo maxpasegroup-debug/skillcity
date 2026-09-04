@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { CareerApplicationForm } from "@/features/careers/components/career-application-form";
-import { getCareerRole } from "@/features/careers/catalog";
+import { getCareerRole, isCareerRoleOpen } from "@/features/careers/catalog";
 
 type Props = { params: Promise<{ roleSlug: string }> };
 
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CareerApplyPage({ params }: Props) {
   const { roleSlug } = await params;
   const role = getCareerRole(roleSlug);
-  if (!role) notFound();
+  if (!role || !isCareerRoleOpen(role.slug)) notFound();
 
   return (
     <main className="skillcity-shell-bg min-h-screen text-brand-dark">

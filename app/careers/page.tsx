@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
-import { careerCategories, getCareerRole } from "@/features/careers/catalog";
+import { careerCategories, getCareerRole, isCareerRoleOpen } from "@/features/careers/catalog";
 
 export const metadata: Metadata = {
   title: "Career Hub | AIRA Skill City",
@@ -27,9 +27,7 @@ export default function CareersPage() {
             Career Hub
           </p>
           <h1 className="mt-7 max-w-5xl text-5xl font-black uppercase leading-none sm:text-7xl lg:text-8xl">Find your role inside Skill City.</h1>
-          <p className="mt-7 max-w-3xl text-xl font-semibold leading-8 text-white/68">
-            Explore available positions across admissions, growth, technology, education, creative and HR teams.
-          </p>
+          <p className="mt-7 max-w-3xl text-xl font-semibold leading-8 text-white/68">Explore vacancy categories. Applications are open now for Academic Advisor and Relationship Manager.</p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="rounded-full">
               <a href="#roles">
@@ -98,12 +96,25 @@ export default function CareersPage() {
                       </div>
                     </div>
                     <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                      {category.roles.map((role) => (
-                        <Link key={role.slug} href={`/careers/${role.slug}`} className="group flex min-h-20 items-center justify-between gap-4 rounded-lg bg-white p-4 font-black text-brand-dark transition hover:-translate-y-1 hover:text-brand-red hover:shadow-soft">
-                          <span>{role.title}</span>
-                          <ArrowRight className="h-5 w-5 shrink-0 text-brand-red transition group-hover:translate-x-1" />
-                        </Link>
-                      ))}
+                      {category.roles.map((role) => {
+                        const active = isCareerRoleOpen(role.slug);
+                        return active ? (
+                          <Link key={role.slug} href={`/careers/${role.slug}/apply`} className="group flex min-h-20 items-center justify-between gap-4 rounded-lg bg-white p-4 font-black text-brand-dark transition hover:-translate-y-1 hover:text-brand-red hover:shadow-soft">
+                            <span>
+                              <span className="block">{role.title}</span>
+                              <span className="mt-1 block text-xs font-black uppercase tracking-[0.14em] text-brand-red">Open now</span>
+                            </span>
+                            <ArrowRight className="h-5 w-5 shrink-0 text-brand-red transition group-hover:translate-x-1" />
+                          </Link>
+                        ) : (
+                          <div key={role.slug} className="flex min-h-20 items-center justify-between gap-4 rounded-lg border border-black/8 bg-brand-beige/70 p-4 font-black text-brand-muted">
+                            <span>
+                              <span className="block">{role.title}</span>
+                              <span className="mt-1 block text-xs font-black uppercase tracking-[0.14em] text-brand-muted">Opening later</span>
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>

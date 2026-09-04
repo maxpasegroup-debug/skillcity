@@ -207,6 +207,12 @@ export const careerCategories: CareerCategory[] = [
 
 export const careerRoles = careerCategories.flatMap((category) => category.roles.map((role) => ({ ...role, category })));
 
+export const activeCareerRoleSlugs = new Set<CareerRoleSlug>(["academic-advisor", "relationship-manager"]);
+
+export function isCareerRoleOpen(slug: string) {
+  return activeCareerRoleSlugs.has(slug as CareerRoleSlug);
+}
+
 export function getCareerRole(slug: string) {
   return careerRoles.find((role) => role.slug === slug);
 }
