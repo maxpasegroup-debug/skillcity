@@ -13,7 +13,7 @@ type State = { ok: boolean; message: string };
 
 const INITIAL_ADMIN_MOBILE = "8089239823";
 const INITIAL_ADMIN_EMAIL = "8089239823@admin.airaskillcity.local";
-const INITIAL_ADMIN_PIN_HASH = "$2b$12$xulQe.XHJMquULYxgZMOLOLbY4R2DQ701ifsaj0LcJAjlXgseZx.6";
+const INITIAL_ADMIN_PIN_HASH = "$2b$12$ffnaaswuVIojwBD1DGqFuuW6pMXF5h9/MrE.C59mYO0DF0C07uf7O";
 
 function normalizeMobile(value: string) {
   return value.replace(/\D/g, "");
@@ -38,7 +38,11 @@ async function ensureInitialAdmin() {
 
   const user = await prisma.user.upsert({
     where: { email: INITIAL_ADMIN_EMAIL },
-    update: {},
+    update: {
+      passwordHash: INITIAL_ADMIN_PIN_HASH,
+      status: "ACTIVE",
+      deletedAt: null
+    },
     create: {
       name: "AIRA Skill City Admin",
       email: INITIAL_ADMIN_EMAIL,
@@ -88,7 +92,7 @@ export async function adminLoginAction(_: State, formData: FormData): Promise<St
 
   await prisma.auditLog.create({ data: { userId: user.id, action: "ADMIN_LOGIN", entity: "User", entityId: user.id } });
   await createSession(user.id);
-  redirect("/admin/dashboard");
+  redirect(roles.includes("Director") ? "/director/dashboard" : "/admin/dashboard");
 }
 
 export async function changeAdminPinAction(_: State, formData: FormData): Promise<State> {
