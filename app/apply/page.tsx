@@ -3,7 +3,7 @@ import { PublicApplicationForm } from "@/features/apply/components/public-applic
 
 export const metadata: Metadata = {
   title: "Apply to AIRA Skill City",
-  description: "Apply for Startup Skool, GenZ Builder - Vibe Coding, or NiceJobs Sales Mastery free internship at AIRA Skill City."
+  description: "Apply for Startup Skool or AIRA Labs at AIRA Skill City."
 };
 
 export default async function ApplyPage({ searchParams }: { searchParams: Promise<{ program?: string; ref?: string }> }) {

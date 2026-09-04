@@ -2,6 +2,40 @@ import { Brain, BriefcaseBusiness, GraduationCap, HeartHandshake, Rocket, Shield
 
 export const launchPrograms = [
   {
+    slug: "startup-skool",
+    title: "Startup Skool",
+    academy: "Startup Skool",
+    outcome: "Build your own brand or business in 180 days with founder mentorship, execution systems and lifetime community access.",
+    who: ["Aspiring founders", "Students who want to build a business", "Creators building a personal brand", "Professionals starting a side venture"],
+    journey: ["Founder clarity", "Brand positioning", "Offer design", "AI-enabled execution", "Sales systems", "Launch and growth"],
+    projects: ["Personal brand system", "Offer page", "Business model canvas", "Launch campaign", "Founder operating dashboard"],
+    mentorship: "Founder mentoring, ALTT-aligned execution reviews, business clarity sessions and Nexa-guided application support.",
+    internship: "Founder-first program with practical business assignments, launch reviews and community accountability.",
+    certification: "Startup Skool completion certificate with founder portfolio and launch evidence.",
+    fee: "Contact admissions for current launch fee.",
+    launchOffer: "Founding batches include ALTT-aligned builder sessions and founder profile setup.",
+    bookingAmount: "INR 20,000 seat booking",
+    importantDates: ["Applications open now", "Founder counselling available", "180-day builder journey"],
+    faqs: ["What are the specializations?", "Solo Founder and Full Stack Entrepreneur.", "Do I need an idea before joining?", "No. You can enter with ambition and build direction inside the program."]
+  },
+  {
+    slug: "aira-labs",
+    title: "AIRA Labs - AI Product Engineering",
+    academy: "AIRA Labs",
+    outcome: "A selective one-year AI Product Engineering pathway for building useful AI products and revenue-generating business models.",
+    who: ["Ambitious AI builders", "Product-minded students", "Founders exploring AI products", "Developers and operators ready for deep work"],
+    journey: ["AI foundations", "Product thinking", "Automation systems", "Prototype engineering", "Business model design", "Research-to-revenue lab"],
+    projects: ["AI workflow prototype", "Revenue model experiment", "AI product MVP", "Research brief", "Demo-ready product pitch"],
+    mentorship: "Selective lab reviews, AI product engineering guidance, founder-style critique and interview-based admission support.",
+    internship: "Admission is selective. Applicants apply first and wait for interview confirmation from the AIRA Labs team.",
+    certification: "AI Product Engineering program certificate after completion of required lab milestones.",
+    fee: "Contact admissions after interview shortlisting.",
+    launchOffer: "Limited seats only. High-demand program with interview-based selection.",
+    bookingAmount: "Apply and wait for interview",
+    importantDates: ["Applications open now", "Interview shortlisting after application", "One-year AI Product Engineering pathway"],
+    faqs: ["Is everyone selected?", "No. AIRA Labs is limited-seat and interview-based.", "What is the focus?", "AI Product Engineering and revenue-generating AI business models."]
+  },
+  {
     slug: "genz-builder",
     title: "GenZ Builder - Vibe Coding",
     academy: "AI Skills Academy",
@@ -72,7 +106,8 @@ export const launchPrograms = [
 ];
 
 export const academies = [
-  { slug: "startup-skool", title: "Startup Skool", icon: Rocket, mission: "Help students and professionals become practical founder-builders.", programs: ["Diploma in & as a Fullstack Entrepreneur", "Solo Founder"], paths: ["Founder", "Product Builder", "Freelancer", "Startup Operator"], roadmap: ["Founder labs", "Demo days", "Investor readiness"] },
+  { slug: "startup-skool", title: "Startup Skool", icon: Rocket, mission: "Help students and professionals become practical founder-builders.", programs: ["Startup Skool", "Diploma in & as a Fullstack Entrepreneur", "Solo Founder"], paths: ["Founder", "Product Builder", "Freelancer", "Startup Operator"], roadmap: ["Founder labs", "Demo days", "Investor readiness"] },
+  { slug: "aira-labs", title: "AIRA Labs", icon: Brain, mission: "Build an AI research and advancement ecosystem around practical AI products and revenue-generating business models.", programs: ["AIRA Labs - AI Product Engineering"], paths: ["AI Product Engineer", "AI Founder", "Automation Builder", "Research-to-Revenue Operator"], roadmap: ["AI product labs", "Interview-based cohorts", "Revenue model experiments"] },
   { slug: "ai-skills-academy", title: "AI Skills Academy", icon: Brain, mission: "Make practical AI skills accessible for study, work, business and creation.", programs: ["GenZ Builder - Vibe Coding"], paths: ["AI Creator", "Full Stack Builder", "Automation Assistant"], roadmap: ["AI portfolio tracks", "Advanced automation", "AI career tracks"] },
   { slug: "internship-academy", title: "Internship Academy", icon: BriefcaseBusiness, mission: "Prepare students for real workplace contribution through skills, projects and practice.", programs: ["Sales Mastery Live Fellowship"], paths: ["Intern", "BDM Associate", "Operations Assistant"], roadmap: ["Employer partnerships", "Internship marketplace", "Work-readiness bootcamps"] },
   { slug: "care-professionals-academy", title: "Care Professionals Academy", icon: HeartHandshake, comingSoon: true, mission: "Prepare compassionate professionals for care-sector careers.", programs: ["Coming soon"], paths: ["Care Assistant", "Patient Support", "Healthcare Operations"], roadmap: ["Care skills", "Communication", "Placement pathways"] },

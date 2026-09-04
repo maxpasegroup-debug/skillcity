@@ -2,6 +2,7 @@ import { BriefcaseBusiness, Code2, Megaphone, GraduationCap, UsersRound } from "
 
 export type CareerCategorySlug = "business-growth" | "technology" | "digital-marketing-creative" | "education-skill-development" | "hr";
 export type CareerRoleSlug =
+  | "academic-advisor"
   | "relationship-manager"
   | "telecaller"
   | "tele-receiver"
@@ -38,9 +39,18 @@ export const careerCategories: CareerCategory[] = [
   {
     slug: "business-growth",
     number: "01",
-    title: "Business & Growth",
+    title: "Admissions & Growth",
     icon: BriefcaseBusiness,
     roles: [
+      {
+        slug: "academic-advisor",
+        title: "Academic Advisor",
+        intro: "Guide learners and parents with clarity, understand their goals and help them choose the right AIRA Skill City pathway.",
+        responsibilities: ["Counsel prospective learners and families", "Explain Startup Skool, AIRA Labs and career pathways clearly", "Coordinate follow-ups with the admission cell until decision"],
+        requirements: ["Excellent communication and listening skills", "Comfort with counselling, admissions or student-facing conversations", "Strong follow-up discipline and basic CRM/data entry habits"],
+        growth: "Grow into senior academic counselling, admissions leadership or campus relationship roles based on performance and ownership.",
+        workMode: "Office-aligned, counselling and admissions focused"
+      },
       {
         slug: "relationship-manager",
         title: "Relationship Manager",

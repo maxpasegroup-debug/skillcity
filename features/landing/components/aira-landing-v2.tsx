@@ -27,22 +27,22 @@ import { NexaOnboardingModal } from "@/features/apply/components/nexa-onboarding
 
 const programs = [
   {
-    title: "Startup School",
-    subtitle: "Build a business, not just a plan.",
+    title: "Startup Skool",
+    subtitle: "Build your own brand in 180 days.",
     image: "/launch/v2/startup-school.png",
-    href: "/apply?program=startup-skool"
+    href: "/programs/startup-skool"
   },
   {
-    title: "GenZ Builder - Vibe Coding",
-    subtitle: "Create with AI, code and design.",
-    image: "/launch/v2/genz-builder.png",
-    href: "/apply?program=genz-builder"
+    title: "AIRA Labs",
+    subtitle: "AI Product Engineering by selection.",
+    image: "/launch/v2/hero-campus.png",
+    href: "/programs/aira-labs"
   },
   {
-    title: "Sales Mastery",
-    subtitle: "Learn confidence, communication and closing.",
-    image: "/launch/v2/sales-mastery.png",
-    href: "/apply?program=nicejobs-sales-mastery"
+    title: "Career Hub",
+    subtitle: "Explore roles and apply to join the team.",
+    image: "/launch/v2/campus-gallery.png",
+    href: "/careers"
   }
 ];
 
@@ -199,9 +199,14 @@ export function AiraLandingV2() {
             </span>
             <span className="mt-1 hidden text-[9px] font-black uppercase tracking-[0.22em] text-[#65605D] sm:block">AI Research & Advancement</span>
           </Link>
-          <ApplyLaunchLink href="/apply" onOpen={openApplyExperience} className="rounded-full bg-[#EB001B] px-5 py-3 text-sm font-black text-white shadow-[0_18px_48px_rgba(235,0,27,0.32)] transition hover:-translate-y-0.5 hover:bg-[#cc0017]">
-            Apply Now
-          </ApplyLaunchLink>
+          <div className="flex items-center gap-2">
+            <Link href="/admin-login" className="inline-flex rounded-full border border-white/14 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-[#C69B43]/60 hover:bg-[#C69B43]/12 sm:px-5">
+              Login
+            </Link>
+            <ApplyLaunchLink href="/apply" onOpen={openApplyExperience} className="rounded-full bg-[#EB001B] px-5 py-3 text-sm font-black text-white shadow-[0_18px_48px_rgba(235,0,27,0.32)] transition hover:-translate-y-0.5 hover:bg-[#cc0017]">
+              Apply Now
+            </ApplyLaunchLink>
+          </div>
         </div>
       </header>
 
@@ -287,7 +292,7 @@ export function AiraLandingV2() {
           <SectionTitle eyebrow="Choose Your Journey" title="Three doors. One city. Your next version." />
           <div className="mt-12 grid gap-5 lg:grid-cols-3">
             {programs.map((program) => (
-              <ApplyLaunchLink key={program.title} href={program.href} onOpen={openApplyExperience} className="aira-card group relative min-h-[620px] overflow-hidden rounded-[1.8rem] border border-white/10 bg-[#2F2A2E] shadow-[0_30px_90px_rgba(0,0,0,0.42)]">
+              <Link key={program.title} href={program.href} className="aira-card group relative min-h-[620px] overflow-hidden rounded-[1.8rem] border border-white/10 bg-[#2F2A2E] shadow-[0_30px_90px_rgba(0,0,0,0.42)]">
                 <Image src={program.image} alt={`${program.title} at AIRA Skill City`} fill sizes="(min-width: 1024px) 33vw, 100vw" className="object-cover transition duration-700 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.06)_0%,rgba(0,0,0,0.18)_38%,rgba(36,33,36,0.94)_100%)]" />
                 <div className="absolute inset-x-0 bottom-0 p-7">
@@ -298,7 +303,7 @@ export function AiraLandingV2() {
                     <ArrowRight className="h-4 w-4" />
                   </span>
                 </div>
-              </ApplyLaunchLink>
+              </Link>
             ))}
           </div>
         </div>

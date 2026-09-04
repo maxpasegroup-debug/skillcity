@@ -28,6 +28,8 @@ export default async function DirectorCareersPage({ searchParams }: Props) {
         <DirectorMetricCard label="New Applications" value={data.stats.newApplications} icon={BriefcaseBusiness} />
         <DirectorMetricCard label="Interview Pipeline" value={data.stats.interviewPending} icon={CalendarClock} />
         <DirectorMetricCard label="Selected Candidates" value={data.stats.selected} icon={CheckCircle2} />
+        <DirectorMetricCard label="Academic Advisor" value={data.stats.academicAdvisorApplications} icon={UserCheck} />
+        <DirectorMetricCard label="Advisor Active Queue" value={data.stats.academicAdvisorNew} icon={CalendarClock} />
       </section>
 
       <section className="grid gap-5 lg:grid-cols-3">
@@ -42,9 +44,10 @@ export default async function DirectorCareersPage({ searchParams }: Props) {
             <h2 className="text-2xl font-black text-brand-dark">Recent Career Applications</h2>
             <div className="mt-5 space-y-3">
               {data.applications.slice(0, 10).map((application) => (
-                <div key={application.id} className="rounded-lg bg-white p-4">
+                <div key={application.id} className={`rounded-lg p-4 ${application.roleSlug === "academic-advisor" ? "border border-brand-gold/35 bg-brand-gold/10" : "bg-white"}`}>
                   <p className="font-black text-brand-dark">{application.candidateName}</p>
                   <p className="mt-1 text-sm font-bold text-brand-muted">{application.roleTitle} - {application.district} - {application.stage.replaceAll("_", " ")}</p>
+                  <p className="mt-1 text-sm font-bold text-brand-muted">Interview decision: {getInterviewDecision(application.metadata)}</p>
                 </div>
               ))}
               {data.applications.length === 0 ? <p className="font-semibold text-brand-muted">No career applications yet.</p> : null}
@@ -130,4 +133,12 @@ function Summary({ title, items }: { title: string; items: Array<{ label: string
       </CardContent>
     </Card>
   );
+}
+
+function getInterviewDecision(metadata: unknown) {
+  if (!metadata || typeof metadata !== "object" || !("officeInterviewForm" in metadata)) return "Pending";
+  const form = (metadata as { officeInterviewForm?: unknown }).officeInterviewForm;
+  if (!form || typeof form !== "object" || !("finalDecision" in form)) return "Pending";
+  const decision = (form as { finalDecision?: { result?: string | null } }).finalDecision?.result;
+  return decision ? decision.replaceAll("_", " ") : "Pending";
 }

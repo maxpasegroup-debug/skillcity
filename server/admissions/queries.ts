@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import type { Prisma } from "@prisma/client";
+import type { ApplicationStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/server/auth/session";
 
@@ -160,7 +160,21 @@ export async function getAdmissionDashboard() {
   await ensureDefaultPipeline();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const [leadsToday, totalLeads, wonLeads, revenue, pendingDocuments, pendingPayments, upcomingCounselling, topPrograms, pendingReview, approvedApplications, rejectedApplications] = await Promise.all([
+  const [
+    leadsToday,
+    totalLeads,
+    wonLeads,
+    revenue,
+    pendingDocuments,
+    pendingPayments,
+    upcomingCounselling,
+    topPrograms,
+    pendingReview,
+    approvedApplications,
+    rejectedApplications,
+    startupSkoolApplications,
+    airaLabsApplications
+  ] = await Promise.all([
     prisma.lead.count({ where: { createdAt: { gte: today } } }),
     prisma.lead.count(),
     prisma.lead.count({ where: { status: "WON" } }),
@@ -171,7 +185,9 @@ export async function getAdmissionDashboard() {
     prisma.program.findMany({ orderBy: { leads: { _count: "desc" } }, take: 5, include: { leads: true } }),
     prisma.admissionApplication.count({ where: { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } } }),
     prisma.admissionApplication.count({ where: { status: "APPROVED" } }),
-    prisma.admissionApplication.count({ where: { status: "REJECTED" } })
+    prisma.admissionApplication.count({ where: { status: "REJECTED" } }),
+    prisma.admissionApplication.count({ where: { program: { slug: "startup-skool" } } }),
+    prisma.admissionApplication.count({ where: { program: { slug: "aira-labs" } } })
   ]);
   return {
     stats: {
@@ -185,7 +201,9 @@ export async function getAdmissionDashboard() {
       upcomingCounselling: upcomingCounselling.length,
       pendingReview,
       approvedApplications,
-      rejectedApplications
+      rejectedApplications,
+      startupSkoolApplications,
+      airaLabsApplications
     },
     upcomingCounselling,
     topPrograms
@@ -204,9 +222,24 @@ export async function getAdmissionData() {
   return { stages, leads, programs, sources, users, batches };
 }
 
-export function getAdmissionsOperationalLists() {
+export function getAdmissionsOperationalLists(filters?: { program?: string; status?: ApplicationStatus; q?: string }) {
+  const applicationWhere: Prisma.AdmissionApplicationWhereInput = {
+    ...(filters?.program ? { program: { slug: filters.program } } : {}),
+    ...(filters?.status ? { status: filters.status } : {}),
+    ...(filters?.q
+      ? {
+          OR: [
+            { lead: { name: { contains: filters.q, mode: "insensitive" as const } } },
+            { lead: { phone: { contains: filters.q, mode: "insensitive" as const } } },
+            { lead: { whatsapp: { contains: filters.q, mode: "insensitive" as const } } },
+            { lead: { email: { contains: filters.q, mode: "insensitive" as const } } }
+          ]
+        }
+      : {})
+  };
+
   return Promise.all([
-    prisma.admissionApplication.findMany({ orderBy: { updatedAt: "desc" }, include: { lead: true, program: true, student: true, documents: true } }),
+    prisma.admissionApplication.findMany({ where: applicationWhere, orderBy: { updatedAt: "desc" }, include: { lead: true, program: true, student: true, documents: true } }),
     prisma.studentDocument.findMany({ orderBy: { updatedAt: "desc" }, include: { application: { include: { lead: true } }, student: true } }),
     prisma.feeInvoice.findMany({ orderBy: { updatedAt: "desc" }, include: { lead: true, student: true, program: true, transactions: true } }),
     prisma.counsellingSession.findMany({ orderBy: { scheduledAt: "asc" }, include: { lead: true, counsellor: true, batch: true } }),

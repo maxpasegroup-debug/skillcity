@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import type React from "react";
-import { ArrowRight, Bot, BriefcaseBusiness, CheckCircle2, Code2, LineChart, MessageCircle, Rocket } from "lucide-react";
+import { ArrowRight, Bot, BrainCircuit, BriefcaseBusiness, CheckCircle2, MessageCircle, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buildAdmissionsWhatsAppUrl } from "@/config/admissions";
-import { careerCategories } from "@/features/careers/catalog";
-import { launchApplicationPrograms, type LaunchApplicationProgramSlug } from "@/features/apply/programs";
+import { careerCategories, getCareerRole } from "@/features/careers/catalog";
+import { nexaProgramOptions, type LaunchApplicationProgramSlug } from "@/features/apply/programs";
 
-export type IntentId = "business" | "income" | "own" | "career" | "exploring";
+export type IntentId = "startup-skool" | "aira-labs" | "career";
 export type CounsellingAnswer = "YES" | "NO" | "";
 
 export type FormValues = {
@@ -29,70 +29,64 @@ export const initialApplicationValues: FormValues = {
   counselled: ""
 };
 
-export type OnboardingState = "intent" | "career" | "program" | "name" | "whatsapp" | "city" | "email" | "counselling" | "enquiry" | "review";
+export type OnboardingState = "name" | "explore" | "career" | "program" | "whatsapp" | "city" | "email" | "counselling" | "enquiry" | "review";
 
 export const progressStages = ["Welcome", "Your Path", "Your Details", "Counselling", "Application"] as const;
 
 export function getProgressIndex(state: OnboardingState) {
-  if (state === "intent") return 0;
+  if (state === "name" || state === "explore") return 0;
   if (state === "career") return 1;
   if (state === "program") return 1;
-  if (state === "name" || state === "whatsapp" || state === "city" || state === "email") return 2;
+  if (state === "whatsapp" || state === "city" || state === "email") return 2;
   if (state === "counselling" || state === "enquiry") return 3;
   return 4;
 }
 
 export const intentOptions = [
   {
-    id: "business",
+    id: "startup-skool",
     number: "01",
-    label: "I want to start a business",
-    response: "Great. Let's find the path that fits your ambition. 🚀"
+    label: "Startup Skool",
+    response: "A 180-day builder path for creating your own brand or business."
   },
   {
-    id: "income",
+    id: "aira-labs",
     number: "02",
-    label: "I want to turn my skills into income",
-    response: "Perfect. Let's explore a path where your skills can become an income stream."
-  },
-  {
-    id: "own",
-    number: "03",
-    label: "I want to build something of my own",
-    response: "That's exactly what we're here for. Let's find your path."
+    label: "AIRA Labs",
+    response: "A selective AI Product Engineering pathway with interview-based admission."
   },
   {
     id: "career",
-    number: "04",
-    label: "I want to build my career",
+    number: "03",
+    label: "Career Hub",
     response: "Great. Let me show you the career opportunities at AIRA Skill City."
-  },
-  {
-    id: "exploring",
-    number: "05",
-    label: "I'm exploring my options",
-    response: "No problem. I'll help you understand the options first."
   }
 ] satisfies Array<{ id: IntentId; number: string; label: string; response: string }>;
 
 const programCopy = {
   "startup-skool": {
     number: "01",
-    label: "STARTUP SCHOOL",
-    line: "Build your own business.",
+    label: "STARTUP SKOOL",
+    line: "Build your own brand in 180 days.",
     icon: Rocket
   },
-  "genz-builder": {
+  "aira-labs": {
     number: "02",
+    label: "AIRA LABS",
+    line: "AI Product Engineering, by selection.",
+    icon: BrainCircuit
+  },
+  "genz-builder": {
+    number: "03",
     label: "GENZ BUILDER",
     line: "Build with Vibe Coding.",
-    icon: Code2
+    icon: Bot
   },
   "nicejobs-sales-mastery": {
-    number: "03",
+    number: "04",
     label: "SALES MASTERY",
     line: "Master the art of selling.",
-    icon: LineChart
+    icon: Rocket
   }
 } satisfies Record<LaunchApplicationProgramSlug, { number: string; label: string; line: string; icon: typeof Rocket }>;
 
@@ -102,6 +96,7 @@ export function getProgramDisplay(slug: LaunchApplicationProgramSlug) {
 
 export function getProgramTitle(slug: LaunchApplicationProgramSlug) {
   if (slug === "startup-skool") return "Startup School";
+  if (slug === "aira-labs") return "AIRA Labs";
   if (slug === "genz-builder") return "GenZ Builder";
   return "Sales Mastery";
 }
@@ -122,7 +117,9 @@ export function generalAdmissionsWhatsAppUrl() {
   return buildAdmissionsWhatsAppUrl("Hi AIRA Skill City Admissions, I'd like to know more about the programs.");
 }
 
-export function HiddenApplicationFields({ selectedProgramSlug, referralId, values }: { selectedProgramSlug: string; referralId?: string; values: FormValues }) {
+export function HiddenApplicationFields({ selectedProgramSlug, referralId, values }: { selectedProgramSlug: LaunchApplicationProgramSlug; referralId?: string; values: FormValues }) {
+  const intentLabel = getIntentLabel(values.intent) || getProgramDisplay(selectedProgramSlug).label;
+
   return (
     <>
       <input type="hidden" name="programSlug" value={selectedProgramSlug} />
@@ -135,8 +132,8 @@ export function HiddenApplicationFields({ selectedProgramSlug, referralId, value
       <input type="hidden" name="state" value="" />
       <input type="hidden" name="educationOrWork" value="Counselling completed" />
       <input type="hidden" name="preferredCounsellingTime" value="Admissions follow-up" />
-      <input type="hidden" name="goal" value={getIntentLabel(values.intent)} />
-      <input type="hidden" name="intent" value={getIntentLabel(values.intent)} />
+      <input type="hidden" name="goal" value={intentLabel} />
+      <input type="hidden" name="intent" value={intentLabel} />
       <input type="hidden" name="counselled" value={values.counselled} />
     </>
   );
@@ -148,27 +145,29 @@ export function IntentStep({ selectedIntent, onSelect }: { selectedIntent: Inten
   return (
     <section>
       <div className="space-y-5">
-        <NexaLine delay="delay-100">Hi, I&apos;m Nexa. 👋</NexaLine>
-        <NexaLine delay="delay-300">I&apos;ll help you find the right path at AIRA Skill City.</NexaLine>
-        <NexaLine>What brings you to AIRA Skill City?</NexaLine>
+        <NexaLine tone="warm">Nice to meet you. What would you like to explore?</NexaLine>
         {selected ? <NexaLine tone="warm">{selected.response}</NexaLine> : null}
       </div>
 
       <div className="mt-8 grid gap-3">
         {intentOptions.map((option) => {
           const active = option.id === selectedIntent;
+          const href = getExploreHref(option.id);
           return (
-            <button
+            <Link
               key={option.id}
-              type="button"
+              href={href}
               onClick={() => onSelect(option.id)}
               className={`grid min-h-20 grid-cols-[auto_1fr] items-center gap-4 rounded-lg border p-4 text-left transition duration-300 hover:-translate-y-1 hover:border-brand-gold/70 hover:shadow-soft ${
                 active ? "border-brand-red bg-brand-dark text-white shadow-[0_24px_70px_rgba(235,0,27,0.18)]" : "border-black/8 bg-white text-brand-dark"
               }`}
             >
               <span className={`text-sm font-black ${active ? "text-brand-gold" : "text-brand-red"}`}>{option.number}</span>
-              <span className="text-lg font-black leading-tight">{option.label}</span>
-            </button>
+              <span>
+                <span className="block text-lg font-black leading-tight">{option.label}</span>
+                <span className={`mt-1 block text-sm font-semibold leading-6 ${active ? "text-white/72" : "text-brand-muted"}`}>{option.response}</span>
+              </span>
+            </Link>
           );
         })}
       </div>
@@ -176,16 +175,36 @@ export function IntentStep({ selectedIntent, onSelect }: { selectedIntent: Inten
   );
 }
 
+function getExploreHref(intent: IntentId) {
+  if (intent === "startup-skool") return "/programs/startup-skool";
+  if (intent === "aira-labs") return "/programs/aira-labs";
+  return "/careers";
+}
+
+export function NameStep({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <section>
+      <div className="space-y-5">
+        <NexaLine delay="delay-100">Hi, I&apos;m Nexa.</NexaLine>
+        <NexaLine delay="delay-300">I&apos;ll help you find the right path at AIRA Skill City.</NexaLine>
+        <NexaLine>What should I call you?</NexaLine>
+      </div>
+      <div className="mt-9 max-w-xl">
+        <TextInput label="Your Name" value={value} onChange={onChange} autoComplete="name" required />
+      </div>
+    </section>
+  );
+}
 export function ProgramStep({ selectedProgramSlug, selectedOnce, onSelect }: { selectedProgramSlug: LaunchApplicationProgramSlug; selectedOnce: boolean; onSelect: (slug: LaunchApplicationProgramSlug) => void }) {
   return (
     <section>
       <div className="space-y-5">
-        <NexaLine>Which path feels right for you?</NexaLine>
+        <NexaLine>Perfect. I&apos;ll open the right application path for you.</NexaLine>
         {selectedOnce ? <NexaLine tone="warm">Great choice. Let&apos;s get to know you a little.</NexaLine> : null}
       </div>
 
       <div className="mt-8 grid gap-3">
-        {launchApplicationPrograms.map((program) => {
+        {nexaProgramOptions.map((program) => {
           const display = programCopy[program.slug];
           const Icon = display.icon;
           const active = program.slug === selectedProgramSlug;
@@ -220,6 +239,8 @@ export function ProgramStep({ selectedProgramSlug, selectedOnce, onSelect }: { s
 }
 
 export function CareerOpportunitiesStep() {
+  const academicAdvisor = getCareerRole("academic-advisor");
+
   return (
     <section>
       <div className="space-y-5">
@@ -228,6 +249,19 @@ export function CareerOpportunitiesStep() {
       </div>
 
       <div className="mt-8 grid gap-3">
+        {academicAdvisor ? (
+          <Link href="/careers/academic-advisor" className="group grid min-h-24 grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg border border-brand-red bg-brand-dark p-4 text-left text-white shadow-[0_24px_70px_rgba(235,0,27,0.18)] transition hover:-translate-y-1 hover:border-brand-gold/70">
+            <span className="text-sm font-black text-brand-gold">01</span>
+            <span>
+              <span className="flex items-center gap-3 text-lg font-black leading-tight">
+                <BriefcaseBusiness className="h-5 w-5 text-brand-gold" />
+                {academicAdvisor.title}
+              </span>
+              <span className="mt-2 block text-sm font-semibold leading-6 text-white/72">First available position in Career Hub.</span>
+            </span>
+            <ArrowRight className="h-5 w-5 text-brand-gold transition group-hover:translate-x-1" />
+          </Link>
+        ) : null}
         {careerCategories.map((category) => {
           const Icon = category.icon;
           return (

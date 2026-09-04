@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DirectorMetricCard } from "@/features/director/components/director-metric-card";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
-import { CareerInterviewForm, CareerInterviewResultForm, CareerNoteForm, CareerStageForm, RMDevelopmentStartForm, RMEvaluationForm, RMTargetForm } from "@/features/careers/components/recruitment-forms";
+import { CareerInterviewForm, CareerInterviewResultForm, CareerNoteForm, CareerOfficeInterviewForm, CareerStageForm, RMDevelopmentStartForm, RMEvaluationForm, RMTargetForm } from "@/features/careers/components/recruitment-forms";
 import { careerCategories, careerRoles } from "@/features/careers/catalog";
 import { recruitmentStages } from "@/features/careers/stages";
 import { getRMEmployeeOptions, getRecruitmentOverview, getRecruitmentUsers, requireRecruitmentUser } from "@/server/careers/queries";
@@ -40,6 +40,8 @@ export default async function AdminCareersPage({ searchParams }: Props) {
         <DirectorMetricCard label="Rejected" value={data.stats.rejected} icon={XCircle} />
         <DirectorMetricCard label="On Hold" value={data.stats.onHold} icon={BriefcaseBusiness} />
         <DirectorMetricCard label="Active Employees" value={data.stats.activeEmployees} icon={UserCheck} />
+        <DirectorMetricCard label="Academic Advisor" value={data.stats.academicAdvisorApplications} icon={UserCheck} />
+        <DirectorMetricCard label="Advisor Active Queue" value={data.stats.academicAdvisorNew} icon={CalendarClock} />
       </section>
 
       <Card>
@@ -69,6 +71,14 @@ export default async function AdminCareersPage({ searchParams }: Props) {
               <Button>Filter Candidates</Button>
             </div>
           </form>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button asChild variant={params.role === "academic-advisor" ? "primary" : "secondary"}>
+              <Link href="/admin/careers?role=academic-advisor">Academic Advisor Applications</Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href="/admin/careers">Clear HR Filters</Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -81,11 +91,11 @@ export default async function AdminCareersPage({ searchParams }: Props) {
       <section className="grid gap-5 xl:grid-cols-[1fr_380px]">
         <div className="space-y-5">
           {data.applications.map((application) => (
-            <Card key={application.id}>
+            <Card key={application.id} className={application.roleSlug === "academic-advisor" ? "border-brand-gold/35" : undefined}>
               <CardContent className="p-6">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <p className="text-sm font-black uppercase text-brand-red">{application.stage.replaceAll("_", " ")}</p>
+                    <p className="text-sm font-black uppercase text-brand-red">{application.stage.replaceAll("_", " ")}{application.roleSlug === "academic-advisor" ? " - ACADEMIC ADVISOR" : ""}</p>
                     <h2 className="mt-2 text-2xl font-black text-brand-dark">{application.candidateName}</h2>
                     <p className="mt-2 font-bold text-brand-muted">{application.roleTitle} - {application.categoryTitle} - {application.district}</p>
                     <p className="mt-3 max-w-3xl leading-7 text-brand-muted">{application.shortIntro}</p>
@@ -105,6 +115,9 @@ export default async function AdminCareersPage({ searchParams }: Props) {
                   <CareerNoteForm applicationId={application.id} />
                   <CareerInterviewForm applicationId={application.id} users={users} />
                   <CareerInterviewResultForm interviews={application.interviews} />
+                </div>
+                <div className="mt-6">
+                  <CareerOfficeInterviewForm applicationId={application.id} metadata={application.metadata} />
                 </div>
                 {application.rmDevelopment ? (
                   <div className="mt-6 grid gap-5 lg:grid-cols-3">
@@ -129,6 +142,7 @@ export default async function AdminCareersPage({ searchParams }: Props) {
                     </div>
                   </div>
                 ) : null}
+                <CandidateInformationSummary metadata={application.metadata} />
                 <div className="mt-6 rounded-lg bg-white p-4">
                   <p className="text-sm font-black uppercase text-brand-red">Activity History</p>
                   <div className="mt-3 space-y-2">
@@ -206,6 +220,51 @@ export default async function AdminCareersPage({ searchParams }: Props) {
       </section>
     </div>
   );
+}
+
+function CandidateInformationSummary({ metadata }: { metadata: unknown }) {
+  const candidate = getCandidateInformation(metadata);
+  if (!candidate) return null;
+
+  const rows = [
+    ["Date", [candidate.applicationDate, candidate.applicationDay].filter(Boolean).join(" - ")],
+    ["Father's Name", candidate.fatherName],
+    ["Date of Birth & Age", [candidate.dateOfBirth, candidate.age ? `${candidate.age} years` : ""].filter(Boolean).join(" - ")],
+    ["Qualification", candidate.qualification],
+    ["Blood Group", candidate.bloodGroup],
+    ["Birth Mark(s)", candidate.birthMarks],
+    ["Marital Status", candidate.maritalStatus],
+    ["Nationality & Aadhaar No.", [candidate.nationality, candidate.aadhaarNo].filter(Boolean).join(" - ")],
+    ["Designation", candidate.designation],
+    ["Nominee", [candidate.nomineeName, candidate.nomineeRelationship].filter(Boolean).join(" - ")],
+    ["Emergency Contact", [candidate.emergencyContact, candidate.emergencyRelationship].filter(Boolean).join(" - ")],
+    ["Present Address", candidate.presentAddress],
+    ["Permanent Address", candidate.permanentAddress],
+    ["PAN Submitted", candidate.panSubmitted],
+    ["Aadhaar Submitted", candidate.aadhaarSubmitted],
+    ["Candidate Signature", candidate.candidateSignature]
+  ].filter(([, value]) => Boolean(value));
+
+  return (
+    <div className="mt-6 rounded-lg border border-black/8 bg-white p-5">
+      <p className="text-sm font-black uppercase text-brand-red">Candidate Information Form</p>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="rounded-lg bg-brand-beige/45 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-brand-muted">{label}</p>
+            <p className="mt-1 break-words font-bold leading-6 text-brand-dark">{value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function getCandidateInformation(metadata: unknown) {
+  if (!metadata || typeof metadata !== "object" || !("candidateInformation" in metadata)) return null;
+  const candidateInformation = (metadata as { candidateInformation?: unknown }).candidateInformation;
+  if (!candidateInformation || typeof candidateInformation !== "object") return null;
+  return candidateInformation as Record<string, string | number | null | undefined>;
 }
 
 function Select({ name, label, children, defaultValue }: { name: string; label: string; children: React.ReactNode; defaultValue?: string }) {

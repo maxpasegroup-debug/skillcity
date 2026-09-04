@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/security/rate-limit";
-import { careerApplicationSchema, careerNoteSchema, careerStageUpdateSchema, interviewResultSchema, interviewSchema, rmDevelopmentStartSchema, rmDevelopmentTargetSchema, rmEvaluationSchema } from "@/features/careers/schemas";
+import { careerApplicationSchema, careerNoteSchema, careerStageUpdateSchema, interviewResultSchema, interviewSchema, officeInterviewFormSchema, rmDevelopmentStartSchema, rmDevelopmentTargetSchema, rmEvaluationSchema } from "@/features/careers/schemas";
 import { getCareerRole } from "@/features/careers/catalog";
 import { requireRecruitmentUser } from "@/server/careers/queries";
 import { getAttributedAdmissionsForRM } from "@/server/careers/rm-performance";
@@ -22,6 +22,11 @@ function normalizePhone(value: string) {
 
 function nullable(value?: string) {
   return value && value.trim() ? value.trim() : null;
+}
+
+function objectMetadata(value: Prisma.JsonValue | null | undefined): Record<string, Prisma.JsonValue> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, Prisma.JsonValue>;
 }
 
 async function checkCareerSubmissionLimit(contact: string) {
@@ -126,7 +131,32 @@ export async function submitCareerApplicationAction(_: CareerActionState, formDa
         availability: parsed.data.availability,
         preferredLocation: parsed.data.preferredLocation,
         consentAt: new Date(),
-        metadata: { publicRolePath: `/careers/${role.slug}` }
+        metadata: {
+          publicRolePath: `/careers/${role.slug}`,
+          candidateInformation: {
+            applicationDate: parsed.data.applicationDate,
+            applicationDay: nullable(parsed.data.applicationDay),
+            fatherName: parsed.data.fatherName,
+            dateOfBirth: parsed.data.dateOfBirth,
+            age: parsed.data.age,
+            qualification: parsed.data.qualification || parsed.data.education,
+            bloodGroup: parsed.data.bloodGroup,
+            birthMarks: nullable(parsed.data.birthMarks),
+            maritalStatus: parsed.data.maritalStatus,
+            nationality: parsed.data.nationality,
+            aadhaarNo: parsed.data.aadhaarNo,
+            designation: parsed.data.designation,
+            nomineeName: parsed.data.nomineeName,
+            nomineeRelationship: parsed.data.nomineeRelationship,
+            emergencyContact: normalizePhone(parsed.data.emergencyContact),
+            emergencyRelationship: parsed.data.emergencyRelationship,
+            presentAddress: parsed.data.presentAddress,
+            permanentAddress: parsed.data.permanentAddress,
+            panSubmitted: parsed.data.panSubmitted,
+            aadhaarSubmitted: parsed.data.aadhaarSubmitted,
+            candidateSignature: parsed.data.candidateSignature
+          }
+        }
       }
     });
 
@@ -294,6 +324,90 @@ export async function recordCareerInterviewResultAction(_: CareerActionState, fo
   revalidatePath("/admin/careers");
   revalidatePath("/director/careers");
   return { ok: true, applicationId: interview.applicationId, message: "Interview result recorded." };
+}
+
+export async function saveOfficeInterviewFormAction(_: CareerActionState, formData: FormData): Promise<CareerActionState> {
+  const actor = await requireRecruitmentUser();
+  const parsed = officeInterviewFormSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check interview form details." };
+
+  const current = await prisma.careerApplication.findUnique({
+    where: { id: parsed.data.applicationId },
+    select: { id: true, candidateName: true, metadata: true }
+  });
+  if (!current) return { ok: false, message: "Career application not found." };
+
+  const rounds = [1, 2, 3, 4, 5].map((roundNumber) => {
+    const key = `round${roundNumber}` as const;
+    return {
+      roundNumber,
+      interviewType: nullable(parsed.data[`${key}Type` as keyof typeof parsed.data] as string | undefined),
+      interviewDateTime: nullable(parsed.data[`${key}DateTime` as keyof typeof parsed.data] as string | undefined),
+      interviewerName: nullable(parsed.data[`${key}InterviewerName` as keyof typeof parsed.data] as string | undefined),
+      remarks: nullable(parsed.data[`${key}Remarks` as keyof typeof parsed.data] as string | undefined),
+      interviewerSignature: nullable(parsed.data[`${key}Signature` as keyof typeof parsed.data] as string | undefined)
+    };
+  });
+
+  const finalResult = parsed.data.finalResult || "";
+  const joiningAt = parsed.data.joiningDate && parsed.data.joiningTime ? new Date(`${parsed.data.joiningDate}T${parsed.data.joiningTime}`) : null;
+  const nextStage = finalResult === "SELECTED" ? "SELECTED" : finalResult === "HOLD" ? "ON_HOLD" : finalResult === "NOT_SELECTED" ? "REJECTED" : "INTERVIEW_COMPLETED";
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const saved = await tx.careerApplication.update({
+      where: { id: current.id },
+      data: {
+        stage: nextStage,
+        reviewedById: actor.id,
+        reviewedAt: new Date(),
+        joinedAt: joiningAt && !Number.isNaN(joiningAt.getTime()) ? joiningAt : undefined,
+        joiningStatus: parsed.data.joiningDate || parsed.data.joiningTime ? `Joining: ${[parsed.data.joiningDate, parsed.data.joiningTime].filter(Boolean).join(" ")}` : undefined,
+        metadata: {
+          ...objectMetadata(current.metadata),
+          officeInterviewForm: {
+            rounds,
+            finalDecision: {
+              result: finalResult || null,
+              remarks: nullable(parsed.data.finalRemarks)
+            },
+            joiningDetails: {
+              dateOfJoining: nullable(parsed.data.joiningDate),
+              time: nullable(parsed.data.joiningTime)
+            },
+            updatedBy: actor.name,
+            updatedAt: new Date().toISOString()
+          }
+        }
+      }
+    });
+
+    await tx.careerApplicationActivity.create({
+      data: {
+        applicationId: saved.id,
+        actorId: actor.id,
+        action: "OFFICE_INTERVIEW_FORM_SAVED",
+        note: finalResult ? `Interview form saved. Final result: ${finalResult.replaceAll("_", " ")}.` : "Interview form saved.",
+        metadata: { finalResult: finalResult || null }
+      }
+    });
+
+    await tx.auditLog.create({
+      data: {
+        userId: actor.id,
+        action: "OFFICE_INTERVIEW_FORM_SAVED",
+        entity: "CareerApplication",
+        entityId: saved.id,
+        metadata: { finalResult: finalResult || null }
+      }
+    });
+
+    return saved;
+  });
+
+  revalidatePath("/admin/careers");
+  revalidatePath("/director/careers");
+  revalidatePath("/executive/hr");
+  return { ok: true, applicationId: updated.id, message: "Interview form saved." };
 }
 
 export async function startRMDevelopmentAction(_: CareerActionState, formData: FormData): Promise<CareerActionState> {

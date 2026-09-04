@@ -11,13 +11,24 @@ export const launchPrograms = [
     isFree: false
   },
   {
+    slug: "aira-labs",
+    title: "AIRA Labs - AI Product Engineering",
+    shortTitle: "AIRA Labs",
+    description: "A selective AI research and product engineering pathway for building revenue-generating AI business models.",
+    category: "AI Research",
+    durationDays: 365,
+    displayOrder: 2,
+    feeLabel: "Interview selection",
+    isFree: false
+  },
+  {
     slug: "genz-builder",
     title: "GenZ Builder - Vibe Coding",
     shortTitle: "GenZ Builder",
     description: "For students who want practical AI, full stack creation and vibe coding skills.",
     category: "AI Skills",
     durationDays: 180,
-    displayOrder: 2,
+    displayOrder: 3,
     feeLabel: "Paid program",
     isFree: false
   },
@@ -28,7 +39,7 @@ export const launchPrograms = [
     description: "Free internship pathway for practical sales, communication and career readiness.",
     category: "Internship",
     durationDays: 60,
-    displayOrder: 3,
+    displayOrder: 4,
     feeLabel: "Free internship",
     isFree: true
   }

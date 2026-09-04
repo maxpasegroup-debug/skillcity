@@ -14,6 +14,7 @@ import {
   EnquiryStep,
   HiddenApplicationFields,
   IntentStep,
+  NameStep,
   ProgramStep,
   ReviewStep,
   SubmittedStep,
@@ -35,10 +36,11 @@ type NexaOnboardingModalProps = {
 };
 
 export function NexaOnboardingModal({ open = true, initialProgramSlug, referralId, onClose, standalone = false }: NexaOnboardingModalProps) {
-  const firstProgram = launchApplicationPrograms.find((program) => program.slug === initialProgramSlug) ?? launchApplicationPrograms[0];
+  const initialProgram = launchApplicationPrograms.find((program) => program.slug === initialProgramSlug);
+  const firstProgram = initialProgram ?? launchApplicationPrograms[0];
   const [selectedProgramSlug, setSelectedProgramSlug] = useState<LaunchApplicationProgramSlug>(firstProgram.slug);
-  const [currentState, setCurrentState] = useState<OnboardingState>("intent");
-  const [programSelectedOnce, setProgramSelectedOnce] = useState(Boolean(initialProgramSlug));
+  const [currentState, setCurrentState] = useState<OnboardingState>("name");
+  const [programSelectedOnce, setProgramSelectedOnce] = useState(Boolean(initialProgram));
   const [values, setValues] = useState<FormValues>(initialApplicationValues);
   const [clientMessage, setClientMessage] = useState("");
   const [applicationState, applicationAction, applicationPending] = useActionState(submitPublicApplicationAction, publicApplicationInitialState);
@@ -105,9 +107,9 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
   }
 
   function canContinue() {
-    if (currentState === "intent") return Boolean(values.intent);
-    if (currentState === "program") return programSelectedOnce;
     if (currentState === "name") return values.name.trim().length >= 2;
+    if (currentState === "explore") return Boolean(values.intent);
+    if (currentState === "program") return programSelectedOnce;
     if (currentState === "whatsapp") return values.whatsapp.replace(/\D/g, "").length >= 7;
     if (currentState === "city") return values.city.trim().length >= 2;
     if (currentState === "email") return !values.email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim());
@@ -121,8 +123,17 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
       return;
     }
     setClientMessage("");
-    if (currentState === "intent" && values.intent === "career") {
+    if (currentState === "name" && programSelectedOnce) {
+      setCurrentState("whatsapp");
+      return;
+    }
+    if (currentState === "explore" && values.intent === "career") {
       setCurrentState("career");
+      return;
+    }
+    if (currentState === "explore" && (values.intent === "startup-skool" || values.intent === "aira-labs")) {
+      selectProgram(values.intent);
+      setCurrentState("program");
       return;
     }
     setCurrentState(getNextState(currentState, values.counselled));
@@ -191,8 +202,8 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
 
                 <div className="rounded-lg border border-white/10 bg-white/8 p-5 backdrop-blur">
                   <p className="text-xs font-black uppercase tracking-[0.2em] text-brand-gold">Selected path</p>
-                  <p className="mt-2 text-2xl font-black">{values.intent === "career" ? "CAREERS" : programSelectedOnce ? selectedDisplay.label : "Waiting for you"}</p>
-                  <p className="mt-2 text-sm font-semibold leading-6 text-white/62">{values.intent === "career" ? "Explore work and growth paths." : programSelectedOnce ? selectedDisplay.line : "Choose what you want to build."}</p>
+                  <p className="mt-2 text-2xl font-black">{values.intent === "career" ? "CAREER HUB" : programSelectedOnce ? selectedDisplay.label : values.name || "Waiting for you"}</p>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-white/62">{values.intent === "career" ? "Explore work and growth paths." : programSelectedOnce ? selectedDisplay.line : "Choose what you want to explore."}</p>
                   <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full rounded-full bg-brand-red transition-all duration-300" style={{ width: `${progress}%` }} />
                   </div>
@@ -221,10 +232,10 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
                 ) : null}
 
                 {applicationState.ok ? <SubmittedStep programSlug={selectedProgramSlug} applicationId={applicationState.applicationId} message={applicationState.message} /> : null}
-                {!applicationState.ok && currentState === "intent" ? <IntentStep selectedIntent={values.intent} onSelect={(intent) => updateValue("intent", intent)} /> : null}
+                {!applicationState.ok && currentState === "name" ? <NameStep value={values.name} onChange={(value) => updateValue("name", value)} /> : null}
+                {!applicationState.ok && currentState === "explore" ? <IntentStep selectedIntent={values.intent} onSelect={(intent) => updateValue("intent", intent)} /> : null}
                 {!applicationState.ok && currentState === "career" ? <CareerOpportunitiesStep /> : null}
                 {!applicationState.ok && currentState === "program" ? <ProgramStep selectedProgramSlug={selectedProgramSlug} selectedOnce={programSelectedOnce} onSelect={selectProgram} /> : null}
-                {!applicationState.ok && currentState === "name" ? <DetailStep question="What's your full name?" label="Full Name" value={values.name} onChange={(value) => updateValue("name", value)} autoComplete="name" /> : null}
                 {!applicationState.ok && currentState === "whatsapp" ? <DetailStep question="What's the best WhatsApp number to reach you?" label="WhatsApp Number" value={values.whatsapp} onChange={(value) => updateValue("whatsapp", value)} autoComplete="tel" /> : null}
                 {!applicationState.ok && currentState === "city" ? <DetailStep question="Which city are you from?" label="City" value={values.city} onChange={(value) => updateValue("city", value)} autoComplete="address-level2" /> : null}
                 {!applicationState.ok && currentState === "email" ? <DetailStep question="What's your email?" label="Email" value={values.email} onChange={(value) => updateValue("email", value)} type="email" autoComplete="email" required={false} /> : null}
@@ -237,7 +248,7 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
                 <footer className="border-t border-black/8 bg-white/72 px-5 py-4 backdrop-blur sm:px-8">
                   <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
-                      <Button type="button" variant="secondary" disabled={currentState === "intent" || pending} onClick={previousStep} className="rounded-full">
+                      <Button type="button" variant="secondary" disabled={currentState === "name" || pending} onClick={previousStep} className="rounded-full">
                         <ArrowLeft className="h-5 w-5" />
                         Back
                       </Button>
@@ -248,7 +259,7 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
                         {pending ? "Sending..." : "Send to Admission Cell"}
                         <ArrowRight className="h-5 w-5" />
                       </Button>
-                    ) : currentState === "enquiry" || currentState === "career" ? null : (
+                    ) : currentState === "enquiry" || currentState === "career" || currentState === "explore" ? null : (
                       <Button type="button" className="h-14 rounded-full px-8" onClick={nextStep}>
                         Continue
                         <ArrowRight className="h-5 w-5" />
@@ -266,9 +277,9 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
 }
 
 function getNextState(currentState: OnboardingState, counselled: string): OnboardingState {
-  if (currentState === "intent") return "program";
-  if (currentState === "program") return "name";
-  if (currentState === "name") return "whatsapp";
+  if (currentState === "name") return "explore";
+  if (currentState === "explore") return "program";
+  if (currentState === "program") return "whatsapp";
   if (currentState === "whatsapp") return "city";
   if (currentState === "city") return "email";
   if (currentState === "email") return "counselling";
@@ -277,21 +288,20 @@ function getNextState(currentState: OnboardingState, counselled: string): Onboar
 }
 
 function getPreviousState(currentState: OnboardingState): OnboardingState {
-  if (currentState === "career") return "intent";
-  if (currentState === "program") return "intent";
-  if (currentState === "name") return "program";
-  if (currentState === "whatsapp") return "name";
+  if (currentState === "career") return "explore";
+  if (currentState === "program") return "explore";
+  if (currentState === "whatsapp") return "program";
   if (currentState === "city") return "whatsapp";
   if (currentState === "email") return "city";
   if (currentState === "counselling") return "email";
   if (currentState === "enquiry" || currentState === "review") return "counselling";
-  return "intent";
+  return "name";
 }
 
 function getValidationMessage(currentState: OnboardingState) {
-  if (currentState === "intent") return "Choose what brings you here.";
+  if (currentState === "name") return "Tell Nexa what to call you.";
+  if (currentState === "explore") return "Choose what you would like to explore.";
   if (currentState === "program") return "Choose a path first.";
-  if (currentState === "name") return "Enter your full name.";
   if (currentState === "whatsapp") return "Enter a valid WhatsApp number.";
   if (currentState === "city") return "Enter your city.";
   if (currentState === "email") return "Enter a valid email, or leave it blank.";

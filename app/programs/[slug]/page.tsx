@@ -37,12 +37,13 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
             <p className="text-sm font-black uppercase text-brand-red">{program.academy}</p>
             <h1 className="mt-4 text-5xl font-black leading-tight md:text-7xl">{program.title}</h1>
             <p className="mt-6 max-w-3xl text-xl leading-9 text-brand-muted">{program.outcome}</p>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row"><Button asChild size="lg"><Link href={`/apply?program=${applySlug}`}>Apply Now</Link></Button><Button asChild size="lg" variant="secondary"><Link href="/contact">Talk to Admissions</Link></Button></div>
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row"><Button asChild size="lg"><Link href={`/apply?program=${applySlug}`}>{getApplyLabel(program.slug)}</Link></Button><Button asChild size="lg" variant="secondary"><Link href="/contact">Talk to Admissions</Link></Button></div>
           </div>
           <Card><CardContent className="p-6"><IndianRupee className="h-8 w-8 text-brand-red" /><h2 className="mt-4 text-2xl font-black">Launch Offer</h2><p className="mt-3 font-bold text-brand-muted">{program.launchOffer}</p><p className="mt-5 text-3xl font-black text-brand-dark">{program.bookingAmount}</p></CardContent></Card>
         </Container>
       </section>
       <Container className="space-y-12 pb-16">
+        <ProgramHighlights slug={program.slug} />
         <InfoGrid title="Career Outcome" items={[program.outcome]} />
         <InfoGrid title="Who Should Join" items={program.who} />
         <InfoGrid title="Learning Journey" items={program.journey} />
@@ -64,10 +65,84 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
   );
 }
 
+function ProgramHighlights({ slug }: { slug: string }) {
+  if (slug === "startup-skool") {
+    return (
+      <section>
+        <h2 className="text-3xl font-black text-brand-dark">Program Structure</h2>
+        <div className="mt-5 grid gap-5 md:grid-cols-3">
+          <Card>
+            <CardContent className="min-h-40 p-6">
+              <p className="text-sm font-black uppercase text-brand-red">Duration</p>
+              <p className="mt-3 text-2xl font-black text-brand-dark">6 Months</p>
+              <p className="mt-3 font-semibold leading-7 text-brand-muted">A 180-day builder journey to shape, launch and grow your own brand.</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="min-h-40 p-6">
+              <p className="text-sm font-black uppercase text-brand-red">Channels</p>
+              <p className="mt-3 text-2xl font-black text-brand-dark">Solo Founder</p>
+              <p className="mt-3 font-semibold leading-7 text-brand-muted">For creators, freelancers and idea-stage founders building independently.</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="min-h-40 p-6">
+              <p className="text-sm font-black uppercase text-brand-red">Channel</p>
+              <p className="mt-3 text-2xl font-black text-brand-dark">Full Stack Entrepreneur</p>
+              <p className="mt-3 font-semibold leading-7 text-brand-muted">For builders who want product, sales, systems and execution depth.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    );
+  }
+
+  if (slug === "aira-labs") {
+    return (
+      <section>
+        <h2 className="text-3xl font-black text-brand-dark">Selection Path</h2>
+        <div className="mt-5 grid gap-5 md:grid-cols-3">
+          <Card>
+            <CardContent className="min-h-40 p-6">
+              <p className="text-sm font-black uppercase text-brand-red">Duration</p>
+              <p className="mt-3 text-2xl font-black text-brand-dark">1 Year</p>
+              <p className="mt-3 font-semibold leading-7 text-brand-muted">A deeper AI Product Engineering pathway for serious builders.</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="min-h-40 p-6">
+              <p className="text-sm font-black uppercase text-brand-red">Admission</p>
+              <p className="mt-3 text-2xl font-black text-brand-dark">Interview Based</p>
+              <p className="mt-3 font-semibold leading-7 text-brand-muted">Apply first. Shortlisted applicants will be invited for interview.</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="min-h-40 p-6">
+              <p className="text-sm font-black uppercase text-brand-red">Seats</p>
+              <p className="mt-3 text-2xl font-black text-brand-dark">Limited</p>
+              <p className="mt-3 font-semibold leading-7 text-brand-muted">Designed as an exclusive lab, not an open mass-admission course.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    );
+  }
+
+  return null;
+}
+
 function getApplicationGatewaySlug(slug: string) {
+  if (slug === "aira-labs") return "aira-labs";
+  if (slug === "startup-skool") return "startup-skool";
   if (slug === "genz-builder") return "genz-builder";
   if (slug === "sales-mastery-live-fellowship") return "nicejobs-sales-mastery";
   return "startup-skool";
+}
+
+function getApplyLabel(slug: string) {
+  if (slug === "startup-skool") return "Apply for Startup Skool";
+  if (slug === "aira-labs") return "Apply for AIRA Labs";
+  return "Apply Now";
 }
 
 function InfoGrid({ title, items, icon: Icon = BadgeCheck }: { title: string; items: string[]; icon?: React.ComponentType<{ className?: string }> }) {

@@ -29,6 +29,8 @@ export default async function AdmissionDashboardPage() {
         <DirectorMetricCard label="Review Queue" value={dashboard.stats.pendingReview} icon={CheckCircle2} />
         <DirectorMetricCard label="Approved" value={dashboard.stats.approvedApplications} icon={CheckCircle2} />
         <DirectorMetricCard label="Rejected" value={dashboard.stats.rejectedApplications} icon={XCircle} />
+        <DirectorMetricCard label="Startup Skool Apps" value={dashboard.stats.startupSkoolApplications} icon={GraduationCap} />
+        <DirectorMetricCard label="AIRA Labs Apps" value={dashboard.stats.airaLabsApplications} icon={GraduationCap} />
         <DirectorMetricCard label="Payment Verification" value={queue.stats.paymentVerification} icon={CreditCard} />
         <DirectorMetricCard label="Activation Pending" value={queue.stats.studentActivationPending} icon={UserCheck} />
         <DirectorMetricCard label="Batch Pending" value={queue.stats.batchAssignmentPending} icon={GraduationCap} />
@@ -38,6 +40,8 @@ export default async function AdmissionDashboardPage() {
         {[
           { href: "/admissions/action-queue", label: "Action required" },
           { href: "/admissions/review", label: "Review applications" },
+          { href: "/admissions/applications?program=startup-skool", label: "Startup Skool apps" },
+          { href: "/admissions/applications?program=aira-labs", label: "AIRA Labs apps" },
           { href: "/admissions/approved", label: "Approved admissions" },
           { href: "/admissions/payments", label: "Fee follow-up" },
           { href: "/admissions/programs", label: "Manage programs" }

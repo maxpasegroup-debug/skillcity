@@ -59,6 +59,8 @@ export async function getRecruitmentOverview(filters?: { role?: string; category
     onHold,
     joined,
     activeEmployees,
+    academicAdvisorApplications,
+    academicAdvisorNew,
     byRole,
     byDistrict,
     byCategory,
@@ -75,6 +77,8 @@ export async function getRecruitmentOverview(filters?: { role?: string; category
     prisma.careerApplication.count({ where: { stage: "ON_HOLD" } }),
     prisma.careerApplication.count({ where: { stage: "JOINED" } }),
     prisma.employee.count({ where: { status: "ACTIVE" } }),
+    prisma.careerApplication.count({ where: { roleSlug: "academic-advisor" } }),
+    prisma.careerApplication.count({ where: { roleSlug: "academic-advisor", stage: { in: ["NEW_APPLICATION", "SCREENING", "SHORTLISTED", "INTERVIEW_SCHEDULED"] } } }),
     prisma.careerApplication.groupBy({ by: ["roleTitle"], _count: true, orderBy: { _count: { roleTitle: "desc" } } }),
     prisma.careerApplication.groupBy({ by: ["district"], _count: true, orderBy: { _count: { district: "desc" } }, take: 12 }),
     prisma.careerApplication.groupBy({ by: ["categoryTitle"], _count: true, orderBy: { _count: { categoryTitle: "desc" } } }),
@@ -104,7 +108,7 @@ export async function getRecruitmentOverview(filters?: { role?: string; category
   ]);
 
   return {
-    stats: { total, newApplications, screeningPending, interviewPending, selected, rejected, onHold, joined, activeEmployees },
+    stats: { total, newApplications, screeningPending, interviewPending, selected, rejected, onHold, joined, activeEmployees, academicAdvisorApplications, academicAdvisorNew },
     byRole,
     byDistrict,
     byCategory,

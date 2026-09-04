@@ -58,8 +58,11 @@ const checks: Check[] = [
   },
   {
     name: "Launch programs",
-    ok: launchPrograms.length === 3 && launchPrograms.some((program) => program.slug === "nicejobs-sales-mastery" && program.isFree),
-    detail: "Startup Skool, GenZ Builder and NiceJobs Sales Mastery are configured."
+    ok:
+      launchPrograms.some((program) => program.slug === "startup-skool" && !program.isFree) &&
+      launchPrograms.some((program) => program.slug === "aira-labs" && !program.isFree) &&
+      launchPrograms.some((program) => program.slug === "nicejobs-sales-mastery" && program.isFree),
+    detail: "Startup Skool, AIRA Labs and NiceJobs Sales Mastery are configured."
   },
   {
     name: "Prisma migrations",

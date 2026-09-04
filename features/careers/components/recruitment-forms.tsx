@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import type { CareerRecruitmentStage } from "@prisma/client";
-import { addCareerNoteAction, careerInitialState, completeRMEvaluationAction, recordCareerInterviewResultAction, scheduleCareerInterviewAction, startRMDevelopmentAction, updateCareerStageAction, updateRMTargetAction } from "@/actions/careers";
+import { addCareerNoteAction, careerInitialState, completeRMEvaluationAction, recordCareerInterviewResultAction, saveOfficeInterviewFormAction, scheduleCareerInterviewAction, startRMDevelopmentAction, updateCareerStageAction, updateRMTargetAction } from "@/actions/careers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DirectorFormMessage } from "@/features/director/components/director-form-message";
@@ -23,13 +23,33 @@ function Select({ name, label, children, defaultValue }: { name: string; label: 
   );
 }
 
-function Textarea({ name, label, required }: { name: string; label: string; required?: boolean }) {
+function Textarea({ name, label, required, defaultValue = "" }: { name: string; label: string; required?: boolean; defaultValue?: string }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-bold text-brand-dark">{label}</span>
-      <textarea name={name} required={required} rows={3} className="w-full rounded-lg border border-black/10 bg-white px-4 py-3 text-base text-brand-dark" />
+      <textarea name={name} required={required} defaultValue={defaultValue} rows={3} className="w-full rounded-lg border border-black/10 bg-white px-4 py-3 text-base text-brand-dark" />
     </label>
   );
+}
+
+type SavedOfficeInterviewForm = {
+  rounds?: Array<{
+    roundNumber?: number;
+    interviewType?: string | null;
+    interviewDateTime?: string | null;
+    interviewerName?: string | null;
+    remarks?: string | null;
+    interviewerSignature?: string | null;
+  }>;
+  finalDecision?: { result?: string | null; remarks?: string | null };
+  joiningDetails?: { dateOfJoining?: string | null; time?: string | null };
+};
+
+function getOfficeInterviewForm(metadata: unknown): SavedOfficeInterviewForm {
+  if (!metadata || typeof metadata !== "object" || !("officeInterviewForm" in metadata)) return {};
+  const form = (metadata as { officeInterviewForm?: unknown }).officeInterviewForm;
+  if (!form || typeof form !== "object") return {};
+  return form as SavedOfficeInterviewForm;
 }
 
 export function CareerStageForm({ applicationId, currentStage }: { applicationId: string; currentStage: CareerRecruitmentStage }) {
@@ -92,6 +112,52 @@ export function CareerInterviewResultForm({ interviews }: { interviews: Intervie
       <Input name="result" label="Result" placeholder="Shortlisted / Selected / Hold / Reject" required />
       <Textarea name="feedback" label="Feedback" />
       <Button disabled={pending} variant="secondary">Record Result</Button>
+    </form>
+  );
+}
+
+export function CareerOfficeInterviewForm({ applicationId, metadata }: { applicationId: string; metadata: unknown }) {
+  const [state, action, pending] = useActionState(saveOfficeInterviewFormAction, careerInitialState);
+  const saved = getOfficeInterviewForm(metadata);
+
+  function roundValue(roundNumber: number, field: "interviewType" | "interviewDateTime" | "interviewerName" | "remarks" | "interviewerSignature") {
+    return saved.rounds?.find((round) => round.roundNumber === roundNumber)?.[field] ?? "";
+  }
+
+  return (
+    <form action={action} className="space-y-5 rounded-lg border border-brand-gold/25 bg-brand-beige/35 p-5">
+      <DirectorFormMessage message={state.message} ok={state.ok} />
+      <input type="hidden" name="applicationId" value={applicationId} />
+      <div>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-red">For Office Use Only</p>
+        <h3 className="mt-2 text-2xl font-black text-brand-dark">Interview Form</h3>
+      </div>
+      <div className="space-y-4">
+        {[1, 2, 3, 4, 5].map((roundNumber) => (
+          <div key={roundNumber} className="rounded-lg bg-white p-4">
+            <p className="text-sm font-black uppercase text-brand-red">Round {roundNumber}</p>
+            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <Input name={`round${roundNumber}Type`} label="Interview Type" defaultValue={roundValue(roundNumber, "interviewType")} placeholder="HR / Technical / Director" />
+              <Input name={`round${roundNumber}DateTime`} label="Interview Date & Time" defaultValue={roundValue(roundNumber, "interviewDateTime")} placeholder="DD.MM.YYYY, Day, Time" />
+              <Input name={`round${roundNumber}InterviewerName`} label="Interviewer's Name" defaultValue={roundValue(roundNumber, "interviewerName")} />
+              <Textarea name={`round${roundNumber}Remarks`} label="Remark(s)" defaultValue={roundValue(roundNumber, "remarks")} />
+              <Input name={`round${roundNumber}Signature`} label="Interviewer's Signature" defaultValue={roundValue(roundNumber, "interviewerSignature")} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="grid gap-4 rounded-lg bg-white p-4 md:grid-cols-2">
+        <Select name="finalResult" label="Final Decision" defaultValue={saved.finalDecision?.result ?? ""}>
+          <option value="">Pending</option>
+          <option value="HOLD">Hold</option>
+          <option value="SELECTED">Selected</option>
+          <option value="NOT_SELECTED">Not-selected</option>
+        </Select>
+        <Textarea name="finalRemarks" label="Final Remarks" defaultValue={saved.finalDecision?.remarks ?? ""} />
+        <Input name="joiningDate" label="Date of Joining" type="date" defaultValue={saved.joiningDetails?.dateOfJoining ?? ""} />
+        <Input name="joiningTime" label="Time" type="time" defaultValue={saved.joiningDetails?.time ?? ""} />
+      </div>
+      <Button disabled={pending}>{pending ? "Saving..." : "Save Interview Form"}</Button>
     </form>
   );
 }

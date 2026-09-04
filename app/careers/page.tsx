@@ -5,14 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
-import { careerCategories } from "@/features/careers/catalog";
+import { careerCategories, getCareerRole } from "@/features/careers/catalog";
 
 export const metadata: Metadata = {
-  title: "Careers at AIRA Skill City",
-  description: "Build your career. Build the future at AIRA Skill City."
+  title: "Career Hub | AIRA Skill City",
+  description: "Explore available positions and apply to join the AIRA Skill City team."
 };
 
 export default function CareersPage() {
+  const featuredRole = getCareerRole("academic-advisor");
+
   return (
     <main className="skillcity-shell-bg min-h-screen text-brand-dark">
       <Navbar />
@@ -22,11 +24,11 @@ export default function CareersPage() {
         <div className="relative mx-auto max-w-7xl">
           <p className="inline-flex items-center gap-2 rounded-full border border-brand-gold/35 bg-brand-gold/10 px-5 py-3 text-xs font-black uppercase tracking-[0.22em] text-brand-gold">
             <Sparkles className="h-4 w-4" />
-            Careers at AIRA Skill City
+            Career Hub
           </p>
-          <h1 className="mt-7 max-w-5xl text-5xl font-black uppercase leading-none sm:text-7xl lg:text-8xl">Build your career. Build the future.</h1>
+          <h1 className="mt-7 max-w-5xl text-5xl font-black uppercase leading-none sm:text-7xl lg:text-8xl">Find your role inside Skill City.</h1>
           <p className="mt-7 max-w-3xl text-xl font-semibold leading-8 text-white/68">
-            Join a growing ecosystem where technology, education, entrepreneurship and real-world opportunities come together.
+            Explore available positions across admissions, growth, technology, education, creative and HR teams.
           </p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="rounded-full">
@@ -36,7 +38,7 @@ export default function CareersPage() {
               </a>
             </Button>
             <Button asChild size="lg" variant="secondary" className="rounded-full border-white/15 bg-white/10 text-white hover:bg-white hover:text-brand-dark">
-              <Link href="/apply">Learn Pathway</Link>
+              <Link href="/programs/startup-skool">Explore Startup Skool</Link>
             </Button>
           </div>
         </div>
@@ -44,10 +46,39 @@ export default function CareersPage() {
 
       <section id="roles" className="px-5 py-16 sm:px-8 lg:px-10 lg:py-24">
         <div className="mx-auto max-w-7xl">
+          {featuredRole ? (
+            <Card className="mb-10 overflow-hidden border-brand-gold/35">
+              <CardContent className="grid gap-6 p-6 md:grid-cols-[1fr_auto] md:items-center md:p-8">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-[0.18em] text-brand-red">First Opening</p>
+                  <h2 className="mt-3 text-4xl font-black text-brand-dark md:text-5xl">{featuredRole.title}</h2>
+                  <p className="mt-4 max-w-3xl text-lg font-semibold leading-8 text-brand-muted">{featuredRole.intro}</p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {featuredRole.requirements.slice(0, 3).map((item) => (
+                      <span key={item} className="rounded-full bg-white px-4 py-2 text-sm font-black text-brand-muted">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3 md:w-64">
+                  <Button asChild className="rounded-full">
+                    <Link href="/careers/academic-advisor/apply">
+                      Apply Now
+                      <ArrowRight className="h-5 w-5" />
+                    </Link>
+                  </Button>
+                  <Button asChild variant="secondary" className="rounded-full">
+                    <Link href="/careers/academic-advisor">View Role</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.18em] text-brand-red">Career Opportunities</p>
-              <h2 className="mt-3 text-4xl font-black text-brand-dark md:text-5xl">Choose your sector</h2>
+              <h2 className="mt-3 text-4xl font-black text-brand-dark md:text-5xl">Available positions</h2>
             </div>
             <p className="max-w-xl font-semibold leading-7 text-brand-muted">Career applications are handled by HR and are kept separate from student admissions.</p>
           </div>
