@@ -8,7 +8,7 @@ export async function requireDirector() {
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/admin-login");
   }
 
   const roles = user.roles.map((item) => item.role.name);

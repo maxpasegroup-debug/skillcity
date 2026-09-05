@@ -15,7 +15,7 @@ export function Navbar() {
             Careers
           </Link>
           <Button asChild variant="secondary" className="hidden min-w-24 sm:inline-flex">
-            <Link href="/login">Login</Link>
+            <Link href="/admin-login">Login</Link>
           </Button>
           <Button asChild className="min-w-28 rounded-full">
             <Link href="/apply">Apply Now</Link>

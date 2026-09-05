@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 export default async function AdminLoginPage() {
   const user = await getCurrentUser();
   const roles = user?.roles.map((item) => item.role.name) ?? [];
-  if (roles.some((role) => role === "Admin" || role === "Director")) redirect("/admin/dashboard");
+  if (roles.includes("Director")) redirect("/director/dashboard");
+  if (roles.includes("Admin")) redirect("/admin/dashboard");
 
   return (
     <main className="skillcity-shell-bg grid min-h-screen place-items-center px-5 py-10 text-brand-dark">

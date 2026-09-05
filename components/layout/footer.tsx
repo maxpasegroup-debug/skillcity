@@ -9,7 +9,7 @@ const links = [
   { href: "/#about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/application-status", label: "Application Status" },
-  { href: "/login", label: "Login" }
+  { href: "/admin-login", label: "Login" }
 ];
 
 const policyLinks = [

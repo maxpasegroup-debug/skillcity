@@ -13,7 +13,7 @@ type State = { ok: boolean; message: string };
 
 const INITIAL_ADMIN_MOBILE = "8089239823";
 const INITIAL_ADMIN_EMAIL = "8089239823@admin.airaskillcity.local";
-const INITIAL_ADMIN_PIN_HASH = "$2b$12$ffnaaswuVIojwBD1DGqFuuW6pMXF5h9/MrE.C59mYO0DF0C07uf7O";
+const INITIAL_ADMIN_PIN_HASH = "$2b$12$BUZGyxtVpc4k43LDgjbQuewk8qc9qhjxFx0.6IbNUYJdRRttElxGy";
 
 function normalizeMobile(value: string) {
   return value.replace(/\D/g, "");
