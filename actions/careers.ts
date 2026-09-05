@@ -29,6 +29,28 @@ function objectMetadata(value: Prisma.JsonValue | null | undefined): Record<stri
   return value as Record<string, Prisma.JsonValue>;
 }
 
+function submissionErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    if (error.message.includes("does not exist") || error.message.includes("Unknown arg")) {
+      return "The recruitment system is being updated. Please try again in a few minutes.";
+    }
+  }
+
+  if (typeof error === "object" && error && "code" in error) {
+    const code = (error as { code?: string }).code;
+    if (code === "P2002") return "We already have an active application with these details. Our HR team will review it.";
+    if (code === "P2021" || code === "P2022") return "The recruitment system is being updated. Please try again in a few minutes.";
+  }
+
+  return "We could not submit your application right now. Please try again.";
+}
+
+function logSubmissionError(scope: string, error: unknown) {
+  const code = typeof error === "object" && error && "code" in error ? (error as { code?: string }).code : undefined;
+  const message = error instanceof Error ? error.message.split("\n")[0] : "Unknown error";
+  console.error(scope, { code, message });
+}
+
 async function checkCareerSubmissionLimit(contact: string) {
   const headerStore = await headers();
   const ip = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || headerStore.get("x-real-ip") || "unknown";
@@ -83,114 +105,119 @@ async function notifyInternalUsers(tx: Prisma.TransactionClient, input: { title:
 }
 
 export async function submitCareerApplicationAction(_: CareerActionState, formData: FormData): Promise<CareerActionState> {
-  const parsed = careerApplicationSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Please check your application." };
+  try {
+    const parsed = careerApplicationSchema.safeParse(Object.fromEntries(formData));
+    if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Please check your application." };
 
-  const role = getCareerRole(parsed.data.roleSlug);
-  if (!role || role.category.slug !== parsed.data.categorySlug) return { ok: false, message: "Choose a valid career role." };
+    const role = getCareerRole(parsed.data.roleSlug);
+    if (!role || role.category.slug !== parsed.data.categorySlug) return { ok: false, message: "Choose a valid career role." };
 
-  const limited = await checkCareerSubmissionLimit(parsed.data.whatsapp);
-  if (limited) return limited;
+    const limited = await checkCareerSubmissionLimit(parsed.data.whatsapp);
+    if (limited) return limited;
 
-  const existing = await prisma.careerApplication.findFirst({
-    where: {
-      roleSlug: role.slug,
-      OR: [{ email: parsed.data.email.toLowerCase() }, { whatsapp: normalizePhone(parsed.data.whatsapp) }, { mobile: normalizePhone(parsed.data.mobile) }],
-      stage: { notIn: ["REJECTED"] }
-    },
-    orderBy: { updatedAt: "desc" }
-  });
-
-  if (existing) {
-    return {
-      ok: true,
-      applicationId: existing.id,
-      message: "We already have your active application for this role. Our HR team will review it."
-    };
-  }
-
-  const application = await prisma.$transaction(async (tx) => {
-    const saved = await tx.careerApplication.create({
-      data: {
-        candidateName: parsed.data.candidateName,
-        mobile: normalizePhone(parsed.data.mobile),
-        whatsapp: normalizePhone(parsed.data.whatsapp),
-        email: parsed.data.email.toLowerCase(),
-        district: parsed.data.district,
+    const existing = await prisma.careerApplication.findFirst({
+      where: {
         roleSlug: role.slug,
-        roleTitle: role.title,
-        categorySlug: role.category.slug,
-        categoryTitle: role.category.title,
-        education: parsed.data.education,
-        experience: nullable(parsed.data.experience),
-        currentStatus: parsed.data.currentStatus,
-        relevantSkills: nullable(parsed.data.relevantSkills),
-        resumeUrl: nullable(parsed.data.resumeUrl),
-        profileUrl: nullable(parsed.data.profileUrl),
-        shortIntro: parsed.data.shortIntro,
-        availability: parsed.data.availability,
-        preferredLocation: parsed.data.preferredLocation,
-        consentAt: new Date(),
-        metadata: {
-          publicRolePath: `/careers/${role.slug}`,
-          candidateInformation: {
-            applicationDate: parsed.data.applicationDate,
-            applicationDay: nullable(parsed.data.applicationDay),
-            fatherName: parsed.data.fatherName,
-            dateOfBirth: parsed.data.dateOfBirth,
-            age: parsed.data.age,
-            qualification: parsed.data.qualification || parsed.data.education,
-            bloodGroup: parsed.data.bloodGroup,
-            birthMarks: nullable(parsed.data.birthMarks),
-            maritalStatus: parsed.data.maritalStatus,
-            nationality: parsed.data.nationality,
-            aadhaarNo: parsed.data.aadhaarNo,
-            designation: parsed.data.designation,
-            nomineeName: parsed.data.nomineeName,
-            nomineeRelationship: parsed.data.nomineeRelationship,
-            emergencyContact: normalizePhone(parsed.data.emergencyContact),
-            emergencyRelationship: parsed.data.emergencyRelationship,
-            presentAddress: parsed.data.presentAddress,
-            permanentAddress: parsed.data.permanentAddress,
-            panSubmitted: parsed.data.panSubmitted,
-            aadhaarSubmitted: parsed.data.aadhaarSubmitted,
-            candidateSignature: parsed.data.candidateSignature
-          }
-        }
-      }
+        OR: [{ email: parsed.data.email.toLowerCase() }, { whatsapp: normalizePhone(parsed.data.whatsapp) }, { mobile: normalizePhone(parsed.data.mobile) }],
+        stage: { notIn: ["REJECTED"] }
+      },
+      orderBy: { updatedAt: "desc" }
     });
 
-    await tx.careerApplicationActivity.create({
-      data: {
-        applicationId: saved.id,
-        action: "CAREER_APPLICATION_SUBMITTED",
-        note: `${saved.candidateName} applied for ${saved.roleTitle}.`
-      }
-    });
-
-    await tx.auditLog.create({
-      data: {
-        action: "CAREER_APPLICATION_SUBMITTED",
-        entity: "CareerApplication",
-        entityId: saved.id,
-        metadata: { roleSlug: saved.roleSlug, categorySlug: saved.categorySlug }
-      }
-    });
-
-    if (role.slug === "relationship-manager") {
-      await tx.relationshipManagerDevelopment.create({ data: { applicationId: saved.id } });
+    if (existing) {
+      return {
+        ok: true,
+        applicationId: existing.id,
+        message: "We already have your active application for this role. Our HR team will review it."
+      };
     }
 
-    await notifyRecruitmentUsers(tx, { applicationId: saved.id, roleTitle: saved.roleTitle, candidateName: saved.candidateName });
+    const application = await prisma.$transaction(async (tx) => {
+      const saved = await tx.careerApplication.create({
+        data: {
+          candidateName: parsed.data.candidateName,
+          mobile: normalizePhone(parsed.data.mobile),
+          whatsapp: normalizePhone(parsed.data.whatsapp),
+          email: parsed.data.email.toLowerCase(),
+          district: parsed.data.district,
+          roleSlug: role.slug,
+          roleTitle: role.title,
+          categorySlug: role.category.slug,
+          categoryTitle: role.category.title,
+          education: parsed.data.education,
+          experience: nullable(parsed.data.experience),
+          currentStatus: parsed.data.currentStatus,
+          relevantSkills: nullable(parsed.data.relevantSkills),
+          resumeUrl: nullable(parsed.data.resumeUrl),
+          profileUrl: nullable(parsed.data.profileUrl),
+          shortIntro: parsed.data.shortIntro,
+          availability: parsed.data.availability,
+          preferredLocation: parsed.data.preferredLocation,
+          consentAt: new Date(),
+          metadata: {
+            publicRolePath: `/careers/${role.slug}`,
+            candidateInformation: {
+              applicationDate: parsed.data.applicationDate,
+              applicationDay: nullable(parsed.data.applicationDay),
+              fatherName: parsed.data.fatherName,
+              dateOfBirth: parsed.data.dateOfBirth,
+              age: parsed.data.age,
+              qualification: parsed.data.qualification || parsed.data.education,
+              bloodGroup: parsed.data.bloodGroup,
+              birthMarks: nullable(parsed.data.birthMarks),
+              maritalStatus: parsed.data.maritalStatus,
+              nationality: parsed.data.nationality,
+              aadhaarNo: parsed.data.aadhaarNo,
+              designation: parsed.data.designation,
+              nomineeName: parsed.data.nomineeName,
+              nomineeRelationship: parsed.data.nomineeRelationship,
+              emergencyContact: normalizePhone(parsed.data.emergencyContact),
+              emergencyRelationship: parsed.data.emergencyRelationship,
+              presentAddress: parsed.data.presentAddress,
+              permanentAddress: parsed.data.permanentAddress,
+              panSubmitted: parsed.data.panSubmitted,
+              aadhaarSubmitted: parsed.data.aadhaarSubmitted,
+              candidateSignature: parsed.data.candidateSignature
+            }
+          }
+        }
+      });
 
-    return saved;
-  });
+      await tx.careerApplicationActivity.create({
+        data: {
+          applicationId: saved.id,
+          action: "CAREER_APPLICATION_SUBMITTED",
+          note: `${saved.candidateName} applied for ${saved.roleTitle}.`
+        }
+      });
 
-  revalidatePath("/admin/careers");
-  revalidatePath("/director/careers");
-  revalidatePath("/executive/hr");
+      await tx.auditLog.create({
+        data: {
+          action: "CAREER_APPLICATION_SUBMITTED",
+          entity: "CareerApplication",
+          entityId: saved.id,
+          metadata: { roleSlug: saved.roleSlug, categorySlug: saved.categorySlug }
+        }
+      });
 
-  return { ok: true, applicationId: application.id, message: "Your career application has been received by the AIRA Skill City HR team." };
+      if (role.slug === "relationship-manager") {
+        await tx.relationshipManagerDevelopment.create({ data: { applicationId: saved.id } });
+      }
+
+      await notifyRecruitmentUsers(tx, { applicationId: saved.id, roleTitle: saved.roleTitle, candidateName: saved.candidateName });
+
+      return saved;
+    });
+
+    revalidatePath("/admin/careers");
+    revalidatePath("/director/careers");
+    revalidatePath("/executive/hr");
+
+    return { ok: true, applicationId: application.id, message: "Your career application has been received by the AIRA Skill City HR team." };
+  } catch (error) {
+    logSubmissionError("Career application submission failed", error);
+    return { ok: false, message: submissionErrorMessage(error) };
+  }
 }
 
 export async function updateCareerStageAction(_: CareerActionState, formData: FormData): Promise<CareerActionState> {
