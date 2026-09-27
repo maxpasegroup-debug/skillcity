@@ -45,14 +45,26 @@ export async function getCurrentUser() {
       user: {
         include: {
           roles: {
-            include: { role: true }
+            include: {
+              role: {
+                include: {
+                  permissions: { include: { permission: true } }
+                }
+              }
+            }
+          },
+          accessScopes: true,
+          employeeProfile: {
+            include: {
+              organizationAssignments: true
+            }
           }
         }
       }
     }
   });
 
-  if (!session || session.revokedAt || session.expiresAt < new Date() || session.user.deletedAt) {
+  if (!session || session.revokedAt || session.expiresAt < new Date() || session.user.deletedAt || session.user.status !== "ACTIVE") {
     return null;
   }
 

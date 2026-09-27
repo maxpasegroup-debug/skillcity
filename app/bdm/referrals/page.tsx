@@ -5,7 +5,7 @@ import { getBdmDashboard, requireBdmUser } from "@/server/admissions/queries";
 
 export default async function BdmReferralsPage() {
   const user = await requireBdmUser();
-  const { referrals } = await getBdmDashboard(user.id);
+  const { referrals } = await getBdmDashboard();
   const referralLink = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/apply?ref=${user.id}`;
 
   return (

@@ -1,11 +1,9 @@
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/server/auth/session";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/server/auth/authorization";
 
 export async function requireSuccessStudent() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  return user;
+  return requirePermission(PERMISSIONS.SUCCESS_ACCESS);
 }
 
 function slugify(value: string) {

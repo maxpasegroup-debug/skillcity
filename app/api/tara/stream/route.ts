@@ -1,5 +1,6 @@
 import type { AIConversationScope } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { hasPermission, PERMISSIONS, type PermissionKey } from "@/lib/auth/permissions";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getCurrentUser } from "@/server/auth/session";
 import { buildTaraContext } from "@/server/ai/context";
@@ -20,13 +21,13 @@ function chunkText(text: string) {
   return chunks && chunks.length > 0 ? chunks : [text];
 }
 
-function canUseScope(roles: string[], scope: AIConversationScope) {
-  if (scope === "DIRECTOR") return roles.includes("Director") || roles.includes("Admin");
-  if (scope === "TRAINER") return roles.includes("Trainer") || roles.includes("Director") || roles.includes("Admin");
-  if (scope === "ADMISSION") return roles.includes("Admission") || roles.includes("Director") || roles.includes("Admin");
-  if (scope === "BDM") return roles.includes("Business Development") || roles.includes("Director") || roles.includes("Admin");
-  return true;
-}
+const scopePermissions: Record<AIConversationScope, PermissionKey> = {
+  STUDENT: PERMISSIONS.AI_STUDENT,
+  DIRECTOR: PERMISSIONS.AI_DIRECTOR,
+  TRAINER: PERMISSIONS.AI_TRAINER,
+  ADMISSION: PERMISSIONS.AI_ADMISSION,
+  BDM: PERMISSIONS.AI_BDM
+};
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -39,8 +40,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid Tara request" }, { status: 400 });
   }
 
-  const roles = user.roles.map((item) => item.role.name);
-  if (!canUseScope(roles, body.scope)) {
+  if (!hasPermission(user, scopePermissions[body.scope])) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   }
 
   await ensurePromptTemplates();
-  const context = await buildTaraContext(user.id, body.scope);
+  const context = await buildTaraContext(user, body.scope);
   const conversation = await getOrCreateConversation({
     conversationId: body.conversationId,
     userId: user.id,

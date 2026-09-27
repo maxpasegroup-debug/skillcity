@@ -5,10 +5,12 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { PERMISSIONS, resolveAuthorizedScopes, type AuthorizationUser } from "@/lib/auth/permissions";
 import { careerApplicationSchema, careerNoteSchema, careerStageUpdateSchema, interviewResultSchema, interviewSchema, officeInterviewFormSchema, rmDevelopmentStartSchema, rmDevelopmentTargetSchema, rmEvaluationSchema } from "@/features/careers/schemas";
 import { getCareerRole } from "@/features/careers/catalog";
 import { requireRecruitmentUser } from "@/server/careers/queries";
 import { getAttributedAdmissionsForRM } from "@/server/careers/rm-performance";
+import { assertCareerApplicationAccess, assertCareerInterviewAccess, assertEmployeeAccess, assertRMDevelopmentAccess } from "@/server/auth/resource-access";
 
 export type CareerActionState = { ok: boolean; message: string; applicationId?: string };
 export const careerInitialState: CareerActionState = { ok: false, message: "" };
@@ -27,6 +29,12 @@ function nullable(value?: string) {
 function objectMetadata(value: Prisma.JsonValue | null | undefined): Record<string, Prisma.JsonValue> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return value as Record<string, Prisma.JsonValue>;
+}
+
+function recruitmentScopeData(user: AuthorizationUser) {
+  const resolved = resolveAuthorizedScopes(user, PERMISSIONS.RECRUITMENT_ACCESS);
+  const scope = resolved.assignments.length === 1 ? resolved.assignments[0] : undefined;
+  return scope ? { institutionId: scope.institutionId, divisionId: scope.divisionId, districtScopeId: scope.districtId, campusId: scope.campusId } : {};
 }
 
 function submissionErrorMessage(error: unknown) {
@@ -224,11 +232,13 @@ export async function updateCareerStageAction(_: CareerActionState, formData: Fo
   const actor = await requireRecruitmentUser();
   const parsed = careerStageUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check recruitment stage details." };
+  await assertCareerApplicationAccess(actor, PERMISSIONS.RECRUITMENT_ACCESS, parsed.data.applicationId);
 
   const application = await prisma.$transaction(async (tx) => {
     const updated = await tx.careerApplication.update({
       where: { id: parsed.data.applicationId },
       data: {
+        ...recruitmentScopeData(actor),
         stage: parsed.data.stage,
         reviewedById: actor.id,
         reviewedAt: new Date(),
@@ -279,6 +289,7 @@ export async function addCareerNoteAction(_: CareerActionState, formData: FormDa
   const actor = await requireRecruitmentUser();
   const parsed = careerNoteSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Add a note." };
+  await assertCareerApplicationAccess(actor, PERMISSIONS.RECRUITMENT_ACCESS, parsed.data.applicationId);
 
   await prisma.careerApplicationActivity.create({
     data: { applicationId: parsed.data.applicationId, actorId: actor.id, action: "CAREER_NOTE_ADDED", note: parsed.data.note }
@@ -292,6 +303,7 @@ export async function scheduleCareerInterviewAction(_: CareerActionState, formDa
   const actor = await requireRecruitmentUser();
   const parsed = interviewSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check interview details." };
+  await assertCareerApplicationAccess(actor, PERMISSIONS.RECRUITMENT_ACCESS, parsed.data.applicationId);
 
   const scheduledAt = new Date(parsed.data.scheduledAt);
   if (Number.isNaN(scheduledAt.getTime())) return { ok: false, message: "Choose a valid interview time." };
@@ -307,7 +319,7 @@ export async function scheduleCareerInterviewAction(_: CareerActionState, formDa
         notes: nullable(parsed.data.notes)
       }
     });
-    await tx.careerApplication.update({ where: { id: parsed.data.applicationId }, data: { stage: "INTERVIEW_SCHEDULED", assignedHrId: actor.id } });
+    await tx.careerApplication.update({ where: { id: parsed.data.applicationId }, data: { ...recruitmentScopeData(actor), stage: "INTERVIEW_SCHEDULED", assignedHrId: actor.id } });
     await tx.careerApplicationActivity.create({
       data: { applicationId: parsed.data.applicationId, actorId: actor.id, action: "CAREER_INTERVIEW_SCHEDULED", note: `Interview scheduled for ${scheduledAt.toLocaleString()}.` }
     });
@@ -329,6 +341,7 @@ export async function recordCareerInterviewResultAction(_: CareerActionState, fo
   const actor = await requireRecruitmentUser();
   const parsed = interviewResultSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check interview result." };
+  await assertCareerInterviewAccess(actor, PERMISSIONS.RECRUITMENT_ACCESS, parsed.data.interviewId);
 
   const interview = await prisma.$transaction(async (tx) => {
     const updated = await tx.careerInterview.update({
@@ -357,6 +370,7 @@ export async function saveOfficeInterviewFormAction(_: CareerActionState, formDa
   const actor = await requireRecruitmentUser();
   const parsed = officeInterviewFormSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check interview form details." };
+  await assertCareerApplicationAccess(actor, PERMISSIONS.RECRUITMENT_ACCESS, parsed.data.applicationId);
 
   const current = await prisma.careerApplication.findUnique({
     where: { id: parsed.data.applicationId },
@@ -441,6 +455,10 @@ export async function startRMDevelopmentAction(_: CareerActionState, formData: F
   const actor = await requireRecruitmentUser();
   const parsed = rmDevelopmentStartSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check RM development details." };
+  await Promise.all([
+    assertRMDevelopmentAccess(actor, PERMISSIONS.RECRUITMENT_ACCESS, parsed.data.developmentId),
+    assertEmployeeAccess(actor, PERMISSIONS.RECRUITMENT_ACCESS, parsed.data.employeeId)
+  ]);
 
   const start = new Date(parsed.data.developmentStart);
   if (Number.isNaN(start.getTime())) return { ok: false, message: "Choose a valid start date." };
@@ -514,6 +532,7 @@ export async function updateRMTargetAction(_: CareerActionState, formData: FormD
   const actor = await requireRecruitmentUser();
   const parsed = rmDevelopmentTargetSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check target details." };
+  await assertRMDevelopmentAccess(actor, PERMISSIONS.RECRUITMENT_ACCESS, parsed.data.developmentId);
 
   const development = await prisma.$transaction(async (tx) => {
     const updated = await tx.relationshipManagerDevelopment.update({
@@ -559,6 +578,7 @@ export async function completeRMEvaluationAction(_: CareerActionState, formData:
   const actor = await requireRecruitmentUser();
   const parsed = rmEvaluationSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check evaluation details." };
+  await assertRMDevelopmentAccess(actor, PERMISSIONS.RECRUITMENT_ACCESS, parsed.data.developmentId);
 
   const current = await prisma.relationshipManagerDevelopment.findUnique({
     where: { id: parsed.data.developmentId },

@@ -6,7 +6,7 @@ import { getBdmDashboard, requireBdmUser } from "@/server/admissions/queries";
 
 export default async function BdmDashboardPage() {
   const user = await requireBdmUser();
-  const dashboard = await getBdmDashboard(user.id);
+  const dashboard = await getBdmDashboard();
   const wonLeads = dashboard.assignedLeads.filter((lead) => lead.status === "WON").length;
   const approvedCommission = dashboard.commissions.filter((item) => item.status === "APPROVED" || item.status === "PAID").reduce((sum, item) => sum + item.amount, 0);
 

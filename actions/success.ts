@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/server/auth/session";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { assertPermission } from "@/server/auth/authorization";
 import { founderProfileSchema, internshipSchema, placementApplicationSchema, placementSchema, portfolioSchema, projectSchema, resumeSchema } from "@/features/success/schemas";
 import { getOrCreatePortfolio, requireSuccessStudent } from "@/server/success/queries";
 
@@ -10,14 +11,6 @@ type State = { ok: boolean; message: string };
 function emptyToNull(value?: string) { return value && value.trim() ? value : null; }
 function list(value?: string) { return value?.split(",").map((item) => item.trim()).filter(Boolean) ?? []; }
 function dateOrNull(value?: string) { return value ? new Date(value) : null; }
-
-async function requireApprover(rolesAllowed: string[]) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Unauthorized");
-  const roles = user.roles.map((item) => item.role.name);
-  if (!roles.some((role) => rolesAllowed.includes(role))) throw new Error("Forbidden");
-  return user;
-}
 
 export async function updatePortfolioAction(_: State, formData: FormData): Promise<State> {
   const user = await requireSuccessStudent();
@@ -86,20 +79,20 @@ export async function saveFounderProfileAction(_: State, formData: FormData): Pr
 }
 
 export async function approvePortfolioProjectAction(projectId: string) {
-  const approver = await requireApprover(["Trainer", "Director", "Admin"]);
+  const approver = await assertPermission(PERMISSIONS.SUCCESS_REVIEW);
   await prisma.portfolioProject.update({ where: { id: projectId }, data: { status: "APPROVED", mentorApproved: true, approvedById: approver.id, approvedAt: new Date() } });
   revalidatePath("/success/projects");
 }
 
 export async function verifySkillAction(studentId: string, name: string, level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "PROFESSIONAL", source: string) {
-  const approver = await requireApprover(["Trainer", "Director", "Admin"]);
+  const approver = await assertPermission(PERMISSIONS.SUCCESS_REVIEW);
   const portfolio = await getOrCreatePortfolio(studentId, "student");
   await prisma.verifiedSkill.create({ data: { studentId, portfolioId: portfolio.id, name, level, verificationSource: source, verifiedById: approver.id } });
   revalidatePath("/success/skills");
 }
 
 export async function issueCertificateAction(studentId: string, title: string, type: "COURSE" | "SKILL" | "ACHIEVEMENT" | "COMPLETION" | "INSTRUCTOR") {
-  const approver = await requireApprover(["Director", "Admin"]);
+  const approver = await assertPermission(PERMISSIONS.CERTIFICATE_ISSUE);
   const portfolio = await getOrCreatePortfolio(studentId, "student");
   const certificateId = `SC-${Date.now()}-${studentId.slice(0, 6)}`;
   const certificate = await prisma.certificate.create({ data: { studentId, portfolioId: portfolio.id, title, type, status: "ISSUED", certificateId, issuedAt: new Date(), approvedById: approver.id, approvedAt: new Date(), qrPayload: `/verify/certificate/${certificateId}` } });
@@ -108,7 +101,7 @@ export async function issueCertificateAction(studentId: string, title: string, t
 }
 
 export async function publishAchievementAction(studentId: string, title: string, description: string, type: "BADGE" | "MILESTONE" | "STREAK" | "HACKATHON" | "TOP_PERFORMER" | "COMMUNITY_AWARD" | "FOUNDER_ACHIEVEMENT") {
-  const approver = await requireApprover(["Director", "Admin"]);
+  const approver = await assertPermission(PERMISSIONS.CERTIFICATE_ISSUE);
   const portfolio = await getOrCreatePortfolio(studentId, "student");
   await prisma.achievement.create({ data: { studentId, portfolioId: portfolio.id, title, description, type, status: "APPROVED", publishedById: approver.id, publishedAt: new Date() } });
   revalidatePath("/success/achievements");

@@ -1,6 +1,12 @@
 import { prisma } from "@/lib/prisma";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requireAdmissionUser } from "@/server/admissions/queries";
+import { batchScopeWhere, enrollmentLogScopeWhere, enrollmentScopeWhere } from "@/server/auth/scoping";
 
 export async function getStudentBatchOnboardingQueue() {
+  const user = await requireAdmissionUser();
+  const enrollmentScope = enrollmentScopeWhere(user, PERMISSIONS.ADMISSIONS_ACCESS);
+  const batchScope = batchScopeWhere(user, PERMISSIONS.ADMISSIONS_ACCESS);
   const now = new Date();
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
@@ -9,7 +15,7 @@ export async function getStudentBatchOnboardingQueue() {
 
   const [batchPending, activeBatches, readyEnrollments, todaysClasses, attendanceRecords, pendingTasks] = await Promise.all([
     prisma.studentEnrollment.findMany({
-      where: { status: "ACTIVE", batchId: null },
+      where: { AND: [enrollmentScope, { status: "ACTIVE", batchId: null }] },
       orderBy: { createdAt: "desc" },
       include: {
         student: { include: { activationProfile: true } },
@@ -18,7 +24,7 @@ export async function getStudentBatchOnboardingQueue() {
       }
     }),
     prisma.batch.findMany({
-      where: { status: "ACTIVE" },
+      where: { AND: [batchScope, { status: "ACTIVE" }] },
       orderBy: [{ startsAt: "asc" }, { createdAt: "desc" }],
       include: {
         program: true,
@@ -33,7 +39,7 @@ export async function getStudentBatchOnboardingQueue() {
       }
     }),
     prisma.studentEnrollment.findMany({
-      where: { status: "ACTIVE", batchId: { not: null } },
+      where: { AND: [enrollmentScope, { status: "ACTIVE", batchId: { not: null } }] },
       orderBy: { updatedAt: "desc" },
       take: 12,
       include: {
@@ -44,14 +50,15 @@ export async function getStudentBatchOnboardingQueue() {
       }
     }),
     prisma.calendarEvent.count({
-      where: { startsAt: { gte: todayStart, lt: todayEnd }, status: { in: ["SCHEDULED", "RESCHEDULED"] } }
+      where: { batch: batchScope, startsAt: { gte: todayStart, lt: todayEnd }, status: { in: ["SCHEDULED", "RESCHEDULED"] } }
     }),
     prisma.attendanceRecord.findMany({
-      where: { session: { sessionDate: { gte: todayStart, lt: todayEnd } } },
+      where: { batch: batchScope, session: { sessionDate: { gte: todayStart, lt: todayEnd } } },
       select: { status: true }
     }),
     prisma.activity.count({
       where: {
+        batch: batchScope,
         required: true,
         type: { in: ["TASK", "PROJECT", "ASSESSMENT", "REFLECTION", "QUIZ"] },
         progress: { some: { status: { not: "COMPLETED" } } }
@@ -81,4 +88,14 @@ export async function getStudentBatchOnboardingQueue() {
       activeBatchIds
     }
   };
+}
+
+export async function getScopedEnrollmentLogs() {
+  const user = await requireAdmissionUser();
+  return prisma.enrollmentLog.findMany({
+    where: enrollmentLogScopeWhere(user, PERMISSIONS.ADMISSIONS_ACCESS),
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    include: { student: true, batch: true, enrollment: { include: { program: true } } }
+  });
 }

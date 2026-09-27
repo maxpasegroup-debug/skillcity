@@ -2,12 +2,12 @@ import Link from "next/link";
 import { Building2, KeyRound, ListChecks, ShieldCheck, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
-import { ensureDefaultPipeline } from "@/server/admissions/queries";
+import { getPipelineStages } from "@/server/admissions/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
-  const stages = await ensureDefaultPipeline();
+  const stages = await getPipelineStages();
 
   return (
     <div className="space-y-10">

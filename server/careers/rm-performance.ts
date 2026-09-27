@@ -1,5 +1,8 @@
 import type { Prisma, RelationshipManagerDevelopment } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { PERMISSIONS, type AuthorizationUser } from "@/lib/auth/permissions";
+import { assertPermission } from "@/server/auth/authorization";
+import { applicationScopeWhere, careerApplicationScopeWhere } from "@/server/auth/scoping";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -34,12 +37,12 @@ function dateWhere(start?: Date | null, end?: Date | null): Prisma.DateTimeNulla
   };
 }
 
-export async function getAttributedAdmissionsForRM(userId: string, development: Pick<RelationshipManagerDevelopment, "developmentStart" | "developmentEnd">): Promise<RMAttributedAdmission[]> {
+export async function getAttributedAdmissionsForRM(userId: string, development: Pick<RelationshipManagerDevelopment, "developmentStart" | "developmentEnd">, actor?: AuthorizationUser): Promise<RMAttributedAdmission[]> {
   if (!development.developmentStart || !development.developmentEnd) return [];
   const convertedAt = dateWhere(development.developmentStart, development.developmentEnd);
 
   const applications = await prisma.admissionApplication.findMany({
-    where: {
+    where: { AND: [actor ? applicationScopeWhere(actor, PERMISSIONS.RECRUITMENT_ACCESS) : {}, {
       status: "APPROVED",
       studentId: { not: null },
       lead: {
@@ -51,7 +54,7 @@ export async function getAttributedAdmissionsForRM(userId: string, development: 
           { referrals: { some: { referrerId: userId } } }
         ]
       }
-    },
+    }] },
     orderBy: [{ lead: { convertedAt: "desc" } }, { updatedAt: "desc" }],
     include: {
       lead: { include: { pipelineStage: true } },
@@ -150,9 +153,9 @@ export function calculateRMPerformance(input: {
   };
 }
 
-export async function buildRMPerformance(development: RMDevelopmentWithRelations) {
+export async function buildRMPerformance(development: RMDevelopmentWithRelations, actor?: AuthorizationUser) {
   const userId = development.employee?.userId ?? development.application.employee?.userId;
-  const attributedAdmissions = userId ? await getAttributedAdmissionsForRM(userId, development) : [];
+  const attributedAdmissions = userId ? await getAttributedAdmissionsForRM(userId, development, actor) : [];
   const performance = calculateRMPerformance({ development, actualAdmissions: attributedAdmissions.length });
   return { development, userId, attributedAdmissions, performance };
 }
@@ -176,11 +179,15 @@ export async function getRMPerformanceForUser(userId: string) {
 }
 
 export async function getRMPerformanceManagement(filters?: { district?: string; performance?: RMPerformanceStatus; status?: string }) {
+  const actor = await assertPermission(PERMISSIONS.RECRUITMENT_ACCESS);
   const developments = await prisma.relationshipManagerDevelopment.findMany({
-    where: {
+    where: { AND: [
+      { application: careerApplicationScopeWhere(actor, PERMISSIONS.RECRUITMENT_ACCESS) },
+      {
       ...(filters?.district ? { application: { district: { contains: filters.district, mode: "insensitive" } } } : {}),
       ...(filters?.status ? { status: filters.status as RelationshipManagerDevelopment["status"] } : {})
-    },
+      }
+    ] },
     orderBy: { updatedAt: "desc" },
     include: {
       application: { include: { employee: { include: { user: true } } } },
@@ -189,6 +196,6 @@ export async function getRMPerformanceManagement(filters?: { district?: string; 
     }
   });
 
-  const rows = await Promise.all(developments.map(buildRMPerformance));
+  const rows = await Promise.all(developments.map((development) => buildRMPerformance(development, actor)));
   return filters?.performance ? rows.filter((row) => row.performance.performanceStatus === filters.performance) : rows;
 }

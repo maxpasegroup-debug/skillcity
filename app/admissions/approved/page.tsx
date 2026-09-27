@@ -1,21 +1,12 @@
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
-import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
+import { getAdmissionApplicationsByStatus } from "@/server/admissions/queries";
 
 export default async function ApprovedAdmissionsPage() {
-  const applications = await prisma.admissionApplication.findMany({
-    where: { status: "APPROVED" },
-    orderBy: { reviewedAt: "desc" },
-    include: {
-      lead: true,
-      program: true,
-      studentLoginCredentials: { orderBy: { createdAt: "desc" }, take: 1 },
-      whatsAppMessageLogs: { orderBy: { createdAt: "desc" }, take: 1 }
-    }
-  });
+  const applications = await getAdmissionApplicationsByStatus("APPROVED");
 
   return (
     <div className="space-y-10">

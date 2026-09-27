@@ -5,15 +5,12 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { hashPassword, verifyPassword } from "@/lib/security/password";
+import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { createSession, revokeCurrentSession } from "@/server/auth/session";
 import { requireAdminUser } from "@/server/admin/queries";
 import { adminLoginSchema, adminPinChangeSchema, adminResetAccessSchema, adminRoleChangeSchema, adminUserStatusSchema } from "@/features/admin/schemas";
 
 type State = { ok: boolean; message: string };
-
-const INITIAL_ADMIN_MOBILE = "8089239823";
-const INITIAL_ADMIN_EMAIL = "8089239823@admin.airaskillcity.local";
-const INITIAL_ADMIN_PIN_HASH = "$2b$12$BUZGyxtVpc4k43LDgjbQuewk8qc9qhjxFx0.6IbNUYJdRRttElxGy";
 
 function normalizeMobile(value: string) {
   return value.replace(/\D/g, "");
@@ -23,7 +20,18 @@ function adminEmailForMobile(mobile: string) {
   return `${normalizeMobile(mobile)}@admin.airaskillcity.local`;
 }
 
-async function ensureInitialAdmin() {
+function initialAdminConfig() {
+  const mobile = process.env.INITIAL_ADMIN_MOBILE ? normalizeMobile(process.env.INITIAL_ADMIN_MOBILE) : "";
+  const pinHash = process.env.INITIAL_ADMIN_PIN_HASH?.trim() ?? "";
+  if (!mobile || !pinHash.startsWith("$2")) return null;
+  return {
+    mobile,
+    pinHash,
+    email: process.env.INITIAL_ADMIN_EMAIL?.trim().toLowerCase() || adminEmailForMobile(mobile)
+  };
+}
+
+async function ensureInitialAdmin(config: NonNullable<ReturnType<typeof initialAdminConfig>>) {
   const adminRole = await prisma.role.upsert({
     where: { name: "Admin" },
     update: {},
@@ -37,16 +45,15 @@ async function ensureInitialAdmin() {
   });
 
   const user = await prisma.user.upsert({
-    where: { email: INITIAL_ADMIN_EMAIL },
+    where: { email: config.email },
     update: {
-      passwordHash: INITIAL_ADMIN_PIN_HASH,
       status: "ACTIVE",
       deletedAt: null
     },
     create: {
       name: "AIRA Skill City Admin",
-      email: INITIAL_ADMIN_EMAIL,
-      passwordHash: INITIAL_ADMIN_PIN_HASH,
+      email: config.email,
+      passwordHash: config.pinHash,
       status: "ACTIVE"
     }
   });
@@ -73,17 +80,18 @@ export async function adminLoginAction(_: State, formData: FormData): Promise<St
   const limited = checkRateLimit(`admin-login:${mobile}`, 5, 15 * 60_000);
   if (!limited.allowed) return { ok: false, message: "Too many attempts. Please wait and try again." };
 
-  if (mobile === INITIAL_ADMIN_MOBILE) {
-    await ensureInitialAdmin();
+  const bootstrap = initialAdminConfig();
+  if (bootstrap && mobile === bootstrap.mobile) {
+    await ensureInitialAdmin(bootstrap);
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: adminEmailForMobile(mobile) },
-    include: { roles: { include: { role: true } } }
+    where: { email: bootstrap && mobile === bootstrap.mobile ? bootstrap.email : adminEmailForMobile(mobile) },
+    include: { roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } } }
   });
 
   const roles = user?.roles.map((item) => item.role.name) ?? [];
-  const valid = user && !user.deletedAt && user.status === "ACTIVE" && roles.some((role) => role === "Admin" || role === "Director") && await verifyPassword(parsed.data.pin, user.passwordHash);
+  const valid = user && !user.deletedAt && user.status === "ACTIVE" && hasPermission(user, PERMISSIONS.ADMIN_ACCESS) && await verifyPassword(parsed.data.pin, user.passwordHash);
 
   if (!valid) {
     await prisma.auditLog.create({ data: { action: "ADMIN_LOGIN_FAILED", entity: "User", metadata: { mobile } } });

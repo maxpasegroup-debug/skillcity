@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { hasPermission, PERMISSIONS, type AuthorizationUser } from "@/lib/auth/permissions";
 import { ensureDefaultPipeline, requireCounsellorUser } from "@/server/admissions/queries";
+import { assertLeadAccess, assertProgramAccess } from "@/server/auth/resource-access";
 import { counsellingDecisionSchema, counsellorOutcomeLabels, nextActionLabels, readinessLabels, type CounsellorOutcome } from "@/features/counsellor/schemas";
 
 type ActionState = { ok: boolean; message: string };
@@ -23,11 +25,12 @@ function parseDateTime(value?: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function isLimitedCounsellor(roles: string[]) {
-  return roles.includes("Counsellor") && !roles.some((role) => role === "Admission" || role === "Director" || role === "Admin");
+function isLimitedCounsellor(user: AuthorizationUser) {
+  return hasPermission(user, PERMISSIONS.COUNSELLOR_ACCESS) && !hasPermission(user, PERMISSIONS.ADMISSIONS_ACCESS);
 }
 
-async function ensureCounsellorLeadAccess(leadId: string, actorId: string, limited: boolean) {
+async function ensureCounsellorLeadAccess(leadId: string, actor: AuthorizationUser, limited: boolean) {
+  await assertLeadAccess(actor, PERMISSIONS.COUNSELLOR_ACCESS, leadId);
   const lead = await prisma.lead.findUnique({
     where: { id: leadId },
     include: {
@@ -38,7 +41,7 @@ async function ensureCounsellorLeadAccess(leadId: string, actorId: string, limit
   });
   if (!lead) throw new Error("Lead not found.");
   const inCounsellingQueue = ["counselling-scheduled", "qualified"].includes(lead.pipelineStage.slug) || lead.activities.length > 0;
-  if (limited && lead.assignedToId && lead.assignedToId !== actorId && !inCounsellingQueue) throw new Error("This candidate is assigned to another team member.");
+  if (limited && lead.assignedToId && lead.assignedToId !== actor.id && !inCounsellingQueue) throw new Error("This candidate is assigned to another team member.");
   return lead;
 }
 
@@ -68,8 +71,7 @@ function buildCounsellingNote(input: {
 
 export async function saveCounsellingDecisionAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const actor = await requireCounsellorUser();
-  const roles = actor.roles.map((item) => item.role.name);
-  const limited = isLimitedCounsellor(roles);
+  const limited = isLimitedCounsellor(actor);
   const parsed = counsellingDecisionSchema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {
@@ -78,7 +80,8 @@ export async function saveCounsellingDecisionAction(_: ActionState, formData: Fo
 
   try {
     const stages = await ensureDefaultPipeline();
-    const lead = await ensureCounsellorLeadAccess(parsed.data.leadId, actor.id, limited);
+    const lead = await ensureCounsellorLeadAccess(parsed.data.leadId, actor, limited);
+    if (parsed.data.recommendedProgramId) await assertProgramAccess(actor, PERMISSIONS.COUNSELLOR_ACCESS, parsed.data.recommendedProgramId);
     const targetStage = stages.find((stage) => stage.slug === outcomeStage[parsed.data.outcome]);
     const recommendedProgram = parsed.data.recommendedProgramId
       ? await prisma.program.findUnique({ where: { id: parsed.data.recommendedProgramId } })
@@ -242,12 +245,11 @@ export async function saveCounsellingDecisionAction(_: ActionState, formData: Fo
 
 export async function assignCounsellingToMeAction(formData: FormData) {
   const actor = await requireCounsellorUser();
-  const roles = actor.roles.map((item) => item.role.name);
   const leadId = String(formData.get("leadId") ?? "");
 
   try {
     await ensureDefaultPipeline();
-    await ensureCounsellorLeadAccess(leadId, actor.id, isLimitedCounsellor(roles));
+    await ensureCounsellorLeadAccess(leadId, actor, isLimitedCounsellor(actor));
     await prisma.$transaction([
       prisma.lead.update({ where: { id: leadId }, data: { assignedToId: actor.id } }),
       prisma.leadActivity.create({

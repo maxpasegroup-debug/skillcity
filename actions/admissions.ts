@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/security/password";
 import { createToken } from "@/lib/security/token";
+import { PERMISSIONS, resolveAuthorizedScopes } from "@/lib/auth/permissions";
 import { requireAdmissionUser, requireBdmUser, ensureDefaultPipeline } from "@/server/admissions/queries";
+import { assertApplicationAccess, assertBatchAccess, assertInvoiceAccess, assertLeadAccess, assertProgramAccess, assertStudentAccess } from "@/server/auth/resource-access";
 import { approvedAdmissionPinTemplate } from "@/server/whatsapp/templates";
 import { sendWhatsAppMessage } from "@/server/whatsapp/service";
 import { admissionProgramSchema, applicationReviewSchema, applicationSchema, commissionSchema, communicationSchema, counsellingSchema, documentSchema, invoiceSchema, leadSchema, paymentSchema, studentCredentialSchema } from "@/features/admissions/schemas";
@@ -30,6 +32,9 @@ export async function createLeadAction(_: State, formData: FormData): Promise<St
   const parsed = leadSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check lead details." };
   const stages = await ensureDefaultPipeline();
+  const resolved = resolveAuthorizedScopes(actor, PERMISSIONS.ADMISSIONS_MANAGE);
+  if (!resolved.global && resolved.assignments.length !== 1) return { ok: false, message: "Choose a single active organization scope before creating a lead." };
+  const organization = resolved.assignments[0];
   const lead = await prisma.lead.create({
     data: {
       ...parsed.data,
@@ -38,7 +43,11 @@ export async function createLeadAction(_: State, formData: FormData): Promise<St
       sourceId: emptyToNull(parsed.data.sourceId),
       assignedToId: emptyToNull(parsed.data.assignedToId),
       pipelineStageId: stages[0].id,
-      ownerId: actor.id
+      ownerId: actor.id,
+      institutionId: organization?.institutionId,
+      divisionId: organization?.divisionId,
+      districtId: organization?.districtId,
+      campusId: organization?.campusId
     }
   });
   await prisma.leadActivity.create({ data: { leadId: lead.id, actorId: actor.id, type: "LEAD_CREATED", summary: "Lead created." } });
@@ -51,6 +60,8 @@ export async function scheduleCounsellingAction(_: State, formData: FormData): P
   const actor = await requireAdmissionUser();
   const parsed = counsellingSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check counselling details." };
+  await assertLeadAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.leadId);
+  if (parsed.data.batchId) await assertBatchAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.batchId);
   const session = await prisma.counsellingSession.create({
     data: {
       leadId: parsed.data.leadId,
@@ -69,9 +80,13 @@ export async function scheduleCounsellingAction(_: State, formData: FormData): P
 }
 
 export async function createApplicationAction(_: State, formData: FormData): Promise<State> {
-  await requireAdmissionUser();
+  const actor = await requireAdmissionUser();
   const parsed = applicationSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check application details." };
+  await Promise.all([
+    assertLeadAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.leadId),
+    assertProgramAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.programId)
+  ]);
   await prisma.admissionApplication.create({ data: { ...parsed.data, submittedAt: parsed.data.status === "SUBMITTED" ? new Date() : null } });
   revalidatePath("/admissions/applications");
   return { ok: true, message: "Application saved." };
@@ -81,6 +96,7 @@ export async function reviewApplicationAction(_: State, formData: FormData): Pro
   const actor = await requireAdmissionUser();
   const parsed = applicationReviewSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check review details." };
+  await assertApplicationAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.applicationId);
 
   const stages = await ensureDefaultPipeline();
   const stageByStatus = {
@@ -139,7 +155,7 @@ export async function reviewApplicationAction(_: State, formData: FormData): Pro
 }
 
 export async function saveAdmissionProgramAction(_: State, formData: FormData): Promise<State> {
-  await requireAdmissionUser();
+  const actor = await requireAdmissionUser();
   const parsed = admissionProgramSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check program details." };
 
@@ -158,13 +174,19 @@ export async function saveAdmissionProgramAction(_: State, formData: FormData): 
   };
 
   if (parsed.data.id) {
+    await assertProgramAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.id);
     await prisma.program.update({ where: { id: parsed.data.id }, data });
   } else {
-    await prisma.program.upsert({
-      where: { slug: parsed.data.slug },
-      update: data,
-      create: data
-    });
+    const resolved = resolveAuthorizedScopes(actor, PERMISSIONS.ADMISSIONS_MANAGE);
+    if (!resolved.global && resolved.assignments.length !== 1) return { ok: false, message: "Choose a single active organization scope before creating a program." };
+    const organization = resolved.assignments[0];
+    const existing = await prisma.program.findUnique({ where: { slug: parsed.data.slug }, select: { id: true } });
+    if (existing) {
+      await assertProgramAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, existing.id);
+      await prisma.program.update({ where: { id: existing.id }, data });
+    } else {
+      await prisma.program.create({ data: { ...data, institutionId: organization?.institutionId, divisionId: organization?.divisionId, campusId: organization?.campusId, departmentId: organization?.departmentId } });
+    }
   }
 
   revalidatePath("/admissions/programs");
@@ -176,6 +198,7 @@ export async function generateStudentCredentialAction(_: State, formData: FormDa
   const actor = await requireAdmissionUser();
   const parsed = studentCredentialSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check WhatsApp number." };
+  await assertApplicationAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.applicationId);
 
   const whatsapp = normalizeWhatsApp(parsed.data.whatsapp);
   if (whatsapp.length < 7) return { ok: false, message: "Enter a valid WhatsApp number." };
@@ -335,18 +358,25 @@ export async function generateStudentCredentialAction(_: State, formData: FormDa
 }
 
 export async function saveDocumentAction(_: State, formData: FormData): Promise<State> {
-  await requireAdmissionUser();
+  const actor = await requireAdmissionUser();
   const parsed = documentSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check document details." };
+  if (!parsed.data.applicationId && !parsed.data.studentId) return { ok: false, message: "Link the document to an application or student." };
+  if (parsed.data.applicationId) await assertApplicationAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.applicationId);
+  if (parsed.data.studentId) await assertStudentAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.studentId);
   await prisma.studentDocument.create({ data: { ...parsed.data, applicationId: emptyToNull(parsed.data.applicationId), studentId: emptyToNull(parsed.data.studentId), verifiedAt: parsed.data.status === "VERIFIED" ? new Date() : null } });
   revalidatePath("/admissions/documents");
   return { ok: true, message: "Document saved." };
 }
 
 export async function createInvoiceAction(_: State, formData: FormData): Promise<State> {
-  await requireAdmissionUser();
+  const actor = await requireAdmissionUser();
   const parsed = invoiceSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check invoice details." };
+  if (parsed.data.leadId) await assertLeadAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.leadId);
+  if (parsed.data.programId) await assertProgramAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.programId);
+  if (parsed.data.batchId) await assertBatchAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.batchId);
+  if (parsed.data.studentId) await assertStudentAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.studentId);
   const total = parsed.data.subtotal - parsed.data.discount - parsed.data.scholarship + parsed.data.gst;
   await prisma.feeInvoice.create({
     data: {
@@ -369,9 +399,10 @@ export async function createInvoiceAction(_: State, formData: FormData): Promise
 }
 
 export async function recordPaymentAction(_: State, formData: FormData): Promise<State> {
-  await requireAdmissionUser();
+  const actor = await requireAdmissionUser();
   const parsed = paymentSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check payment details." };
+  await assertInvoiceAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.invoiceId);
   await prisma.paymentTransaction.create({ data: { ...parsed.data, paidAt: parsed.data.status === "SUCCESS" ? new Date() : null } });
   revalidatePath("/admissions/payments");
   revalidatePath("/admissions/action-queue");
@@ -391,6 +422,7 @@ export async function saveCommunicationAction(_: State, formData: FormData): Pro
   const actor = await requireAdmissionUser();
   const parsed = communicationSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check communication details." };
+  if (parsed.data.leadId) await assertLeadAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.leadId);
   await prisma.communicationLog.create({ data: { ...parsed.data, leadId: emptyToNull(parsed.data.leadId), userId: actor.id, scheduledAt: dateOrNull(parsed.data.scheduledAt), sentAt: parsed.data.status === "SENT" ? new Date() : null } });
   revalidatePath("/admissions/communications");
   return { ok: true, message: "Communication saved." };
@@ -398,6 +430,7 @@ export async function saveCommunicationAction(_: State, formData: FormData): Pro
 
 export async function convertPaidLeadToEnrollmentAction(invoiceId: string) {
   const actor = await requireAdmissionUser();
+  await assertInvoiceAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, invoiceId);
   const invoice = await prisma.feeInvoice.findUnique({ where: { id: invoiceId }, include: { lead: true, program: { include: { journeys: { where: { status: "ACTIVE" }, take: 1 } } }, batch: true } });
   if (!invoice?.lead || !invoice.program || !invoice.batch || invoice.status !== "PAID") throw new Error("Paid invoice with lead, program, and batch is required.");
   const email = invoice.lead.email ?? `${invoice.lead.phone}@skillcity.local`;

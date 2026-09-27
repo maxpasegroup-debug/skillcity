@@ -1,14 +1,10 @@
 import { XCircle } from "lucide-react";
-import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
+import { getAdmissionApplicationsByStatus } from "@/server/admissions/queries";
 
 export default async function RejectedAdmissionsPage() {
-  const applications = await prisma.admissionApplication.findMany({
-    where: { status: "REJECTED" },
-    orderBy: { reviewedAt: "desc" },
-    include: { lead: { include: { leadNotes: { orderBy: { createdAt: "desc" }, take: 1 } } }, program: true }
-  });
+  const applications = await getAdmissionApplicationsByStatus("REJECTED");
 
   return (
     <div className="space-y-10">

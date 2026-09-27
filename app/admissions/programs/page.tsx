@@ -1,15 +1,11 @@
 import { BookOpen } from "lucide-react";
-import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
 import { AdmissionProgramForm } from "@/features/admissions/components/admission-cell-forms";
+import { getAdmissionProgramsWithCounts } from "@/server/admissions/queries";
 
 export default async function AdmissionProgramsPage() {
-  const programs = await prisma.program.findMany({
-    where: { deletedAt: null },
-    orderBy: [{ displayOrder: "asc" }, { updatedAt: "desc" }],
-    include: { _count: { select: { leads: true, admissionApplications: true } } }
-  });
+  const programs = await getAdmissionProgramsWithCounts();
 
   return (
     <div className="space-y-10">

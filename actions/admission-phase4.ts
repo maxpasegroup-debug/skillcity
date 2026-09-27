@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/security/password";
 import { createToken } from "@/lib/security/token";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 import { ensureDefaultPipeline, requireAdmissionUser } from "@/server/admissions/queries";
+import { assertApplicationAccess, assertInvoiceAccess } from "@/server/auth/resource-access";
 import { approvedAdmissionPinTemplate } from "@/server/whatsapp/templates";
 import { sendWhatsAppMessage } from "@/server/whatsapp/service";
 import { admissionActivationSchema, manualPaymentCaptureSchema, paymentRequestSchema, paymentVerificationSchema } from "@/features/admissions/phase4-schemas";
@@ -42,6 +44,7 @@ export async function createPaymentRequestForApplicationAction(_: State, formDat
   const actor = await requireAdmissionUser();
   const parsed = paymentRequestSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check payment request." };
+  await assertApplicationAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.applicationId);
 
   const application = await prisma.admissionApplication.findUnique({
     where: { id: parsed.data.applicationId },
@@ -110,6 +113,7 @@ export async function captureManualPaymentAction(_: State, formData: FormData): 
   const actor = await requireAdmissionUser();
   const parsed = manualPaymentCaptureSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check payment details." };
+  await assertInvoiceAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.invoiceId);
 
   const invoice = await prisma.feeInvoice.findUnique({ where: { id: parsed.data.invoiceId }, include: { lead: true, program: true, transactions: true } });
   if (!invoice) return { ok: false, message: "Invoice not found." };
@@ -164,6 +168,7 @@ export async function verifyPaymentAction(_: State, formData: FormData): Promise
     include: { invoice: { include: { lead: true, program: true, transactions: true } } }
   });
   if (!payment) return { ok: false, message: "Payment not found." };
+  await assertInvoiceAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, payment.invoiceId);
   if (payment.status === "SUCCESS" && payment.invoice.status === "PAID" && parsed.data.decision === "VERIFIED") return { ok: true, message: "Payment is already verified." };
 
   const totalVerifiedBefore = payment.invoice.transactions.filter((item) => item.id !== payment.id && item.status === "SUCCESS").reduce((sum, item) => sum + item.amount, 0);
@@ -219,6 +224,8 @@ export async function confirmAdmissionAndActivateStudentAction(_: State, formDat
   const actor = await requireAdmissionUser();
   const parsed = admissionActivationSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check activation details." };
+  await assertApplicationAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.applicationId);
+  if (parsed.data.invoiceId) await assertInvoiceAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.invoiceId);
 
   const application = await prisma.admissionApplication.findUnique({
     where: { id: parsed.data.applicationId },

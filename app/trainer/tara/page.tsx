@@ -1,16 +1,13 @@
-import { redirect } from "next/navigation";
 import { TaraChat } from "@/features/tara/components/tara-chat";
 import { getTaraConversations } from "@/server/ai/conversations";
 import { trainerSuggestions } from "@/server/ai/prompts";
-import { getCurrentUser } from "@/server/auth/session";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/server/auth/authorization";
 
 export const dynamic = "force-dynamic";
 
 export default async function TrainerTaraPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  const roles = user.roles.map((item) => item.role.name);
-  if (!roles.some((role) => ["Trainer", "Director", "Admin"].includes(role))) redirect("/dashboard");
+  const user = await requirePermission(PERMISSIONS.AI_TRAINER);
 
   const conversations = await getTaraConversations(user.id, "TRAINER");
   return (

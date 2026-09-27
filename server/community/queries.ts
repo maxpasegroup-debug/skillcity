@@ -1,11 +1,9 @@
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/server/auth/session";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/server/auth/authorization";
 
 export async function requireCommunityUser() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  return user;
+  return requirePermission(PERMISSIONS.COMMUNITY_ACCESS);
 }
 
 export async function getOrCreateWallet(userId: string) {

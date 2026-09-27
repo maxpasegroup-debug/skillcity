@@ -2,8 +2,7 @@ import { CalendarClock, CheckCircle2, GraduationCap, MonitorUp, Users } from "lu
 import { Card, CardContent } from "@/components/ui/card";
 import { BatchAssignmentForm } from "@/features/admissions/components/batch-assignment-form";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
-import { prisma } from "@/lib/prisma";
-import { getStudentBatchOnboardingQueue } from "@/server/admissions/phase5-queries";
+import { getScopedEnrollmentLogs, getStudentBatchOnboardingQueue } from "@/server/admissions/phase5-queries";
 
 function formatDate(date?: Date | null) {
   if (!date) return "Not set";
@@ -19,11 +18,7 @@ function capacityLabel(batch: { enrollmentLimit: number | null; enrollments: unk
 export default async function EnrollmentsPage() {
   const [queue, logs] = await Promise.all([
     getStudentBatchOnboardingQueue(),
-    prisma.enrollmentLog.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      include: { student: true, batch: true, enrollment: { include: { program: true } } }
-    })
+    getScopedEnrollmentLogs()
   ]);
   const batchOptions = queue.activeBatches.map((batch) => ({
     id: batch.id,

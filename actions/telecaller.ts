@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { hasPermission, PERMISSIONS, type AuthorizationUser } from "@/lib/auth/permissions";
 import { ensureDefaultPipeline, requireTelecallerUser } from "@/server/admissions/queries";
+import { assertLeadAccess } from "@/server/auth/resource-access";
 import { telecallerOutcomeLabels, telecallerOutcomeSchema, type TelecallerOutcome } from "@/features/telecaller/schemas";
 
 type ActionState = { ok: boolean; message: string };
@@ -24,24 +26,24 @@ function parseDateTime(value?: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function isLimitedTelecaller(roles: string[]) {
-  return roles.includes("Telecaller") && !roles.some((role) => role === "Admission" || role === "Director" || role === "Admin");
+function isLimitedTelecaller(user: AuthorizationUser) {
+  return hasPermission(user, PERMISSIONS.TELECALLER_ACCESS) && !hasPermission(user, PERMISSIONS.ADMISSIONS_ACCESS);
 }
 
-async function ensureLeadAccess(leadId: string, actorId: string, limited: boolean) {
+async function ensureLeadAccess(leadId: string, actor: AuthorizationUser, limited: boolean) {
+  await assertLeadAccess(actor, PERMISSIONS.TELECALLER_ACCESS, leadId);
   const lead = await prisma.lead.findUnique({
     where: { id: leadId },
-    select: { id: true, assignedToId: true, name: true }
+    select: { id: true, assignedToId: true, ownerId: true, institutionId: true, divisionId: true, districtId: true, campusId: true, name: true }
   });
   if (!lead) throw new Error("Lead not found.");
-  if (limited && lead.assignedToId && lead.assignedToId !== actorId) throw new Error("This lead is assigned to another team member.");
+  if (limited && lead.assignedToId && lead.assignedToId !== actor.id) throw new Error("This lead is assigned to another team member.");
   return lead;
 }
 
 export async function recordTelecallerOutcomeAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const actor = await requireTelecallerUser();
-  const roles = actor.roles.map((item) => item.role.name);
-  const limited = isLimitedTelecaller(roles);
+  const limited = isLimitedTelecaller(actor);
   const parsed = telecallerOutcomeSchema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {
@@ -50,7 +52,7 @@ export async function recordTelecallerOutcomeAction(_: ActionState, formData: Fo
 
   try {
     await ensureDefaultPipeline();
-    await ensureLeadAccess(parsed.data.leadId, actor.id, limited);
+    await ensureLeadAccess(parsed.data.leadId, actor, limited);
     const stageSlug = outcomeStage[parsed.data.outcome];
     const stage = stageSlug ? await prisma.pipelineStage.findUnique({ where: { slug: stageSlug } }) : null;
     const nextFollowUpAt = parseDateTime(parsed.data.nextFollowUpAt);
@@ -132,12 +134,11 @@ export async function recordTelecallerOutcomeAction(_: ActionState, formData: Fo
 
 export async function assignLeadToMeAction(formData: FormData) {
   const actor = await requireTelecallerUser();
-  const roles = actor.roles.map((item) => item.role.name);
-  const limited = isLimitedTelecaller(roles);
+  const limited = isLimitedTelecaller(actor);
   const leadId = String(formData.get("leadId") ?? "");
 
   try {
-    await ensureLeadAccess(leadId, actor.id, limited);
+    await ensureLeadAccess(leadId, actor, limited);
     await prisma.$transaction([
       prisma.lead.update({ where: { id: leadId }, data: { assignedToId: actor.id } }),
       prisma.leadActivity.create({

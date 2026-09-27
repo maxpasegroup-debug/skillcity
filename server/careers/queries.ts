@@ -1,38 +1,26 @@
-import { redirect } from "next/navigation";
 import type { CareerRecruitmentStage } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/server/auth/session";
-
-const recruitmentRoles = new Set(["Admin", "Director", "CEO", "COO", "HOD", "HR Manager", "HR Executive"]);
-const directorViewRoles = new Set(["Admin", "Director", "CEO", "COO", "HOD"]);
-const relationshipManagerRoles = new Set(["Relationship Manager", "Business Development", "Admin", "Director"]);
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/server/auth/authorization";
+import { careerApplicationScopeWhere, employeeScopeWhere } from "@/server/auth/scoping";
 
 export async function requireRecruitmentUser() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  const roles = user.roles.map((item) => item.role.name);
-  if (!roles.some((role) => recruitmentRoles.has(role))) redirect("/dashboard");
-  return user;
+  return requirePermission(PERMISSIONS.RECRUITMENT_ACCESS);
 }
 
 export async function requireDirectorRecruitmentView() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  const roles = user.roles.map((item) => item.role.name);
-  if (!roles.some((role) => directorViewRoles.has(role))) redirect("/dashboard");
-  return user;
+  return requirePermission(PERMISSIONS.RECRUITMENT_DIRECTOR);
 }
 
 export async function requireRelationshipManagerUser() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  const roles = user.roles.map((item) => item.role.name);
-  if (!roles.some((role) => relationshipManagerRoles.has(role))) redirect("/dashboard");
-  return user;
+  return requirePermission(PERMISSIONS.RELATIONSHIP_MANAGER_ACCESS);
 }
 
 export async function getRecruitmentOverview(filters?: { role?: string; category?: string; district?: string; stage?: CareerRecruitmentStage; q?: string }) {
-  const where = {
+  const user = await requireRecruitmentUser();
+  const scope = careerApplicationScopeWhere(user, PERMISSIONS.RECRUITMENT_ACCESS);
+  const employeeScope = employeeScopeWhere(user, PERMISSIONS.RECRUITMENT_ACCESS);
+  const filtersWhere = {
     ...(filters?.role ? { roleSlug: filters.role } : {}),
     ...(filters?.category ? { categorySlug: filters.category } : {}),
     ...(filters?.district ? { district: { contains: filters.district, mode: "insensitive" as const } } : {}),
@@ -48,6 +36,7 @@ export async function getRecruitmentOverview(filters?: { role?: string; category
         }
       : {})
   };
+  const where = { AND: [scope, filtersWhere] };
 
   const [
     total,
@@ -68,20 +57,20 @@ export async function getRecruitmentOverview(filters?: { role?: string; category
     interviewPipeline,
     rmDevelopments
   ] = await Promise.all([
-    prisma.careerApplication.count(),
-    prisma.careerApplication.count({ where: { stage: "NEW_APPLICATION" } }),
-    prisma.careerApplication.count({ where: { stage: { in: ["NEW_APPLICATION", "SCREENING"] } } }),
-    prisma.careerApplication.count({ where: { stage: { in: ["SHORTLISTED", "INTERVIEW_SCHEDULED"] } } }),
-    prisma.careerApplication.count({ where: { stage: { in: ["SELECTED", "OFFER_SENT", "OFFER_ACCEPTED"] } } }),
-    prisma.careerApplication.count({ where: { stage: "REJECTED" } }),
-    prisma.careerApplication.count({ where: { stage: "ON_HOLD" } }),
-    prisma.careerApplication.count({ where: { stage: "JOINED" } }),
-    prisma.employee.count({ where: { status: "ACTIVE" } }),
-    prisma.careerApplication.count({ where: { roleSlug: "academic-advisor" } }),
-    prisma.careerApplication.count({ where: { roleSlug: "academic-advisor", stage: { in: ["NEW_APPLICATION", "SCREENING", "SHORTLISTED", "INTERVIEW_SCHEDULED"] } } }),
-    prisma.careerApplication.groupBy({ by: ["roleTitle"], _count: true, orderBy: { _count: { roleTitle: "desc" } } }),
-    prisma.careerApplication.groupBy({ by: ["district"], _count: true, orderBy: { _count: { district: "desc" } }, take: 12 }),
-    prisma.careerApplication.groupBy({ by: ["categoryTitle"], _count: true, orderBy: { _count: { categoryTitle: "desc" } } }),
+    prisma.careerApplication.count({ where: scope }),
+    prisma.careerApplication.count({ where: { AND: [scope, { stage: "NEW_APPLICATION" }] } }),
+    prisma.careerApplication.count({ where: { AND: [scope, { stage: { in: ["NEW_APPLICATION", "SCREENING"] } }] } }),
+    prisma.careerApplication.count({ where: { AND: [scope, { stage: { in: ["SHORTLISTED", "INTERVIEW_SCHEDULED"] } }] } }),
+    prisma.careerApplication.count({ where: { AND: [scope, { stage: { in: ["SELECTED", "OFFER_SENT", "OFFER_ACCEPTED"] } }] } }),
+    prisma.careerApplication.count({ where: { AND: [scope, { stage: "REJECTED" }] } }),
+    prisma.careerApplication.count({ where: { AND: [scope, { stage: "ON_HOLD" }] } }),
+    prisma.careerApplication.count({ where: { AND: [scope, { stage: "JOINED" }] } }),
+    prisma.employee.count({ where: { AND: [employeeScope, { status: "ACTIVE" }] } }),
+    prisma.careerApplication.count({ where: { AND: [scope, { roleSlug: "academic-advisor" }] } }),
+    prisma.careerApplication.count({ where: { AND: [scope, { roleSlug: "academic-advisor", stage: { in: ["NEW_APPLICATION", "SCREENING", "SHORTLISTED", "INTERVIEW_SCHEDULED"] } }] } }),
+    prisma.careerApplication.groupBy({ by: ["roleTitle"], where: scope, _count: true, orderBy: { _count: { roleTitle: "desc" } } }),
+    prisma.careerApplication.groupBy({ by: ["district"], where: scope, _count: true, orderBy: { _count: { district: "desc" } }, take: 12 }),
+    prisma.careerApplication.groupBy({ by: ["categoryTitle"], where: scope, _count: true, orderBy: { _count: { categoryTitle: "desc" } } }),
     prisma.careerApplication.findMany({
       where,
       orderBy: { submittedAt: "desc" },
@@ -95,12 +84,13 @@ export async function getRecruitmentOverview(filters?: { role?: string; category
       }
     }),
     prisma.careerInterview.findMany({
-      where: { status: "SCHEDULED" },
+      where: { status: "SCHEDULED", application: scope },
       orderBy: { scheduledAt: "asc" },
       take: 12,
       include: { application: true, interviewer: true }
     }),
     prisma.relationshipManagerDevelopment.findMany({
+      where: { application: scope },
       orderBy: { updatedAt: "desc" },
       take: 20,
       include: { application: true, employee: { include: { user: true } } }
@@ -119,9 +109,9 @@ export async function getRecruitmentOverview(filters?: { role?: string; category
 }
 
 export async function getCareerApplicationDetail(applicationId: string) {
-  await requireRecruitmentUser();
-  return prisma.careerApplication.findUnique({
-    where: { id: applicationId },
+  const user = await requireRecruitmentUser();
+  return prisma.careerApplication.findFirst({
+    where: { AND: [{ id: applicationId }, careerApplicationScopeWhere(user, PERMISSIONS.RECRUITMENT_ACCESS)] },
     include: {
       assignedHr: true,
       reviewedBy: true,
@@ -133,11 +123,13 @@ export async function getCareerApplicationDetail(applicationId: string) {
   });
 }
 
-export function getRecruitmentUsers() {
+export async function getRecruitmentUsers() {
+  const user = await requireRecruitmentUser();
   return prisma.user.findMany({
     where: {
       deletedAt: null,
       status: "ACTIVE",
+      employeeProfile: employeeScopeWhere(user, PERMISSIONS.RECRUITMENT_ACCESS),
       roles: { some: { role: { name: { in: ["Admin", "Director", "CEO", "COO", "HOD", "HR Manager", "HR Executive", "Interviewer"] } } } }
     },
     orderBy: { name: "asc" },
@@ -145,9 +137,11 @@ export function getRecruitmentUsers() {
   });
 }
 
-export function getRMEmployeeOptions() {
+export async function getRMEmployeeOptions() {
+  const user = await requireRecruitmentUser();
   return prisma.employee.findMany({
     where: {
+      AND: [employeeScopeWhere(user, PERMISSIONS.RECRUITMENT_ACCESS)],
       status: "ACTIVE",
       user: {
         deletedAt: null,

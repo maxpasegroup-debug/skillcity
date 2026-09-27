@@ -1,19 +1,12 @@
 import type { Prisma } from "@prisma/client";
 import { ClipboardCheck } from "lucide-react";
-import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
 import { ApplicationReviewForm } from "@/features/admissions/components/admission-cell-forms";
+import { getAdmissionReviewQueue } from "@/server/admissions/queries";
 
 export default async function AdmissionReviewPage() {
-  const applications = await prisma.admissionApplication.findMany({
-    where: { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } },
-    orderBy: { submittedAt: "asc" },
-    include: {
-      lead: { include: { leadNotes: { orderBy: { createdAt: "desc" }, take: 2 } } },
-      program: true
-    }
-  });
+  const applications = await getAdmissionReviewQueue();
 
   return (
     <div className="space-y-10">

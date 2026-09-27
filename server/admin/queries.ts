@@ -1,11 +1,9 @@
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getAdmissionDashboard, ensureDefaultPipeline } from "@/server/admissions/queries";
+import { getAdmissionDashboard } from "@/server/admissions/queries";
 import { getRecruitmentOverview } from "@/server/careers/queries";
 import { getRMPerformanceManagement } from "@/server/careers/rm-performance";
-import { getCurrentUser } from "@/server/auth/session";
-
-const adminRoles = new Set(["Admin", "Director"]);
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/server/auth/authorization";
 
 function studentAttentionReasons(enrollment: {
   studentId: string;
@@ -41,17 +39,10 @@ function studentAttentionReasons(enrollment: {
 }
 
 export async function requireAdminUser() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/admin-login");
-
-  const roles = user.roles.map((item) => item.role.name);
-  if (!roles.some((role) => adminRoles.has(role))) redirect("/dashboard");
-
-  return user;
+  return requirePermission(PERMISSIONS.ADMIN_ACCESS, "/admin-login");
 }
 
 export async function getAdminCommandCenter() {
-  await ensureDefaultPipeline();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);

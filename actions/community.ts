@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { challengeSchema, eventSchema, groupSchema, listingSchema, postSchema } from "@/features/community/schemas";
 import { getOrCreateWallet, requireCommunityUser } from "@/server/community/queries";
 
@@ -26,8 +27,7 @@ export async function createGroupAction(_: State, formData: FormData): Promise<S
   const user = await requireCommunityUser();
   const parsed = groupSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check group details." };
-  const roles = user.roles.map((item) => item.role.name);
-  if (!roles.some((role) => ["Director", "Admin"].includes(role))) return { ok: false, message: "Only Director or Admin can create groups." };
+  if (!hasPermission(user, PERMISSIONS.COMMUNITY_MANAGE)) return { ok: false, message: "You do not have permission to create groups." };
   const group = await prisma.communityGroup.create({ data: { creatorId: user.id, name: parsed.data.name, slug: `${slugify(parsed.data.name)}-${Date.now()}`, description: parsed.data.description, type: parsed.data.type } });
   await prisma.communityMembership.create({ data: { groupId: group.id, userId: user.id, role: "Owner" } });
   revalidatePath("/community-hub/groups");
@@ -38,8 +38,7 @@ export async function createEventAction(_: State, formData: FormData): Promise<S
   const user = await requireCommunityUser();
   const parsed = eventSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check event details." };
-  const roles = user.roles.map((item) => item.role.name);
-  if (!roles.some((role) => ["Director", "Trainer", "Admin"].includes(role))) return { ok: false, message: "Only Director, Trainer or Admin can create events." };
+  if (!hasPermission(user, PERMISSIONS.COMMUNITY_EVENT_MANAGE)) return { ok: false, message: "You do not have permission to create events." };
   await prisma.event.create({ data: { groupId: emptyToNull(parsed.data.groupId), title: parsed.data.title, description: parsed.data.description, type: parsed.data.type, capacity: parsed.data.capacity, startsAt: new Date(parsed.data.startsAt), meetingLink: emptyToNull(parsed.data.meetingLink) } });
   revalidatePath("/community-hub/events");
   return { ok: true, message: "Event created." };
@@ -55,8 +54,7 @@ export async function createChallengeAction(_: State, formData: FormData): Promi
   const user = await requireCommunityUser();
   const parsed = challengeSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check challenge details." };
-  const roles = user.roles.map((item) => item.role.name);
-  if (!roles.some((role) => ["Director", "Trainer", "Admin"].includes(role))) return { ok: false, message: "Only Director, Trainer or Admin can create challenges." };
+  if (!hasPermission(user, PERMISSIONS.COMMUNITY_EVENT_MANAGE)) return { ok: false, message: "You do not have permission to create challenges." };
   await prisma.challenge.create({ data: { groupId: emptyToNull(parsed.data.groupId), title: parsed.data.title, description: parsed.data.description, rewardXp: parsed.data.rewardXp, rewardCoins: parsed.data.rewardCoins, status: "ACTIVE" } });
   revalidatePath("/community-hub/challenges");
   return { ok: true, message: "Challenge created." };

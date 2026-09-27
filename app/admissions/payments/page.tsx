@@ -3,17 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { InvoiceForm, PaymentForm } from "@/features/admissions/components/admission-forms";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
-import { prisma } from "@/lib/prisma";
-import { getAdmissionData, getAdmissionsOperationalLists } from "@/server/admissions/queries";
+import { getAdmissionData, getAdmissionStudentOptions, getAdmissionsOperationalLists } from "@/server/admissions/queries";
 
 export default async function PaymentsPage() {
   const [{ leads, programs, batches }, [, , invoices], students] = await Promise.all([
     getAdmissionData(),
     getAdmissionsOperationalLists(),
-    prisma.user.findMany({
-      where: { roles: { some: { role: { name: "Student" } } } },
-      orderBy: { name: "asc" }
-    })
+    getAdmissionStudentOptions()
   ]);
 
   return (

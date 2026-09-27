@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createAutomationRuleAction, createCampusAction, createDepartmentAction, createEmployeeAction, createExecutiveReportAction, createInstitutionAction, saveSystemSettingAction } from "@/actions/executive";
+import { createAutomationRuleAction, createCampusAction, createDepartmentAction, createDistrictAction, createDivisionAction, createExecutiveReportAction, createInstitutionAction, saveSystemSettingAction } from "@/actions/executive";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DirectorFormMessage } from "@/features/director/components/director-form-message";
@@ -22,19 +22,24 @@ export function InstitutionForm() {
   return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-3"><Input name="name" label="Institution Name" required /><Input name="slug" label="Slug" required /><Input name="legalName" label="Legal Name" /></div><Button disabled={pending}>Create Institution</Button></form>;
 }
 
-export function CampusForm({ institutions }: { institutions: Option[] }) {
+export function DivisionForm({ institutions }: { institutions: Option[] }) {
+  const [state, action, pending] = useActionState(createDivisionAction, initialState);
+  return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-4"><Select name="institutionId" label="Organization" required>{institutions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Input name="name" label="Division Name" required /><Input name="slug" label="Slug" required /><Input name="code" label="Code" /></div><Button disabled={pending}>Create Division</Button></form>;
+}
+
+export function DistrictForm({ institutions }: { institutions: Option[] }) {
+  const [state, action, pending] = useActionState(createDistrictAction, initialState);
+  return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-3"><Select name="institutionId" label="Organization" required>{institutions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Input name="name" label="District Name" required /><Input name="slug" label="Slug" required /><Input name="stateName" label="State / Province" required /><Input name="stateCode" label="State Code" /><Input name="countryCode" label="Country Code" defaultValue="IN" required /></div><Button disabled={pending}>Create District</Button></form>;
+}
+
+export function CampusForm({ institutions, districts }: { institutions: Option[]; districts: Option[] }) {
   const [state, action, pending] = useActionState(createCampusAction, initialState);
-  return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-3"><Select name="institutionId" label="Institution" required>{institutions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Input name="name" label="Campus Name" required /><Input name="slug" label="Slug" required /></div><div className="grid gap-4 md:grid-cols-2"><Input name="city" label="City" /><Input name="state" label="State" /></div><Textarea name="address" label="Address" /><Button disabled={pending}>Create Campus</Button></form>;
+  return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-3"><Select name="institutionId" label="Organization" required>{institutions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Select name="districtId" label="District"><option value="">Central / unassigned</option>{districts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Select name="type" label="Unit Type" required><option value="BRANCH">Branch</option><option value="CENTRE">Centre</option><option value="CAMPUS">Campus</option><option value="CORPORATE_OFFICE">Corporate Office</option></Select><Input name="name" label="Unit Name" required /><Input name="slug" label="Slug" required /><Input name="city" label="City" /></div><Input name="state" label="State" /><Textarea name="address" label="Address" /><Button disabled={pending}>Create Unit</Button></form>;
 }
 
-export function DepartmentForm({ institutions, campuses }: { institutions: Option[]; campuses: Option[] }) {
+export function DepartmentForm({ institutions, divisions, campuses }: { institutions: Option[]; divisions: Option[]; campuses: Option[] }) {
   const [state, action, pending] = useActionState(createDepartmentAction, initialState);
-  return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-4"><Select name="institutionId" label="Institution"><option value="">Platform</option>{institutions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Select name="campusId" label="Campus"><option value="">All campuses</option>{campuses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Input name="name" label="Department" required /><Input name="code" label="Code" required /></div><Textarea name="description" label="Description" /><Button disabled={pending}>Create Department</Button></form>;
-}
-
-export function EmployeeForm({ users, institutions, campuses, departments }: { users: Option[]; institutions: Option[]; campuses: Option[]; departments: Option[] }) {
-  const [state, action, pending] = useActionState(createEmployeeAction, initialState);
-  return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-3"><Select name="userId" label="User" required>{users.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Input name="employeeCode" label="Employee Code" /><Input name="title" label="Title" /></div><div className="grid gap-4 md:grid-cols-4"><Select name="institutionId" label="Institution"><option value="">Platform</option>{institutions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Select name="campusId" label="Campus"><option value="">All campuses</option>{campuses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Select name="departmentId" label="Department"><option value="">No department</option>{departments.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Select name="employmentType" label="Type" required><option value="FULL_TIME">Full Time</option><option value="PART_TIME">Part Time</option><option value="CONTRACT">Contract</option><option value="INTERN">Intern</option></Select></div><Button disabled={pending}>Save Employee</Button></form>;
+  return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-5"><Select name="institutionId" label="Organization"><option value="">Platform</option>{institutions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Select name="divisionId" label="Division"><option value="">All divisions</option>{divisions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Select name="campusId" label="Branch / Centre"><option value="">All units</option>{campuses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Input name="name" label="Department" required /><Input name="code" label="Code" required /></div><Textarea name="description" label="Description" /><Button disabled={pending}>Create Department</Button></form>;
 }
 
 export function AutomationRuleForm() {

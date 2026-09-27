@@ -8,6 +8,8 @@ export const institutionSchema = z.object({
 
 export const campusSchema = z.object({
   institutionId: z.string().uuid(),
+  districtId: z.string().uuid().optional().or(z.literal("")),
+  type: z.enum(["BRANCH", "CENTRE", "CAMPUS", "CORPORATE_OFFICE"]),
   name: z.string().min(2).max(180),
   slug: z.string().min(2).max(180),
   city: z.string().optional(),
@@ -15,22 +17,29 @@ export const campusSchema = z.object({
   address: z.string().optional()
 });
 
+export const divisionSchema = z.object({
+  institutionId: z.string().uuid(),
+  name: z.string().min(2).max(180),
+  slug: z.string().min(2).max(180),
+  code: z.string().max(80).optional()
+});
+
+export const districtSchema = z.object({
+  institutionId: z.string().uuid(),
+  name: z.string().min(2).max(160),
+  slug: z.string().min(2).max(180),
+  stateName: z.string().min(2).max(160),
+  stateCode: z.string().max(40).optional(),
+  countryCode: z.string().length(2).transform((value) => value.toUpperCase())
+});
+
 export const departmentSchema = z.object({
   institutionId: z.string().uuid().optional().or(z.literal("")),
+  divisionId: z.string().uuid().optional().or(z.literal("")),
   campusId: z.string().uuid().optional().or(z.literal("")),
   name: z.string().min(2).max(160),
   code: z.string().min(2).max(80),
   description: z.string().optional()
-});
-
-export const employeeSchema = z.object({
-  userId: z.string().uuid(),
-  institutionId: z.string().uuid().optional().or(z.literal("")),
-  campusId: z.string().uuid().optional().or(z.literal("")),
-  departmentId: z.string().uuid().optional().or(z.literal("")),
-  employeeCode: z.string().optional(),
-  title: z.string().optional(),
-  employmentType: z.enum(["FULL_TIME", "PART_TIME", "CONTRACT", "INTERN"])
 });
 
 export const automationRuleSchema = z.object({

@@ -1,8 +1,11 @@
 import type { AIConversationScope } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { PERMISSIONS, type AuthorizationUser, type PermissionKey } from "@/lib/auth/permissions";
+import { documentScopeWhere, feeInvoiceScopeWhere, leadScopeWhere, programScopeWhere } from "@/server/auth/scoping";
 import type { TaraContext } from "@/types/tara";
 
-export async function buildTaraContext(userId: string, scope: AIConversationScope): Promise<TaraContext> {
+export async function buildTaraContext(actor: AuthorizationUser, scope: AIConversationScope): Promise<TaraContext> {
+  const userId = actor.id;
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
@@ -84,7 +87,7 @@ export async function buildTaraContext(userId: string, scope: AIConversationScop
 
   const crm =
     scope === "ADMISSION" || scope === "BDM"
-      ? await buildCrmContext(userId, scope)
+      ? await buildCrmContext(actor, scope)
       : undefined;
   const success = await buildSuccessContext(userId);
   const community = await buildCommunityContext(userId);
@@ -161,8 +164,12 @@ async function buildSuccessContext(userId: string) {
   };
 }
 
-async function buildCrmContext(userId: string, scope: AIConversationScope) {
-  const leadWhere = scope === "BDM" ? { assignedToId: userId } : {};
+async function buildCrmContext(actor: AuthorizationUser, scope: AIConversationScope) {
+  const permission: PermissionKey = scope === "BDM" ? PERMISSIONS.AI_BDM : PERMISSIONS.AI_ADMISSION;
+  const leadWhere = leadScopeWhere(actor, permission);
+  const invoiceWhere = feeInvoiceScopeWhere(actor, permission);
+  const documentWhere = documentScopeWhere(actor, permission);
+  const programWhere = programScopeWhere(actor, permission);
   const [leads, pipeline, counselling, pendingPayments, pendingDocuments, commissions, referrals] = await Promise.all([
     prisma.lead.findMany({
       where: leadWhere,
@@ -175,31 +182,31 @@ async function buildCrmContext(userId: string, scope: AIConversationScope) {
       include: { leads: { where: leadWhere, select: { id: true } } }
     }),
     prisma.counsellingSession.findMany({
-      where: { scheduledAt: { gte: new Date() }, ...(scope === "BDM" ? { lead: { assignedToId: userId } } : {}) },
+      where: { scheduledAt: { gte: new Date() }, lead: leadWhere },
       orderBy: { scheduledAt: "asc" },
       take: 8,
       include: { lead: true }
     }),
     prisma.feeInvoice.findMany({
-      where: { status: { in: ["ISSUED", "PARTIALLY_PAID"] }, ...(scope === "BDM" ? { lead: { assignedToId: userId } } : {}) },
+      where: { AND: [invoiceWhere, { status: { in: ["ISSUED", "PARTIALLY_PAID"] } }] },
       orderBy: { dueAt: "asc" },
       take: 8,
       include: { lead: true }
     }),
     prisma.studentDocument.findMany({
-      where: { status: "PENDING", ...(scope === "BDM" ? { application: { lead: { assignedToId: userId } } } : {}) },
+      where: { AND: [documentWhere, { status: "PENDING" }] },
       orderBy: { updatedAt: "desc" },
       take: 8,
       include: { application: { include: { lead: true } } }
     }),
     prisma.commissionRecord.findMany({
-      where: scope === "BDM" ? { userId } : {},
+      where: { OR: [{ userId: actor.id }, { program: programWhere }] },
       orderBy: { createdAt: "desc" },
       take: 8,
       include: { program: true }
     }),
     prisma.referral.findMany({
-      where: scope === "BDM" ? { referrerId: userId } : {},
+      where: { OR: [{ referrerId: actor.id }, { lead: leadWhere }, { program: programWhere }] },
       orderBy: { createdAt: "desc" },
       take: 8,
       include: { program: true, lead: true }

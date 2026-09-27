@@ -1,16 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { DirectorMetricCard } from "@/features/director/components/director-metric-card";
-import { EmployeeForm } from "@/features/executive/components/executive-forms";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
 import { getRecruitmentOverview } from "@/server/careers/queries";
 import { getRMPerformanceManagement } from "@/server/careers/rm-performance";
-import { getExecutiveData } from "@/server/executive/queries";
 import { BriefcaseBusiness, CalendarClock, CheckCircle2, FileText, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default async function HRPage() {
-  const [institutions, campuses, departments, employees, , , , users] = await getExecutiveData();
   const [recruitment, rmPerformance] = await Promise.all([getRecruitmentOverview(), getRMPerformanceManagement()]);
   return (
     <div className="space-y-10">
@@ -51,8 +48,7 @@ export default async function HRPage() {
           </div>
         </CardContent>
       </Card>
-      <Card><CardContent className="p-6"><EmployeeForm users={users} institutions={institutions} campuses={campuses} departments={departments} /></CardContent></Card>
-      <div className="grid gap-5 lg:grid-cols-2">{employees.map((employee) => <Card key={employee.id}><CardContent className="p-6"><p className="text-sm font-black text-brand-red">{employee.status} - {employee.employmentType}</p><h2 className="mt-2 text-2xl font-black text-brand-dark">{employee.user.name}</h2><p className="mt-2 font-bold text-brand-muted">{employee.title ?? "Team member"} - {employee.department?.name ?? "No department"}</p></CardContent></Card>)}</div>
+      <Card><CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-black uppercase text-brand-red">Employee Foundation</p><h2 className="mt-2 text-2xl font-black text-brand-dark">Scoped employee directory</h2><p className="mt-2 font-semibold leading-7 text-brand-muted">Manage personnel records, designations, reporting lines and organizational assignments.</p></div><Button asChild><Link href="/employees">Open Employees<UserCheck className="h-5 w-5" /></Link></Button></CardContent></Card>
     </div>
   );
 }

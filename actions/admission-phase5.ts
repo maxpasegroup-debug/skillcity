@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 import { assignStudentBatchSchema } from "@/features/admissions/phase5-schemas";
 import { ensureDefaultPipeline, requireAdmissionUser } from "@/server/admissions/queries";
+import { assertBatchAccess, assertEnrollmentAccess } from "@/server/auth/resource-access";
 
 type State = { ok: boolean; message: string };
 
@@ -18,6 +20,11 @@ export async function assignStudentBatchAction(_: State, formData: FormData): Pr
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the batch assignment." };
   }
+
+  await Promise.all([
+    assertEnrollmentAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.enrollmentId),
+    assertBatchAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.batchId)
+  ]);
 
   const [enrollment, batch] = await Promise.all([
     prisma.studentEnrollment.findUnique({

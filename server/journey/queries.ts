@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
 import type { Activity, JourneyDay, JourneyPhase, JourneyWeek, StudentProgress, Submission } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/server/auth/session";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/server/auth/authorization";
 import type { JourneyActivityView, JourneyPhaseView } from "@/types/journey";
 
 type DayWithActivities = JourneyDay & {
@@ -17,13 +17,7 @@ type PhaseWithWeeks = JourneyPhase & {
 };
 
 export async function requireStudent() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  return user;
+  return requirePermission(PERMISSIONS.STUDENT_ACCESS);
 }
 
 export async function getActiveEnrollment(studentId: string) {

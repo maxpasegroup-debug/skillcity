@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { PERMISSIONS, resolveAuthorizedScopes } from "@/lib/auth/permissions";
 import { requireDirector } from "@/server/director/queries";
+import { assertActivityAccess, assertBatchAccess, assertBlueprintAccess, assertJourneyAccess, assertJourneyDayAccess, assertProgramAccess } from "@/server/auth/resource-access";
+import { employeeScopeWhere } from "@/server/auth/scoping";
 import { writeDirectorLog } from "@/server/director/log";
 import {
   activityPlannerSchema,
@@ -34,16 +37,26 @@ export async function saveProgramAction(_: DirectorState, formData: FormData): P
 
   const data = parsed.data;
   const status = data.archive === "on" ? "ARCHIVED" : data.status;
-  const program = await prisma.program.upsert({
-    where: { slug: data.slug },
-    update: {
+  const existing = await prisma.program.findUnique({ where: { slug: data.slug }, select: { id: true } });
+  if (existing) await assertProgramAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, existing.id);
+  const resolved = resolveAuthorizedScopes(actor, PERMISSIONS.DIRECTOR_ACCESS);
+  if (!existing && !resolved.global && resolved.assignments.length !== 1) return { ok: false, message: "Choose a single active organization scope before creating a program." };
+  const organization = resolved.assignments[0];
+  const program = existing ? await prisma.program.update({
+    where: { id: existing.id },
+    data: {
       name: data.name,
       description: data.description,
       durationDays: data.durationDays,
       status,
       thumbnail: emptyToNull(data.thumbnail)
-    },
-    create: {
+    }
+  }) : await prisma.program.create({
+    data: {
+      institutionId: organization?.institutionId,
+      divisionId: organization?.divisionId,
+      campusId: organization?.campusId,
+      departmentId: organization?.departmentId,
       name: data.name,
       slug: data.slug,
       description: data.description,
@@ -73,6 +86,8 @@ export async function createBlueprintAction(_: DirectorState, formData: FormData
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the blueprint details." };
   }
+  await assertProgramAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.programId);
+  if (parsed.data.journeyId) await assertJourneyAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.journeyId);
 
   const blueprint = await prisma.blueprint.create({
     data: {
@@ -98,6 +113,7 @@ export async function createBlueprintAction(_: DirectorState, formData: FormData
 
 export async function duplicateBlueprintAction(blueprintId: string) {
   const actor = await requireDirector();
+  await assertBlueprintAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, blueprintId);
   const source = await prisma.blueprint.findUnique({ where: { id: blueprintId }, include: { versions: { orderBy: { version: "desc" }, take: 1 } } });
   if (!source) {
     throw new Error("Blueprint not found");
@@ -131,6 +147,8 @@ export async function createBatchAction(_: DirectorState, formData: FormData): P
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the batch details." };
   }
+  await assertProgramAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.programId);
+  if (parsed.data.journeyId) await assertJourneyAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.journeyId);
 
   const batch = await prisma.batch.create({
     data: {
@@ -156,6 +174,9 @@ export async function assignTrainerAction(_: DirectorState, formData: FormData):
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the trainer assignment." };
   }
+  await assertBatchAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.batchId);
+  const trainer = await prisma.user.findFirst({ where: { id: parsed.data.trainerId, employeeProfile: employeeScopeWhere(actor, PERMISSIONS.DIRECTOR_ACCESS) }, select: { id: true } });
+  if (!trainer) return { ok: false, message: "Trainer is outside the authorized organization scope." };
 
   const assignment = await prisma.trainerAssignment.upsert({
     where: { trainerId_batchId_role: { trainerId: parsed.data.trainerId, batchId: parsed.data.batchId, role: parsed.data.role } },
@@ -180,6 +201,8 @@ export async function createDirectorAnnouncementAction(_: DirectorState, formDat
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the announcement." };
   }
+  if (parsed.data.programId) await assertProgramAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.programId);
+  if (parsed.data.batchId) await assertBatchAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.batchId);
 
   const publishedAt = parsed.data.status === "PUBLISHED" ? new Date() : null;
   const announcement = await prisma.directorAnnouncement.create({
@@ -223,6 +246,8 @@ export async function createContentLibraryAction(_: DirectorState, formData: For
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the content item." };
   }
+  if (parsed.data.programId) await assertProgramAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.programId);
+  if (!parsed.data.programId && !resolveAuthorizedScopes(actor, PERMISSIONS.DIRECTOR_ACCESS).global) return { ok: false, message: "Scoped content must be linked to an authorized program." };
 
   const item = await prisma.contentLibrary.create({
     data: {
@@ -247,6 +272,10 @@ export async function createCalendarEventAction(_: DirectorState, formData: Form
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the calendar event." };
   }
+  if (parsed.data.programId) await assertProgramAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.programId);
+  if (parsed.data.journeyId) await assertJourneyAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.journeyId);
+  if (parsed.data.batchId) await assertBatchAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.batchId);
+  if (!parsed.data.programId && !parsed.data.journeyId && !parsed.data.batchId && !resolveAuthorizedScopes(actor, PERMISSIONS.DIRECTOR_ACCESS).global) return { ok: false, message: "Scoped events must be linked to an authorized program, journey, or batch." };
 
   const event = await prisma.calendarEvent.create({
     data: {
@@ -274,6 +303,7 @@ export async function addActivityToDayAction(_: DirectorState, formData: FormDat
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the activity." };
   }
+  await assertJourneyDayAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.dayId);
 
   const last = await prisma.activity.findFirst({ where: { dayId: parsed.data.dayId }, orderBy: { sortOrder: "desc" } });
   const activity = await prisma.activity.create({
@@ -297,6 +327,7 @@ export async function addActivityToDayAction(_: DirectorState, formData: FormDat
 
 export async function reorderActivityAction(activityId: string, direction: "up" | "down") {
   const actor = await requireDirector();
+  await assertActivityAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, activityId);
   const activity = await prisma.activity.findUnique({ where: { id: activityId } });
   if (!activity) {
     throw new Error("Activity not found");

@@ -3,8 +3,8 @@ import { DirectorPageHeader } from "@/features/director/components/director-page
 import { getBdmDashboard, requireBdmUser } from "@/server/admissions/queries";
 
 export default async function BdmTargetsPage() {
-  const user = await requireBdmUser();
-  const { assignedLeads, monthlyRevenue } = await getBdmDashboard(user.id);
+  await requireBdmUser();
+  const { assignedLeads, monthlyRevenue } = await getBdmDashboard();
   const conversions = assignedLeads.filter((lead) => lead.status === "WON").length;
 
   return (

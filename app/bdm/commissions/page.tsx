@@ -3,8 +3,8 @@ import { DirectorPageHeader } from "@/features/director/components/director-page
 import { getBdmDashboard, requireBdmUser } from "@/server/admissions/queries";
 
 export default async function BdmCommissionsPage() {
-  const user = await requireBdmUser();
-  const { commissions } = await getBdmDashboard(user.id);
+  await requireBdmUser();
+  const { commissions } = await getBdmDashboard();
 
   return (
     <div className="space-y-10">

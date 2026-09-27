@@ -1,18 +1,26 @@
 import { prisma } from "@/lib/prisma";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requireAdmissionUser } from "@/server/admissions/queries";
+import { applicationScopeWhere, enrollmentScopeWhere, feeInvoiceScopeWhere, leadScopeWhere } from "@/server/auth/scoping";
 
 export async function getAdmissionPhase4Queue() {
+  const user = await requireAdmissionUser();
+  const applicationScope = applicationScopeWhere(user, PERMISSIONS.ADMISSIONS_ACCESS);
+  const invoiceScope = feeInvoiceScopeWhere(user, PERMISSIONS.ADMISSIONS_ACCESS);
+  const enrollmentScope = enrollmentScopeWhere(user, PERMISSIONS.ADMISSIONS_ACCESS);
+  const leadScope = leadScopeWhere(user, PERMISSIONS.ADMISSIONS_ACCESS);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const [applicationsAwaitingReview, approvedApplications, paymentPendingInvoices, paymentVerificationPending, activationCandidates, batchPending, admissionConfirmedToday] = await Promise.all([
     prisma.admissionApplication.findMany({
-      where: { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } },
+      where: { AND: [applicationScope, { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } }] },
       orderBy: { submittedAt: "asc" },
       take: 20,
       include: { lead: { include: { assignedTo: true, source: true, counsellingSessions: { orderBy: { updatedAt: "desc" }, take: 1 } } }, program: true, documents: true }
     }),
     prisma.admissionApplication.findMany({
-      where: { status: "APPROVED" },
+      where: { AND: [applicationScope, { status: "APPROVED" }] },
       orderBy: { reviewedAt: "desc" },
       take: 20,
       include: {
@@ -23,37 +31,30 @@ export async function getAdmissionPhase4Queue() {
       }
     }),
     prisma.feeInvoice.findMany({
-      where: { status: { in: ["ISSUED", "PARTIALLY_PAID"] } },
+      where: { AND: [invoiceScope, { status: { in: ["ISSUED", "PARTIALLY_PAID"] } }] },
       orderBy: { updatedAt: "desc" },
       take: 20,
       include: { lead: { include: { applications: { orderBy: { updatedAt: "desc" }, take: 1 } } }, student: true, program: true, transactions: { orderBy: { createdAt: "desc" } } }
     }),
     prisma.paymentTransaction.findMany({
-      where: { status: { in: ["INITIATED", "SUCCESS"] }, invoice: { status: { not: "PAID" } } },
+      where: { status: { in: ["INITIATED", "SUCCESS"] }, invoice: { AND: [invoiceScope, { status: { not: "PAID" } }] } },
       orderBy: { createdAt: "desc" },
       take: 20,
       include: { invoice: { include: { lead: true, program: true } } }
     }),
     prisma.admissionApplication.findMany({
-      where: {
-        status: "APPROVED",
-        studentId: null,
-        OR: [
-          { program: { feeType: "FREE" } },
-          { lead: { invoices: { some: { status: "PAID" } } } }
-        ]
-      },
+      where: { AND: [applicationScope, { status: "APPROVED", studentId: null, OR: [{ program: { feeType: "FREE" } }, { lead: { invoices: { some: { status: "PAID" } } } }] }] },
       orderBy: { reviewedAt: "desc" },
       take: 20,
       include: { lead: { include: { invoices: { where: { status: "PAID" }, orderBy: { updatedAt: "desc" }, take: 1 } } }, program: true }
     }),
     prisma.studentEnrollment.findMany({
-      where: { status: "ACTIVE", batchId: null },
+      where: { AND: [enrollmentScope, { status: "ACTIVE", batchId: null }] },
       orderBy: { createdAt: "desc" },
       take: 20,
       include: { student: true, program: true }
     }),
-    prisma.lead.count({ where: { status: "WON", convertedAt: { gte: today } } })
+    prisma.lead.count({ where: { AND: [leadScope, { status: "WON", convertedAt: { gte: today } }] } })
   ]);
 
   return {
@@ -76,8 +77,10 @@ export async function getAdmissionPhase4Queue() {
 }
 
 export async function getAdmissionPhase4Application(applicationId: string) {
-  return prisma.admissionApplication.findUnique({
-    where: { id: applicationId },
+  const user = await requireAdmissionUser();
+  const scope = applicationScopeWhere(user, PERMISSIONS.ADMISSIONS_ACCESS);
+  return prisma.admissionApplication.findFirst({
+    where: { AND: [{ id: applicationId }, scope] },
     include: {
       lead: {
         include: {

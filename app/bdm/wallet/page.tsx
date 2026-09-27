@@ -3,8 +3,8 @@ import { DirectorPageHeader } from "@/features/director/components/director-page
 import { getBdmDashboard, requireBdmUser } from "@/server/admissions/queries";
 
 export default async function BdmWalletPage() {
-  const user = await requireBdmUser();
-  const { commissions } = await getBdmDashboard(user.id);
+  await requireBdmUser();
+  const { commissions } = await getBdmDashboard();
   const payable = commissions.filter((item) => item.status === "APPROVED").reduce((sum, item) => sum + item.amount, 0);
   const paid = commissions.filter((item) => item.status === "PAID").reduce((sum, item) => sum + item.amount, 0);
 

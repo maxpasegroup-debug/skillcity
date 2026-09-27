@@ -1,15 +1,9 @@
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/server/auth/session";
-
-const trainerRoles = new Set(["Trainer", "Director", "Admin"]);
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/server/auth/authorization";
 
 export async function requireTrainer() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  const roles = user.roles.map((item) => item.role.name);
-  if (!roles.some((role) => trainerRoles.has(role))) redirect("/dashboard");
-  return user;
+  return requirePermission(PERMISSIONS.TRAINER_ACCESS);
 }
 
 export async function getAssignedBatchIds(trainerId: string) {
