@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireStudent } from "@/server/journey/queries";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requireDirector } from "@/server/director/queries";
+import { programScopeWhere } from "@/server/auth/scoping";
+import { resolveAlttStage } from "@/lib/academic/altt";
 import type { AlttProgressView, AlttStepView } from "@/types/altt";
 
 export async function getLearningSession(studentId: string, dayId: string) {
@@ -28,6 +32,7 @@ export async function getLearningSession(studentId: string, dayId: string) {
   if (!enrollment) {
     notFound();
   }
+  const visibleDay = { ...day, activities: day.activities.filter((activity) => !activity.batchId || activity.batchId === enrollment.batchId) };
 
   const steps: AlttStepView[] =
     day.learningFlow?.steps.map((step) => ({
@@ -38,7 +43,8 @@ export async function getLearningSession(studentId: string, dayId: string) {
       sortOrder: step.sortOrder,
       required: step.required,
       points: step.points,
-      completed: false
+      completed: false,
+      alttStage: resolveAlttStage(step)
     })) ?? [];
 
   const session = await prisma.dailyLearningSession.upsert({
@@ -68,7 +74,7 @@ export async function getLearningSession(studentId: string, dayId: string) {
     assessmentStatus: needsAssessment ? (assessmentComplete ? "Complete" : "Pending") : "Not Required"
   };
 
-  return { day, session, steps: viewedSteps, progress };
+  return { day: visibleDay, session, steps: viewedSteps, progress };
 }
 
 export async function requireLearningSession(dayId: string) {
@@ -76,9 +82,11 @@ export async function requireLearningSession(dayId: string) {
   return getLearningSession(user.id, dayId);
 }
 
-export function getDirectorLearningFlows() {
+export async function getDirectorLearningFlows() {
+  const actor = await requireDirector();
+  const programScope = programScopeWhere(actor, PERMISSIONS.DIRECTOR_ACCESS);
   return prisma.learningFlow.findMany({
     orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
-    include: { steps: { orderBy: { sortOrder: "asc" } }, days: true }
+    include: { steps: { orderBy: { sortOrder: "asc" } }, days: { where: { week: { phase: { journey: { program: programScope } } } } } }
   });
 }

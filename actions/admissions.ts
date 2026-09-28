@@ -6,10 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/security/password";
 import { createToken } from "@/lib/security/token";
 import { PERMISSIONS, resolveAuthorizedScopes } from "@/lib/auth/permissions";
+import { normalizeCrmEmail, normalizeCrmPhone } from "@/lib/crm/validation";
 import { requireAdmissionUser, requireBdmUser, ensureDefaultPipeline } from "@/server/admissions/queries";
 import { assertApplicationAccess, assertBatchAccess, assertInvoiceAccess, assertLeadAccess, assertProgramAccess, assertStudentAccess } from "@/server/auth/resource-access";
 import { approvedAdmissionPinTemplate } from "@/server/whatsapp/templates";
 import { sendWhatsAppMessage } from "@/server/whatsapp/service";
+import { leadScopeWhere } from "@/server/auth/scoping";
+import { assertAssignableEmployee, assertLeadProgramRelationship } from "@/server/crm/service";
 import { admissionProgramSchema, applicationReviewSchema, applicationSchema, commissionSchema, communicationSchema, counsellingSchema, documentSchema, invoiceSchema, leadSchema, paymentSchema, studentCredentialSchema } from "@/features/admissions/schemas";
 
 type State = { ok: boolean; message: string };
@@ -27,6 +30,10 @@ function createSixDigitPin() {
   return randomInt(100000, 1000000).toString();
 }
 
+function legacyAdmissionMutationEnabled() {
+  return false;
+}
+
 export async function createLeadAction(_: State, formData: FormData): Promise<State> {
   const actor = await requireAdmissionUser();
   const parsed = leadSchema.safeParse(Object.fromEntries(formData));
@@ -35,22 +42,21 @@ export async function createLeadAction(_: State, formData: FormData): Promise<St
   const resolved = resolveAuthorizedScopes(actor, PERMISSIONS.ADMISSIONS_MANAGE);
   if (!resolved.global && resolved.assignments.length !== 1) return { ok: false, message: "Choose a single active organization scope before creating a lead." };
   const organization = resolved.assignments[0];
-  const lead = await prisma.lead.create({
-    data: {
-      ...parsed.data,
-      email: emptyToNull(parsed.data.email),
-      programInterestedId: emptyToNull(parsed.data.programInterestedId),
-      sourceId: emptyToNull(parsed.data.sourceId),
-      assignedToId: emptyToNull(parsed.data.assignedToId),
-      pipelineStageId: stages[0].id,
-      ownerId: actor.id,
-      institutionId: organization?.institutionId,
-      divisionId: organization?.divisionId,
-      districtId: organization?.districtId,
-      campusId: organization?.campusId
-    }
+  const phone = normalizeCrmPhone(parsed.data.phone);
+  const whatsapp = parsed.data.whatsapp ? normalizeCrmPhone(parsed.data.whatsapp) : null;
+  const email = normalizeCrmEmail(parsed.data.email);
+  const programId = emptyToNull(parsed.data.programInterestedId);
+  const assigneeId = emptyToNull(parsed.data.assignedToId);
+  if (programId) await assertProgramAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, programId);
+  if (assigneeId) await assertAssignableEmployee(actor, assigneeId);
+  const identifiers = [{ phone }, ...(whatsapp ? [{ whatsapp }] : []), ...(email ? [{ email }] : [])];
+  const duplicate = await prisma.lead.findFirst({ where: { AND: [leadScopeWhere(actor, PERMISSIONS.ADMISSIONS_MANAGE), { OR: identifiers }] }, select: { id: true, name: true } });
+  if (duplicate) return { ok: false, message: `Possible duplicate lead: ${duplicate.name}. Review the existing CRM record before creating another.` };
+  await prisma.$transaction(async (tx) => {
+    const created = await tx.lead.create({ data: { ...parsed.data, phone, whatsapp, email, programInterestedId: programId, sourceId: emptyToNull(parsed.data.sourceId), assignedToId: assigneeId, pipelineStageId: stages[0].id, ownerId: actor.id, institutionId: organization?.institutionId, divisionId: organization?.divisionId, districtId: organization?.districtId, campusId: organization?.campusId } });
+    await tx.leadActivity.create({ data: { leadId: created.id, actorId: actor.id, type: "LEAD_CREATED", summary: "Lead created." } });
+    await tx.auditLog.create({ data: { userId: actor.id, action: "LEAD_CREATED", entity: "Lead", entityId: created.id } });
   });
-  await prisma.leadActivity.create({ data: { leadId: lead.id, actorId: actor.id, type: "LEAD_CREATED", summary: "Lead created." } });
   revalidatePath("/admissions/leads");
   revalidatePath("/admissions/dashboard");
   return { ok: true, message: "Lead created." };
@@ -87,7 +93,14 @@ export async function createApplicationAction(_: State, formData: FormData): Pro
     assertLeadAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.leadId),
     assertProgramAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.programId)
   ]);
-  await prisma.admissionApplication.create({ data: { ...parsed.data, submittedAt: parsed.data.status === "SUBMITTED" ? new Date() : null } });
+  await assertLeadProgramRelationship(parsed.data.leadId, parsed.data.programId);
+  const existing = await prisma.admissionApplication.findFirst({ where: { leadId: parsed.data.leadId, programId: parsed.data.programId, status: { not: "REJECTED" } }, select: { id: true } });
+  if (existing) return { ok: true, message: "An active application already exists for this lead and program." };
+  await prisma.$transaction(async (tx) => {
+    const application = await tx.admissionApplication.create({ data: { ...parsed.data, submittedAt: parsed.data.status === "SUBMITTED" ? new Date() : null } });
+    await tx.leadActivity.create({ data: { leadId: parsed.data.leadId, actorId: actor.id, type: "APPLICATION_CREATED", summary: `Application ${parsed.data.status.toLowerCase()} record created.` } });
+    await tx.auditLog.create({ data: { userId: actor.id, action: "ADMISSION_APPLICATION_CREATED", entity: "AdmissionApplication", entityId: application.id } });
+  });
   revalidatePath("/admissions/applications");
   return { ok: true, message: "Application saved." };
 }
@@ -195,6 +208,7 @@ export async function saveAdmissionProgramAction(_: State, formData: FormData): 
 }
 
 export async function generateStudentCredentialAction(_: State, formData: FormData): Promise<State> {
+  if (!legacyAdmissionMutationEnabled()) return { ok: false, message: "Use the admission application activation workflow." };
   const actor = await requireAdmissionUser();
   const parsed = studentCredentialSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check WhatsApp number." };
@@ -370,6 +384,7 @@ export async function saveDocumentAction(_: State, formData: FormData): Promise<
 }
 
 export async function createInvoiceAction(_: State, formData: FormData): Promise<State> {
+  if (!legacyAdmissionMutationEnabled()) return { ok: false, message: "Create payment requests from an approved admission application." };
   const actor = await requireAdmissionUser();
   const parsed = invoiceSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check invoice details." };
@@ -399,6 +414,7 @@ export async function createInvoiceAction(_: State, formData: FormData): Promise
 }
 
 export async function recordPaymentAction(_: State, formData: FormData): Promise<State> {
+  if (!legacyAdmissionMutationEnabled()) return { ok: false, message: "Capture and verify payments from the admission application workflow." };
   const actor = await requireAdmissionUser();
   const parsed = paymentSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check payment details." };
@@ -429,6 +445,7 @@ export async function saveCommunicationAction(_: State, formData: FormData): Pro
 }
 
 export async function convertPaidLeadToEnrollmentAction(invoiceId: string) {
+  if (!legacyAdmissionMutationEnabled()) return { ok: false, message: "Use the admission application activation workflow." };
   const actor = await requireAdmissionUser();
   await assertInvoiceAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, invoiceId);
   const invoice = await prisma.feeInvoice.findUnique({ where: { id: invoiceId }, include: { lead: true, program: { include: { journeys: { where: { status: "ACTIVE" }, take: 1 } } }, batch: true } });

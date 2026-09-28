@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/server/auth/authorization";
 import type { JourneyActivityView, JourneyPhaseView } from "@/types/journey";
+import { resolveAlttStage } from "@/lib/academic/altt";
 
 type DayWithActivities = JourneyDay & {
   activities: Activity[];
@@ -182,6 +183,7 @@ export async function getStudentJourney(studentId: string) {
     .filter((day) => day.absoluteDay >= enrollment.currentDay)
     .flatMap((day) => day.activities.map((activity) => ({ day, activity })))
     .find(({ activity }) => activity.type === "LIVE" && activity.progressStatus !== "COMPLETED");
+  const currentActivity = today?.activities.find((activity) => activity.progressStatus !== "COMPLETED") ?? today?.activities[0] ?? null;
 
   const completedDayNumbers = new Set(
     allDays
@@ -209,9 +211,21 @@ export async function getStudentJourney(studentId: string) {
       xp: completedActivities.reduce((total, activity) => total + activity.points, 0),
       streak,
       pendingTasks: today?.activities.filter((activity) => activity.required && activity.progressStatus !== "COMPLETED").length ?? 0,
-      upcomingLiveClass: liveActivities ? `${liveActivities.activity.title} - Day ${liveActivities.day.absoluteDay}` : null
+      upcomingLiveClass: liveActivities ? `${liveActivities.activity.title} - Day ${liveActivities.day.absoluteDay}` : null,
+      currentAlttStage: currentActivity ? resolveAlttStage(currentActivity) : "GROW"
     }
   };
+}
+
+export async function getStudentAcademicProjects(studentId: string) {
+  const journey = await getStudentJourney(studentId);
+  if (!journey) return { enrollment: null, projects: [] };
+  const projects = journey.phases.flatMap((phase) => phase.weeks.flatMap((week) => week.days.flatMap((day) =>
+    day.activities
+      .filter((activity) => activity.type === "PROJECT" || resolveAlttStage(activity) === "BUILD")
+      .map((activity) => ({ ...activity, dayId: day.id, dayNumber: day.absoluteDay, alttStage: resolveAlttStage(activity) }))
+  )));
+  return { enrollment: journey.enrollment, projects };
 }
 
 export async function getStudentOnboardingHome(studentId: string) {
@@ -314,6 +328,7 @@ export async function getStudentDay(studentId: string, dayId: string) {
 
 export async function getStudentAnnouncements(studentId: string) {
   const enrollment = await getActiveEnrollment(studentId);
+  if (!enrollment) return [];
   const now = new Date();
 
   return prisma.announcement.findMany({
@@ -323,17 +338,13 @@ export async function getStudentAnnouncements(studentId: string) {
         { expiresAt: null },
         { expiresAt: { gt: now } }
       ],
-      AND: enrollment
-        ? [
-            {
-              OR: [
-                { audience: "ALL" },
-                { audience: "PROGRAM", programId: enrollment.programId },
-                { audience: "BATCH", batchId: enrollment.batchId }
-              ]
-            }
-          ]
-        : [{ audience: "ALL" }]
+      AND: [{
+        OR: [
+          { audience: "ALL" },
+          { audience: "PROGRAM", programId: enrollment.programId },
+          { audience: "BATCH", batchId: enrollment.batchId }
+        ]
+      }]
     },
     orderBy: { publishedAt: "desc" },
     take: 5

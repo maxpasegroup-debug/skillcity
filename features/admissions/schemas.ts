@@ -27,7 +27,7 @@ export const counsellingSchema = z.object({
 export const applicationSchema = z.object({
   leadId: z.string().uuid(),
   programId: z.string().uuid(),
-  status: z.enum(["DRAFT", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED"])
+  status: z.enum(["DRAFT", "SUBMITTED"])
 });
 
 export const applicationReviewSchema = z.object({

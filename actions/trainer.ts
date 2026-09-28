@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { assessmentReviewSchema, attendanceRecordSchema, attendanceSessionSchema, reflectionReviewSchema, resourceSchema, studentConcernSchema, submissionReviewSchema, trainerAnnouncementSchema, trainerClassCompletionSchema, trainerClassScheduleSchema, trainerTaskSchema } from "@/features/trainer/schemas";
 import { assertTrainerBatchAccess, requireTrainer } from "@/server/trainer/queries";
 import { writeAuditLog } from "@/server/audit/log";
+import { assertTrainerArtifactAccess } from "@/server/academic/access";
 
 type State = { ok: boolean; message: string };
 const state: State = { ok: false, message: "" };
@@ -269,9 +270,9 @@ export async function reviewSubmissionAction(previousState: State = state, formD
   const trainer = await requireTrainer();
   const parsed = submissionReviewSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check submission review." };
-  const submission = await prisma.submission.findUnique({ where: { id: parsed.data.submissionId }, include: { student: true } });
+  const submission = await prisma.submission.findUnique({ where: { id: parsed.data.submissionId }, include: { student: true, activity: true, day: { include: { week: { include: { phase: true } } } } } });
   if (!submission) return { ok: false, message: "Submission not found." };
-  await ensureStudentAccess(trainer.id, submission.studentId);
+  await assertTrainerArtifactAccess(trainer.id, { studentId: submission.studentId, journeyId: submission.day.week.phase.journeyId, activityBatchId: submission.activity?.batchId });
   await prisma.$transaction(async (tx) => {
     await tx.submissionReview.create({ data: { submissionId: submission.id, reviewerId: trainer.id, status: parsed.data.status, score: parsed.data.score, feedback: parsed.data.feedback } });
     await tx.submission.update({ where: { id: submission.id }, data: { status: parsed.data.status } });
@@ -306,9 +307,10 @@ export async function reviewReflectionAction(previousState: State = state, formD
   const trainer = await requireTrainer();
   const parsed = reflectionReviewSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check reflection review." };
-  const reflection = await prisma.studentReflection.findUnique({ where: { id: parsed.data.reflectionId }, include: { reflection: true } });
+  const reflection = await prisma.studentReflection.findUnique({ where: { id: parsed.data.reflectionId }, include: { reflection: { include: { day: { include: { week: { include: { phase: true } } } } } } } });
   if (!reflection) return { ok: false, message: "Reflection not found." };
-  const batchId = await ensureStudentAccess(trainer.id, reflection.studentId);
+  const access = await assertTrainerArtifactAccess(trainer.id, { studentId: reflection.studentId, journeyId: reflection.reflection.day.week.phase.journeyId });
+  const batchId = access.batchId;
   await prisma.trainerFeedback.create({ data: { trainerId: trainer.id, studentId: reflection.studentId, reflectionId: reflection.id, type: "REFLECTION", comment: parsed.data.comment } });
   if (parsed.data.flagConcern) {
     await prisma.studentConcern.create({ data: { trainerId: trainer.id, studentId: reflection.studentId, batchId, title: "Reflection concern", notes: parsed.data.comment, taraFollowUpRecommended: parsed.data.taraFollowUpRecommended ?? false } });
@@ -323,9 +325,9 @@ export async function reviewAssessmentAction(previousState: State = state, formD
   const trainer = await requireTrainer();
   const parsed = assessmentReviewSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, message: "Check assessment review." };
-  const assessment = await prisma.assessmentResult.findUnique({ where: { id: parsed.data.assessmentId } });
+  const assessment = await prisma.assessmentResult.findUnique({ where: { id: parsed.data.assessmentId }, include: { activity: true, day: { include: { week: { include: { phase: true } } } } } });
   if (!assessment) return { ok: false, message: "Assessment not found." };
-  await ensureStudentAccess(trainer.id, assessment.studentId);
+  await assertTrainerArtifactAccess(trainer.id, { studentId: assessment.studentId, journeyId: assessment.day.week.phase.journeyId, activityBatchId: assessment.activity?.batchId });
   await prisma.$transaction([
     prisma.assessmentResult.update({ where: { id: assessment.id }, data: { score: parsed.data.score, feedback: parsed.data.feedback } }),
     prisma.trainerFeedback.create({ data: { trainerId: trainer.id, studentId: assessment.studentId, assessmentId: assessment.id, type: "ASSESSMENT", score: parsed.data.score, comment: parsed.data.feedback } }),

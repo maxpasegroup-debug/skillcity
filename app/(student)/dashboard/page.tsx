@@ -147,6 +147,7 @@ export default async function DashboardPage() {
             <StatCard label="Streak" value={`${journey.stats.streak} days`} icon={Flame} />
             <StatCard label="Today's Tasks" value={home.todaysTasks} icon={ListTodo} />
             <StatCard label="Pending Submissions" value={home.pendingSubmissions} icon={CheckCircle2} />
+            <StatCard label="ALTT Stage" value={journey.stats.currentAlttStage} icon={GraduationCap} />
           </section>
 
           <section className="grid gap-5 lg:grid-cols-2">

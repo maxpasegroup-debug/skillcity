@@ -25,7 +25,7 @@ export default async function LearningDayPage({ params }: { params: Promise<{ da
       <Card className="bg-brand-red text-white">
         <CardContent className="p-8">
           <p className="text-sm font-black uppercase tracking-normal text-white/80">Today&apos;s Goal</p>
-          <h2 className="mt-3 text-3xl font-black">Understand, learn, practice, build, reflect, improve, and master today&apos;s outcome.</h2>
+          <h2 className="mt-3 text-3xl font-black">Learn, practise, build, deploy, earn, and grow through today&apos;s outcome.</h2>
         </CardContent>
       </Card>
 

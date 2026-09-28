@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createApplicationAction, createCommissionAction, createInvoiceAction, createLeadAction, recordPaymentAction, saveCommunicationAction, saveDocumentAction, scheduleCounsellingAction } from "@/actions/admissions";
+import { createApplicationAction, createCommissionAction, createLeadAction, saveCommunicationAction, saveDocumentAction, scheduleCounsellingAction } from "@/actions/admissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DirectorFormMessage } from "@/features/director/components/director-form-message";
@@ -29,22 +29,12 @@ export function CounsellingForm({ leads, batches }: { leads: Option[]; batches: 
 
 export function ApplicationForm({ leads, programs }: { leads: Option[]; programs: Option[] }) {
   const [state, action, pending] = useActionState(createApplicationAction, initialState);
-  return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-3"><Select name="leadId" label="Lead" required>{leads.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</Select><Select name="programId" label="Program" required>{programs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select><Select name="status" label="Status" required><option value="DRAFT">Draft</option><option value="SUBMITTED">Submitted</option><option value="UNDER_REVIEW">Under Review</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option></Select></div><Button disabled={pending}>Save Application</Button></form>;
+  return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-3"><Select name="leadId" label="Lead" required>{leads.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</Select><Select name="programId" label="Program" required>{programs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select><Select name="status" label="Status" required><option value="DRAFT">Draft</option><option value="SUBMITTED">Submitted</option></Select></div><Button disabled={pending}>Save Application</Button></form>;
 }
 
 export function DocumentForm({ applications, students }: { applications: Option[]; students: Option[] }) {
   const [state, action, pending] = useActionState(saveDocumentAction, initialState);
   return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><Input name="title" label="Document Title" required /><div className="grid gap-4 md:grid-cols-3"><Select name="type" label="Type" required><option value="ID">ID</option><option value="PHOTO">Photo</option><option value="CERTIFICATE">Certificate</option><option value="ADDRESS_PROOF">Proof of Address</option><option value="OTHER">Other</option></Select><Select name="applicationId" label="Application"><option value="">No application</option>{applications.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select><Select name="studentId" label="Student"><option value="">No student</option>{students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></div><Input name="fileUrl" label="File URL" type="url" required /><Select name="status" label="Status" required><option value="PENDING">Pending</option><option value="VERIFIED">Verified</option><option value="REJECTED">Rejected</option></Select><Textarea name="rejectionReason" label="Rejection Reason" /><Button disabled={pending}>Save Document</Button></form>;
-}
-
-export function InvoiceForm({ leads, students, programs, batches }: { leads: Option[]; students: Option[]; programs: Option[]; batches: Option[] }) {
-  const [state, action, pending] = useActionState(createInvoiceAction, initialState);
-  return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-4"><Select name="leadId" label="Lead"><option value="">No lead</option>{leads.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</Select><Select name="studentId" label="Student"><option value="">No student</option>{students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select><Select name="programId" label="Program"><option value="">No program</option>{programs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</Select><Select name="batchId" label="Batch"><option value="">No batch</option>{batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</Select></div><div className="grid gap-4 md:grid-cols-5"><Input name="subtotal" label="Subtotal" type="number" required /><Input name="discount" label="Discount" type="number" defaultValue={0} /><Input name="scholarship" label="Scholarship" type="number" defaultValue={0} /><Input name="gst" label="GST" type="number" defaultValue={0} /><Input name="dueAt" label="Due Date" type="date" /></div><Button disabled={pending}>Issue Invoice</Button></form>;
-}
-
-export function PaymentForm({ invoices }: { invoices: Option[] }) {
-  const [state, action, pending] = useActionState(recordPaymentAction, initialState);
-  return <form action={action} className="space-y-5"><DirectorFormMessage message={state.message} ok={state.ok} /><div className="grid gap-4 md:grid-cols-4"><Select name="invoiceId" label="Invoice" required>{invoices.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</Select><Select name="provider" label="Provider" required><option value="MANUAL">Manual</option><option value="RAZORPAY">Razorpay</option><option value="STRIPE">Stripe</option><option value="SCHOLARSHIP">Scholarship</option></Select><Select name="status" label="Status" required><option value="SUCCESS">Success</option><option value="INITIATED">Initiated</option><option value="FAILED">Failed</option><option value="REFUNDED">Refunded</option></Select><Input name="amount" label="Amount" type="number" required /></div><Input name="providerRef" label="Provider Reference" /><Button disabled={pending}>Record Payment</Button></form>;
 }
 
 export function CommunicationForm({ leads }: { leads: Option[] }) {

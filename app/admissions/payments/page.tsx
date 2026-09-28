@@ -1,36 +1,19 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { InvoiceForm, PaymentForm } from "@/features/admissions/components/admission-forms";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
-import { getAdmissionData, getAdmissionStudentOptions, getAdmissionsOperationalLists } from "@/server/admissions/queries";
+import { getAdmissionsOperationalLists } from "@/server/admissions/queries";
 
 export default async function PaymentsPage() {
-  const [{ leads, programs, batches }, [, , invoices], students] = await Promise.all([
-    getAdmissionData(),
-    getAdmissionsOperationalLists(),
-    getAdmissionStudentOptions()
-  ]);
+  const [, , invoices] = await getAdmissionsOperationalLists();
 
   return (
     <div className="space-y-10">
       <DirectorPageHeader
         eyebrow="Payments"
         title="Invoices and transactions"
-        description="Provider-neutral architecture for Razorpay, Stripe, manual payments, scholarships, discounts, installments, GST, receipts, and invoices."
+        description="Read-only payment overview. Requests, capture, and verification are handled from the authorized admission application workflow."
       />
-
-      <Card>
-        <CardContent className="p-6">
-          <InvoiceForm leads={leads} students={students} programs={programs} batches={batches} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-6">
-          <PaymentForm invoices={invoices.map((invoice) => ({ id: invoice.id, name: `${invoice.invoiceNo} - INR ${invoice.total}` }))} />
-        </CardContent>
-      </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">
         {invoices.map((invoice) => (

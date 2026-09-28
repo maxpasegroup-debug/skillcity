@@ -25,6 +25,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { getAdmissionDashboard } from "@/server/admissions/queries";
+import { getCrmFunnel } from "@/server/crm/queries";
 import { getRecruitmentOverview } from "@/server/careers/queries";
 import { getExecutiveDashboard } from "@/server/executive/queries";
 
@@ -57,6 +58,16 @@ describe("scoped aggregate queries", () => {
     expect(calls.length).toBeGreaterThan(10);
     expect(calls.every((call) => call.includes("branch-1"))).toBe(true);
     expect(calls.some((call) => call.includes("branch-2"))).toBe(false);
+  });
+
+  it("applies district scope to every CRM funnel stage", async () => {
+    state.user = actor({ scope: "DISTRICT", districtId: "district-1" });
+    await getCrmFunnel();
+
+    const calls = callsFor(state.count);
+    expect(calls).toHaveLength(8);
+    expect(calls.every((call) => call.includes("district-1"))).toBe(true);
+    expect(calls.some((call) => call.includes("district-2"))).toBe(false);
   });
 
   it("applies recruitment scope to counts, grouped reports, details, and interviews", async () => {

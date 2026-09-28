@@ -147,7 +147,7 @@ export async function getDirectorTrainersAndBatches() {
   const employeeScope = employeeScopeWhere(user, PERMISSIONS.DIRECTOR_ACCESS);
   return Promise.all([
     prisma.user.findMany({
-      where: { roles: { some: { role: { name: "Trainer" } } }, deletedAt: null, employeeProfile: employeeScope },
+      where: { roles: { some: { role: { name: "Trainer" } } }, deletedAt: null, status: "ACTIVE", employeeProfile: { AND: [employeeScope, { status: { in: ["ACTIVE", "PROBATION", "ON_NOTICE"] } }] } },
       orderBy: { name: "asc" }
     }),
     prisma.batch.findMany({ where: batchScope, orderBy: { createdAt: "desc" }, include: { program: true, journey: true, enrollments: true, trainerAssignments: { include: { trainer: true } } } }),

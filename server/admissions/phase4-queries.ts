@@ -12,7 +12,7 @@ export async function getAdmissionPhase4Queue() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [applicationsAwaitingReview, approvedApplications, paymentPendingInvoices, paymentVerificationPending, activationCandidates, batchPending, admissionConfirmedToday] = await Promise.all([
+  const [applicationsAwaitingReview, approvedApplications, paymentPendingInvoices, paymentVerificationPending, rawActivationCandidates, batchPending, admissionConfirmedToday] = await Promise.all([
     prisma.admissionApplication.findMany({
       where: { AND: [applicationScope, { status: { in: ["SUBMITTED", "UNDER_REVIEW"] } }] },
       orderBy: { submittedAt: "asc" },
@@ -45,8 +45,11 @@ export async function getAdmissionPhase4Queue() {
     prisma.admissionApplication.findMany({
       where: { AND: [applicationScope, { status: "APPROVED", studentId: null, OR: [{ program: { feeType: "FREE" } }, { lead: { invoices: { some: { status: "PAID" } } } }] }] },
       orderBy: { reviewedAt: "desc" },
-      take: 20,
-      include: { lead: { include: { invoices: { where: { status: "PAID" }, orderBy: { updatedAt: "desc" }, take: 1 } } }, program: true }
+      take: 100,
+      include: {
+        lead: { include: { invoices: { where: { status: "PAID" }, orderBy: { updatedAt: "desc" } } } },
+        program: true
+      }
     }),
     prisma.studentEnrollment.findMany({
       where: { AND: [enrollmentScope, { status: "ACTIVE", batchId: null }] },
@@ -56,6 +59,10 @@ export async function getAdmissionPhase4Queue() {
     }),
     prisma.lead.count({ where: { AND: [leadScope, { status: "WON", convertedAt: { gte: today } }] } })
   ]);
+
+  const activationCandidates = rawActivationCandidates
+    .filter((application) => application.program.feeType === "FREE" || application.lead.invoices.some((invoice) => invoice.programId === application.programId))
+    .slice(0, 20);
 
   return {
     applicationsAwaitingReview,

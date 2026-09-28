@@ -27,7 +27,7 @@ export default async function AdmissionApplicationOperatingPage({ params }: { pa
   const application = await getAdmissionPhase4Application(applicationId);
   if (!application) notFound();
 
-  const invoices = application.lead.invoices;
+  const invoices = application.lead.invoices.filter((invoice) => invoice.programId === application.programId);
   const paidInvoices = invoices.filter((invoice) => invoice.status === "PAID");
   const payableInvoices = invoices.filter((invoice) => invoice.status === "ISSUED" || invoice.status === "PARTIALLY_PAID");
   const pendingPayments = invoices.flatMap((invoice) => invoice.transactions.filter((payment) => (payment.status === "INITIATED" || payment.status === "SUCCESS") && invoice.status !== "PAID").map((payment) => ({ ...payment, invoice })));

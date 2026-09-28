@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { LeadForm } from "@/features/admissions/components/admission-forms";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
@@ -27,11 +28,11 @@ export default async function LeadsPage() {
               <h2 className="text-xl font-black text-brand-dark">{stage.name}</h2>
               <div className="mt-4 space-y-3">
                 {leads.filter((lead) => lead.pipelineStageId === stage.id).map((lead) => (
-                  <div key={lead.id} className="rounded-lg bg-white p-4">
+                  <Link href={`/admissions/leads/${lead.id}`} key={lead.id} className="block rounded-lg bg-white p-4 transition hover:text-brand-red hover:shadow-soft">
                     <p className="font-black text-brand-dark">{lead.name}</p>
                     <p className="mt-1 text-sm font-bold text-brand-muted">{lead.phone} - {lead.priority}</p>
                     <p className="mt-1 text-sm font-bold text-brand-muted">{lead.programInterested?.name ?? "Program not selected"}</p>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>

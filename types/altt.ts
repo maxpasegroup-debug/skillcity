@@ -1,4 +1,5 @@
 import type { LearningStepType, SubmissionStatus } from "@prisma/client";
+import type { AlttStage } from "@/lib/academic/altt";
 
 export type AlttStepView = {
   id: string;
@@ -9,6 +10,7 @@ export type AlttStepView = {
   required: boolean;
   points: number;
   completed: boolean;
+  alttStage: AlttStage;
 };
 
 export type AlttProgressView = {

@@ -3,40 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireStudent } from "@/server/journey/queries";
+import { assertStudentActivityAccess } from "@/server/academic/access";
 
 export async function completeActivityAction(activityId: string) {
   const user = await requireStudent();
 
-  const activity = await prisma.activity.findUnique({
-    where: { id: activityId },
-    include: {
-      day: {
-        include: {
-          week: {
-            include: {
-              phase: true
-            }
-          }
-        }
-      }
-    }
-  });
-
-  if (!activity) {
-    throw new Error("Activity not found");
-  }
-
-  const enrollment = await prisma.studentEnrollment.findFirst({
-    where: {
-      studentId: user.id,
-      journeyId: activity.day.week.phase.journeyId,
-      status: "ACTIVE"
-    }
-  });
-
-  if (!enrollment) {
-    throw new Error("Active enrollment not found");
-  }
+  const { enrollment } = await assertStudentActivityAccess(user.id, activityId);
 
   await prisma.studentProgress.upsert({
     where: {

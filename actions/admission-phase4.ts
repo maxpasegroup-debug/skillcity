@@ -6,8 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/security/password";
 import { createToken } from "@/lib/security/token";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { validateAdmissionRelationships } from "@/lib/crm/validation";
 import { ensureDefaultPipeline, requireAdmissionUser } from "@/server/admissions/queries";
-import { assertApplicationAccess, assertInvoiceAccess } from "@/server/auth/resource-access";
+import { assertApplicationAccess, assertBatchAccess, assertInvoiceAccess } from "@/server/auth/resource-access";
 import { approvedAdmissionPinTemplate } from "@/server/whatsapp/templates";
 import { sendWhatsAppMessage } from "@/server/whatsapp/service";
 import { admissionActivationSchema, manualPaymentCaptureSchema, paymentRequestSchema, paymentVerificationSchema } from "@/features/admissions/phase4-schemas";
@@ -226,6 +227,7 @@ export async function confirmAdmissionAndActivateStudentAction(_: State, formDat
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check activation details." };
   await assertApplicationAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.applicationId);
   if (parsed.data.invoiceId) await assertInvoiceAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.invoiceId);
+  if (parsed.data.batchId) await assertBatchAccess(actor, PERMISSIONS.ADMISSIONS_MANAGE, parsed.data.batchId);
 
   const application = await prisma.admissionApplication.findUnique({
     where: { id: parsed.data.applicationId },
@@ -246,11 +248,27 @@ export async function confirmAdmissionAndActivateStudentAction(_: State, formDat
   if (application.program.feeType !== "FREE" && (!invoice || invoice.status !== "PAID")) {
     return { ok: false, message: "Verified payment is required before admission confirmation." };
   }
+  if (invoice && (invoice.leadId !== application.leadId || invoice.programId !== application.programId)) {
+    return { ok: false, message: "The selected invoice does not belong to this lead and program." };
+  }
 
   const journey = application.program.journeys[0] ?? await prisma.journey.findFirst({ where: { programId: application.programId, status: "ACTIVE" }, orderBy: { version: "desc" } });
   if (!journey) return { ok: false, message: "Create an active journey before activating this student." };
 
+  const batch = parsed.data.batchId ? await prisma.batch.findUnique({ where: { id: parsed.data.batchId }, include: { _count: { select: { enrollments: true } } } }) : null;
+  if (parsed.data.batchId && !batch) return { ok: false, message: "Batch not found." };
+  const relationshipIssues = validateAdmissionRelationships({
+    application,
+    invoice,
+    batch: batch ? { programId: batch.programId, journeyId: batch.journeyId, status: batch.status, capacity: batch.enrollmentLimit, enrollmentCount: batch._count.enrollments } : null,
+    journeyId: journey.id
+  });
+  if (relationshipIssues.length) return { ok: false, message: relationshipIssues[0] };
+
   const whatsapp = normalizeWhatsApp(parsed.data.whatsapp);
+  const credentialOwner = await prisma.studentLoginCredential.findUnique({ where: { whatsapp }, select: { applicationId: true, userId: true } });
+  if (credentialOwner?.applicationId && credentialOwner.applicationId !== application.id) return { ok: false, message: "This WhatsApp login belongs to another admission application." };
+  if (application.studentId && credentialOwner && credentialOwner.userId !== application.studentId) return { ok: false, message: "This application is already linked to another student account." };
   const pin = application.studentLoginCredentials[0] ? null : createSixDigitPin();
   const passwordHash = await hashPassword(createToken(20));
   const pinHash = pin ? await hashPassword(pin) : null;
@@ -266,9 +284,11 @@ export async function confirmAdmissionAndActivateStudentAction(_: State, formDat
     });
 
     const existingCredential = await tx.studentLoginCredential.findUnique({ where: { whatsapp } });
-    const existingStudent = existingCredential
-      ? await tx.user.findUnique({ where: { id: existingCredential.userId } })
-      : await tx.user.findUnique({ where: { email: studentEmail } });
+    const existingStudent = application.studentId
+      ? await tx.user.findUnique({ where: { id: application.studentId } })
+      : existingCredential
+        ? await tx.user.findUnique({ where: { id: existingCredential.userId } })
+        : await tx.user.findUnique({ where: { email: studentEmail } });
 
     const student = existingStudent
       ? await tx.user.update({ where: { id: existingStudent.id }, data: { name: application.lead.name, status: "ACTIVE" } })
@@ -346,10 +366,7 @@ export async function confirmAdmissionAndActivateStudentAction(_: State, formDat
         }
       });
     } else if (credential.applicationId !== application.id || credential.userId !== student.id) {
-      credential = await tx.studentLoginCredential.update({
-        where: { id: credential.id },
-        data: { userId: student.id, applicationId: application.id, status: "ACTIVE", revokedAt: null }
-      });
+      throw new Error("Student login relationship changed during activation. Retry after reviewing the linked account.");
     }
 
     await tx.leadActivity.createMany({

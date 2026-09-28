@@ -33,6 +33,7 @@ export function LearningStepCard({ step, dayId }: { step: AlttStepView; dayId: s
           <div className="flex gap-4">
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-brand-beige text-brand-red"><Icon className="h-6 w-6" /></div>
             <div>
+              <p className="text-xs font-black uppercase text-brand-muted">{step.alttStage}</p>
               <p className="text-sm font-black text-brand-red">Step {step.sortOrder} · {step.type.replaceAll("_", " ")}</p>
               <h3 className="mt-2 text-2xl font-black text-brand-dark">{step.title}</h3>
               {step.instructions ? <p className="mt-3 max-w-2xl text-base leading-7 text-brand-muted">{step.instructions}</p> : null}

@@ -6,6 +6,9 @@ import { requireStudent } from "@/server/journey/queries";
 import { requireDirector } from "@/server/director/queries";
 import { writeDirectorLog } from "@/server/director/log";
 import { assessmentResultSchema, attachLearningFlowSchema, learningFlowSchema, quizAttemptSchema, reflectionAnswerSchema, submissionSchema } from "@/features/altt/schemas";
+import { assertStudentActivityAccess, assertStudentDayAccess, assertStudentReflectionAccess, assertStudentStepAccess } from "@/server/academic/access";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { assertJourneyDayAccess } from "@/server/auth/resource-access";
 
 type ActionState = { ok: boolean; message: string };
 
@@ -15,6 +18,7 @@ function emptyToNull(value: string | undefined) {
 
 export async function completeLearningStepAction(stepId: string, dayId: string) {
   const user = await requireStudent();
+  await assertStudentStepAccess(user.id, dayId, stepId);
   const session = await prisma.dailyLearningSession.findUnique({ where: { studentId_dayId: { studentId: user.id, dayId } } });
   const completed = new Set(session?.completedStepIds ?? []);
   completed.add(stepId);
@@ -54,6 +58,7 @@ export async function saveReflectionAction(_: ActionState, formData: FormData): 
   if (!parsed.success) {
     return { ok: false, message: "Please answer each reflection question." };
   }
+  await assertStudentReflectionAccess(user.id, parsed.data.dayId, parsed.data.answers.map((answer) => answer.reflectionId));
 
   await prisma.$transaction(
     parsed.data.answers.map((answer) =>
@@ -75,27 +80,16 @@ export async function saveSubmissionAction(_: ActionState, formData: FormData): 
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check your submission." };
   }
-
-  const day = await prisma.journeyDay.findUnique({
-    where: { id: parsed.data.dayId },
-    include: { week: { include: { phase: true } } }
-  });
-  if (!day) return { ok: false, message: "Journey day not found." };
-
-  const enrollment = await prisma.studentEnrollment.findFirst({
-    where: { studentId: user.id, journeyId: day.week.phase.journeyId, status: "ACTIVE" },
-    select: { batchId: true }
-  });
-  if (!enrollment) return { ok: false, message: "You do not have access to this journey day." };
+  const { enrollment } = await assertStudentDayAccess(user.id, parsed.data.dayId);
 
   const activityId = emptyToNull(parsed.data.activityId);
   if (activityId) {
-    const activity = await prisma.activity.findUnique({ where: { id: activityId } });
-    if (!activity || activity.dayId !== parsed.data.dayId) return { ok: false, message: "Task not found for this day." };
-    if (activity.batchId && activity.batchId !== enrollment.batchId) return { ok: false, message: "This task belongs to another batch." };
+    const { activity } = await assertStudentActivityAccess(user.id, activityId);
+    if (activity.dayId !== parsed.data.dayId) return { ok: false, message: "Task not found for this day." };
   }
 
   const stepId = emptyToNull(parsed.data.stepId);
+  if (stepId) await assertStudentStepAccess(user.id, parsed.data.dayId, stepId);
   const existingSubmission = await prisma.submission.findFirst({
     where: {
       studentId: user.id,
@@ -159,6 +153,15 @@ export async function saveQuizAttemptAction(_: ActionState, formData: FormData):
   if (!parsed.success) {
     return { ok: false, message: "Enter your quiz answers." };
   }
+  await assertStudentDayAccess(user.id, parsed.data.dayId);
+  if (parsed.data.activityId) {
+    const { activity } = await assertStudentActivityAccess(user.id, parsed.data.activityId);
+    if (activity.dayId !== parsed.data.dayId) return { ok: false, message: "Quiz activity does not belong to this journey day." };
+  }
+  if (parsed.data.stepId) {
+    const { step } = await assertStudentStepAccess(user.id, parsed.data.dayId, parsed.data.stepId);
+    if (step.type !== "QUIZ") return { ok: false, message: "Quiz step does not belong to this journey day." };
+  }
 
   const attemptNumber = await prisma.quizAttempt.count({ where: { studentId: user.id, dayId: parsed.data.dayId } });
   const questionFilters = [
@@ -196,6 +199,15 @@ export async function saveAssessmentResultAction(_: ActionState, formData: FormD
   if (!parsed.success || parsed.data.score > parsed.data.maxScore) {
     return { ok: false, message: "Check the assessment score." };
   }
+  await assertStudentDayAccess(user.id, parsed.data.dayId);
+  if (parsed.data.activityId) {
+    const { activity } = await assertStudentActivityAccess(user.id, parsed.data.activityId);
+    if (activity.dayId !== parsed.data.dayId || activity.type !== "ASSESSMENT") return { ok: false, message: "Assessment does not belong to this journey day." };
+  }
+  if (parsed.data.stepId) {
+    const { step } = await assertStudentStepAccess(user.id, parsed.data.dayId, parsed.data.stepId);
+    if (step.type !== "ASSESSMENT") return { ok: false, message: "Assessment step does not belong to this journey day." };
+  }
 
   await prisma.assessmentResult.create({
     data: {
@@ -228,13 +240,12 @@ export async function createLearningFlowAction(_: ActionState, formData: FormDat
       version: parsed.data.version,
       steps: {
         create: [
-          { title: "Understand", type: "INTERACTIVE_READING", sortOrder: 1, instructions: "Read the goal and understand the context.", points: 5 },
-          { title: "Learn", type: "ARTICLE", sortOrder: 2, instructions: "Study the learning material.", points: 10 },
-          { title: "Practice", type: "CODING_PRACTICE", sortOrder: 3, instructions: "Apply the idea through practice.", points: 15 },
-          { title: "Build", type: "PROJECT_TASK", sortOrder: 4, instructions: "Create a small output from what you practiced.", points: 20 },
-          { title: "Reflect", type: "REFLECTION", sortOrder: 5, instructions: "Write what changed in your understanding.", points: 10 },
-          { title: "Improve", type: "CHECKLIST", sortOrder: 6, instructions: "Review and improve your work.", points: 10 },
-          { title: "Master", type: "ASSESSMENT", sortOrder: 7, instructions: "Complete the final check for the day.", points: 20 }
+          { title: "Learn", type: "INTERACTIVE_READING", sortOrder: 1, instructions: "Understand the goal and study the learning material.", points: 10, metadata: { alttStage: "LEARN" } },
+          { title: "Practise", type: "CODING_PRACTICE", sortOrder: 2, instructions: "Apply the idea through guided practice.", points: 15, metadata: { alttStage: "PRACTISE" } },
+          { title: "Build", type: "PROJECT_TASK", sortOrder: 3, instructions: "Create a useful output from what you practised.", points: 20, metadata: { alttStage: "BUILD" } },
+          { title: "Deploy", type: "EXTERNAL_LINK", sortOrder: 4, instructions: "Present, publish, pilot, or deliver the output in a real context.", points: 20, metadata: { alttStage: "DEPLOY" } },
+          { title: "Earn", type: "REFLECTION", sortOrder: 5, instructions: "Record validated customer, value, or economic evidence without sensitive financial detail.", points: 15, metadata: { alttStage: "EARN" } },
+          { title: "Grow", type: "ASSESSMENT", sortOrder: 6, instructions: "Review the evidence and define the next improvement.", points: 20, metadata: { alttStage: "GROW" } }
         ]
       }
     }
@@ -251,6 +262,7 @@ export async function attachLearningFlowAction(_: ActionState, formData: FormDat
   if (!parsed.success) {
     return { ok: false, message: "Select a day and learning flow." };
   }
+  await assertJourneyDayAccess(actor, PERMISSIONS.DIRECTOR_ACCESS, parsed.data.dayId);
 
   await prisma.journeyDay.update({ where: { id: parsed.data.dayId }, data: { learningFlowId: parsed.data.learningFlowId } });
   const existingQuestions = await prisma.reflection.count({ where: { dayId: parsed.data.dayId } });
