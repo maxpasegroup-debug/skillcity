@@ -241,6 +241,58 @@ export function coreDocumentScopeWhere(user: AuthorizationUser, permission: Perm
   return scopedWhere<Prisma.CoreDocumentWhereInput>(user, permission, { ownerUserId: user.id }, conditions);
 }
 
+export function communicationMessageScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.CommunicationMessageWhereInput {
+  const scopes = resolveAuthorizedScopes(user, permission);
+  const conditions = scopes.assignments.map((scope): Prisma.CommunicationMessageWhereInput | null => {
+    if (scope.scope === "ORGANIZATION" && scope.institutionId) return { institutionId: scope.institutionId };
+    if (scope.scope === "DIVISION" && scope.divisionId) return { divisionId: scope.divisionId };
+    if (scope.scope === "DISTRICT" && scope.districtId) return { districtId: scope.districtId };
+    if (scope.scope === "BRANCH" && scope.campusId) return { campusId: scope.campusId };
+    if (scope.scope === "DEPARTMENT" && scope.departmentId) return { departmentId: scope.departmentId };
+    return null;
+  });
+  return scopedWhere<Prisma.CommunicationMessageWhereInput>(user, permission, { recipientUserId: user.id }, conditions);
+}
+
+export function communicationTemplateScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.CommunicationTemplateWhereInput {
+  const scopes = resolveAuthorizedScopes(user, permission);
+  const conditions = scopes.assignments.map((scope): Prisma.CommunicationTemplateWhereInput | null => {
+    if (scope.scope === "ORGANIZATION" && scope.institutionId) return { institutionId: scope.institutionId };
+    if (scope.scope === "DIVISION" && scope.divisionId) return { divisionId: scope.divisionId };
+    if (scope.scope === "DISTRICT" && scope.districtId) return { districtId: scope.districtId };
+    if (scope.scope === "BRANCH" && scope.campusId) return { campusId: scope.campusId };
+    if (scope.scope === "DEPARTMENT" && scope.departmentId) return { departmentId: scope.departmentId };
+    return null;
+  });
+  return scopedWhere<Prisma.CommunicationTemplateWhereInput>(user, permission, null, conditions);
+}
+
+export function automationRuleScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.AutomationRuleWhereInput {
+  const scopes = resolveAuthorizedScopes(user, permission);
+  const conditions = scopes.assignments.map((scope): Prisma.AutomationRuleWhereInput | null => {
+    if (scope.scope === "ORGANIZATION" && scope.institutionId) return { institutionId: scope.institutionId };
+    if (scope.scope === "DIVISION" && scope.divisionId) return { divisionId: scope.divisionId };
+    if (scope.scope === "DISTRICT" && scope.districtId) return { districtId: scope.districtId };
+    if (scope.scope === "BRANCH" && scope.campusId) return { campusId: scope.campusId };
+    if (scope.scope === "DEPARTMENT" && scope.departmentId) return { departmentId: scope.departmentId };
+    return null;
+  });
+  return scopedWhere<Prisma.AutomationRuleWhereInput>(user, permission, null, conditions);
+}
+
+export function domainEventScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.DomainEventWhereInput {
+  const scopes = resolveAuthorizedScopes(user, permission);
+  const conditions = scopes.assignments.map((scope): Prisma.DomainEventWhereInput | null => {
+    if (scope.scope === "ORGANIZATION" && scope.institutionId) return { institutionId: scope.institutionId };
+    if (scope.scope === "DIVISION" && scope.divisionId) return { divisionId: scope.divisionId };
+    if (scope.scope === "DISTRICT" && scope.districtId) return { districtId: scope.districtId };
+    if (scope.scope === "BRANCH" && scope.campusId) return { campusId: scope.campusId };
+    if (scope.scope === "DEPARTMENT" && scope.departmentId) return { departmentId: scope.departmentId };
+    return null;
+  });
+  return scopedWhere<Prisma.DomainEventWhereInput>(user, permission, { actorId: user.id }, conditions);
+}
+
 export function complianceRecordScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.ComplianceRecordWhereInput {
   const scopes = resolveAuthorizedScopes(user, permission);
   const conditions = scopes.assignments.map((scope): Prisma.ComplianceRecordWhereInput | null => {

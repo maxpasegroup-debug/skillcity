@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type React from "react";
-import { BarChart3, Bot, Boxes, BriefcaseBusiness, Building2, CreditCard, FileText, Gauge, HeartPulse, Landmark, Network, Scale, Settings, Sparkles, Users, Workflow, GraduationCap } from "lucide-react";
+import { BarChart3, Bot, Boxes, BriefcaseBusiness, Building2, CreditCard, FileText, Gauge, HeartPulse, Landmark, MessageSquareText, Network, Scale, Settings, Sparkles, Users, Workflow, GraduationCap } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 
 const nav = [
@@ -19,6 +19,7 @@ const nav = [
   { href: "/labs", label: "AIRA Labs", icon: Boxes },
   { href: "/executive/departments", label: "Departments", icon: Landmark },
   { href: "/executive/automation-center", label: "Automation Center", icon: Workflow },
+  { href: "/communications", label: "Communications", icon: MessageSquareText },
   { href: "/executive/ai-command-center", label: "AI Command Center", icon: Bot },
   { href: "/executive/reports", label: "Reports", icon: BarChart3 },
   { href: "/executive/system-settings", label: "System Settings", icon: Settings }

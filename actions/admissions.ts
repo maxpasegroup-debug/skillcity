@@ -14,6 +14,7 @@ import { sendWhatsAppMessage } from "@/server/whatsapp/service";
 import { leadScopeWhere } from "@/server/auth/scoping";
 import { assertAssignableEmployee, assertLeadProgramRelationship } from "@/server/crm/service";
 import { admissionProgramSchema, applicationReviewSchema, applicationSchema, commissionSchema, communicationSchema, counsellingSchema, documentSchema, invoiceSchema, leadSchema, paymentSchema, studentCredentialSchema } from "@/features/admissions/schemas";
+import { recordDomainEvent } from "@/server/communications/outbox";
 
 type State = { ok: boolean; message: string };
 
@@ -56,6 +57,7 @@ export async function createLeadAction(_: State, formData: FormData): Promise<St
     const created = await tx.lead.create({ data: { ...parsed.data, phone, whatsapp, email, programInterestedId: programId, sourceId: emptyToNull(parsed.data.sourceId), assignedToId: assigneeId, pipelineStageId: stages[0].id, ownerId: actor.id, institutionId: organization?.institutionId, divisionId: organization?.divisionId, districtId: organization?.districtId, campusId: organization?.campusId } });
     await tx.leadActivity.create({ data: { leadId: created.id, actorId: actor.id, type: "LEAD_CREATED", summary: "Lead created." } });
     await tx.auditLog.create({ data: { userId: actor.id, action: "LEAD_CREATED", entity: "Lead", entityId: created.id } });
+    await recordDomainEvent(tx, { type: "lead.created", idempotencyKey: `lead.created:${created.id}`, aggregateType: "Lead", aggregateId: created.id, actorId: actor.id, institutionId: created.institutionId, divisionId: created.divisionId, districtId: created.districtId, campusId: created.campusId, payload: { recipientUserId: created.assignedToId ?? actor.id, leadId: created.id } });
   });
   revalidatePath("/admissions/leads");
   revalidatePath("/admissions/dashboard");

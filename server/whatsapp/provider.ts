@@ -16,17 +16,11 @@ export interface WhatsAppProvider {
 }
 
 class LogOnlyWhatsAppProvider implements WhatsAppProvider {
-  async send(input: WhatsAppSendInput): Promise<WhatsAppSendResult> {
-    console.info("[whatsapp:log-only]", {
-      to: input.to,
-      template: input.template,
-      message: input.message
-    });
-
+  async send(): Promise<WhatsAppSendResult> {
     return {
-      status: "SENT",
-      provider: "LOG_ONLY",
-      providerRef: `local-${Date.now()}`
+      status: "QUEUED",
+      provider: "UNCONFIGURED",
+      error: "No WhatsApp provider is configured"
     };
   }
 }

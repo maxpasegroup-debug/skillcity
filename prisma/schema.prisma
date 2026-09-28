@@ -706,6 +706,7 @@ enum EmploymentType {
 }
 
 enum AutomationTriggerType {
+  EVENT
   STUDENT_ABSENCE
   TRAINER_PENDING_REVIEWS
   FEE_OVERDUE
@@ -727,6 +728,37 @@ enum AutomationExecutionStatus {
   SUCCESS
   FAILED
   SKIPPED
+}
+
+enum DomainEventStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+  DEAD_LETTER
+}
+
+enum CommunicationDeliveryStatus {
+  QUEUED
+  PROCESSING
+  SUBMITTED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  CANCELLED
+}
+
+enum CommunicationPurpose {
+  TRANSACTIONAL
+  OPERATIONAL
+  MARKETING
+}
+
+enum CommunicationTemplateStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
 }
 
 enum ExecutiveReportType {
@@ -975,6 +1007,11 @@ model User {
   financeInvoicesCreated        FeeInvoice[]                     @relation("FinanceInvoiceCreator")
   financePaymentsRecorded       PaymentTransaction[]             @relation("FinancePaymentRecorder")
   financePaymentsVerified       PaymentTransaction[]             @relation("FinancePaymentVerifier")
+  domainEvents                  DomainEvent[]                    @relation("DomainEventActor")
+  communicationTemplatesCreated CommunicationTemplate[]          @relation("CommunicationTemplateCreator")
+  communicationMessagesCreated  CommunicationMessage[]           @relation("CommunicationMessageCreator")
+  communicationMessagesReceived CommunicationMessage[]           @relation("CommunicationMessageRecipient")
+  automationRulesCreated        AutomationRule[]                 @relation("AutomationRuleCreator")
 
   @@index([email])
   @@index([deletedAt])
@@ -2252,24 +2289,28 @@ model Institution {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  campuses            Campus[]
-  divisions           Division[]
-  districts           District[]
-  departments         Department[]
-  programs            Program[]
-  employees           Employee[]
-  employeeAssignments EmployeeOrganizationAssignment[]
-  leads               Lead[]
-  userAccessScopes    UserAccessScope[]
-  careerApplications  CareerApplication[]
-  reports             ExecutiveReport[]
-  settings            SystemSetting[]
-  labsProducts        LabsProduct[]
-  careerEmployers     CareerEmployer[]
-  careerOpportunities CareerOpportunity[]
-  coreDocuments       CoreDocument[]
-  complianceRecords   ComplianceRecord[]
-  feeInvoicesScoped   FeeInvoice[]
+  campuses               Campus[]
+  divisions              Division[]
+  districts              District[]
+  departments            Department[]
+  programs               Program[]
+  employees              Employee[]
+  employeeAssignments    EmployeeOrganizationAssignment[]
+  leads                  Lead[]
+  userAccessScopes       UserAccessScope[]
+  careerApplications     CareerApplication[]
+  reports                ExecutiveReport[]
+  settings               SystemSetting[]
+  labsProducts           LabsProduct[]
+  careerEmployers        CareerEmployer[]
+  careerOpportunities    CareerOpportunity[]
+  coreDocuments          CoreDocument[]
+  complianceRecords      ComplianceRecord[]
+  feeInvoicesScoped      FeeInvoice[]
+  domainEvents           DomainEvent[]
+  communicationTemplates CommunicationTemplate[]
+  communicationMessages  CommunicationMessage[]
+  automationRules        AutomationRule[]
 
   @@index([status])
 }
@@ -2288,22 +2329,26 @@ model Campus {
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 
-  institution         Institution                      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
-  district            District?                        @relation(fields: [districtId], references: [id], onDelete: SetNull)
-  departments         Department[]
-  programs            Program[]
-  batches             Batch[]
-  employees           Employee[]
-  employeeAssignments EmployeeOrganizationAssignment[]
-  leads               Lead[]
-  userAccessScopes    UserAccessScope[]
-  careerApplications  CareerApplication[]
-  labsProducts        LabsProduct[]
-  careerEmployers     CareerEmployer[]
-  careerOpportunities CareerOpportunity[]
-  coreDocuments       CoreDocument[]
-  complianceRecords   ComplianceRecord[]
-  feeInvoicesScoped   FeeInvoice[]
+  institution            Institution                      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  district               District?                        @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  departments            Department[]
+  programs               Program[]
+  batches                Batch[]
+  employees              Employee[]
+  employeeAssignments    EmployeeOrganizationAssignment[]
+  leads                  Lead[]
+  userAccessScopes       UserAccessScope[]
+  careerApplications     CareerApplication[]
+  labsProducts           LabsProduct[]
+  careerEmployers        CareerEmployer[]
+  careerOpportunities    CareerOpportunity[]
+  coreDocuments          CoreDocument[]
+  complianceRecords      ComplianceRecord[]
+  feeInvoicesScoped      FeeInvoice[]
+  domainEvents           DomainEvent[]
+  communicationTemplates CommunicationTemplate[]
+  communicationMessages  CommunicationMessage[]
+  automationRules        AutomationRule[]
 
   @@unique([institutionId, slug])
   @@index([institutionId, status])
@@ -2322,19 +2367,23 @@ model Department {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  institution         Institution?                     @relation(fields: [institutionId], references: [id], onDelete: Cascade)
-  division            Division?                        @relation(fields: [divisionId], references: [id], onDelete: SetNull)
-  campus              Campus?                          @relation(fields: [campusId], references: [id], onDelete: SetNull)
-  programs            Program[]
-  employees           Employee[]
-  employeeAssignments EmployeeOrganizationAssignment[]
-  userAccessScopes    UserAccessScope[]
-  labsProducts        LabsProduct[]
-  careerEmployers     CareerEmployer[]
-  careerOpportunities CareerOpportunity[]
-  coreDocuments       CoreDocument[]
-  complianceRecords   ComplianceRecord[]
-  feeInvoicesScoped   FeeInvoice[]
+  institution            Institution?                     @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  division               Division?                        @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  campus                 Campus?                          @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  programs               Program[]
+  employees              Employee[]
+  employeeAssignments    EmployeeOrganizationAssignment[]
+  userAccessScopes       UserAccessScope[]
+  labsProducts           LabsProduct[]
+  careerEmployers        CareerEmployer[]
+  careerOpportunities    CareerOpportunity[]
+  coreDocuments          CoreDocument[]
+  complianceRecords      ComplianceRecord[]
+  feeInvoicesScoped      FeeInvoice[]
+  domainEvents           DomainEvent[]
+  communicationTemplates CommunicationTemplate[]
+  communicationMessages  CommunicationMessage[]
+  automationRules        AutomationRule[]
 
   @@index([institutionId])
   @@index([divisionId])
@@ -2812,20 +2861,24 @@ model Division {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  institution         Institution                      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
-  departments         Department[]
-  programs            Program[]
-  employees           Employee[]
-  employeeAssignments EmployeeOrganizationAssignment[]
-  leads               Lead[]
-  userAccessScopes    UserAccessScope[]
-  careerApplications  CareerApplication[]
-  labsProducts        LabsProduct[]
-  careerEmployers     CareerEmployer[]
-  careerOpportunities CareerOpportunity[]
-  coreDocuments       CoreDocument[]
-  complianceRecords   ComplianceRecord[]
-  feeInvoicesScoped   FeeInvoice[]
+  institution            Institution                      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  departments            Department[]
+  programs               Program[]
+  employees              Employee[]
+  employeeAssignments    EmployeeOrganizationAssignment[]
+  leads                  Lead[]
+  userAccessScopes       UserAccessScope[]
+  careerApplications     CareerApplication[]
+  labsProducts           LabsProduct[]
+  careerEmployers        CareerEmployer[]
+  careerOpportunities    CareerOpportunity[]
+  coreDocuments          CoreDocument[]
+  complianceRecords      ComplianceRecord[]
+  feeInvoicesScoped      FeeInvoice[]
+  domainEvents           DomainEvent[]
+  communicationTemplates CommunicationTemplate[]
+  communicationMessages  CommunicationMessage[]
+  automationRules        AutomationRule[]
 
   @@unique([institutionId, slug])
   @@unique([institutionId, code])
@@ -2844,19 +2897,23 @@ model District {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  institution         Institution                      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
-  campuses            Campus[]
-  employees           Employee[]
-  employeeAssignments EmployeeOrganizationAssignment[]
-  leads               Lead[]
-  userAccessScopes    UserAccessScope[]
-  careerApplications  CareerApplication[]
-  labsProducts        LabsProduct[]
-  careerEmployers     CareerEmployer[]
-  careerOpportunities CareerOpportunity[]
-  coreDocuments       CoreDocument[]
-  complianceRecords   ComplianceRecord[]
-  feeInvoicesScoped   FeeInvoice[]
+  institution            Institution                      @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  campuses               Campus[]
+  employees              Employee[]
+  employeeAssignments    EmployeeOrganizationAssignment[]
+  leads                  Lead[]
+  userAccessScopes       UserAccessScope[]
+  careerApplications     CareerApplication[]
+  labsProducts           LabsProduct[]
+  careerEmployers        CareerEmployer[]
+  careerOpportunities    CareerOpportunity[]
+  coreDocuments          CoreDocument[]
+  complianceRecords      ComplianceRecord[]
+  feeInvoicesScoped      FeeInvoice[]
+  domainEvents           DomainEvent[]
+  communicationTemplates CommunicationTemplate[]
+  communicationMessages  CommunicationMessage[]
+  automationRules        AutomationRule[]
 
   @@unique([institutionId, stateName, slug])
   @@index([institutionId, status])
@@ -2864,35 +2921,220 @@ model District {
 }
 
 model AutomationRule {
-  id           String                @id @default(uuid()) @db.Uuid
-  name         String                @db.VarChar(180)
-  description  String?               @db.Text
-  triggerType  AutomationTriggerType
-  actionType   AutomationActionType
-  conditions   Json
-  actionConfig Json
-  active       Boolean               @default(true)
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  id            String                @id @default(uuid()) @db.Uuid
+  code          String?               @unique @db.VarChar(120)
+  name          String                @db.VarChar(180)
+  description   String?               @db.Text
+  triggerType   AutomationTriggerType
+  eventType     String?               @db.VarChar(160)
+  actionType    AutomationActionType
+  conditions    Json
+  actionConfig  Json
+  active        Boolean               @default(true)
+  institutionId String?               @db.Uuid
+  divisionId    String?               @db.Uuid
+  districtId    String?               @db.Uuid
+  campusId      String?               @db.Uuid
+  departmentId  String?               @db.Uuid
+  createdById   String?               @db.Uuid
+  maxAttempts   Int                   @default(3)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
-  executions AutomationExecution[]
+  institution Institution?          @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  division    Division?             @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  district    District?             @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  campus      Campus?               @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  department  Department?           @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  createdBy   User?                 @relation("AutomationRuleCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  executions  AutomationExecution[]
 
   @@index([triggerType, active])
+  @@index([eventType, active])
+  @@index([institutionId, active])
+  @@index([divisionId])
+  @@index([districtId])
+  @@index([campusId])
+  @@index([departmentId])
 }
 
 model AutomationExecution {
-  id         String                    @id @default(uuid()) @db.Uuid
-  ruleId     String                    @db.Uuid
-  status     AutomationExecutionStatus @default(PENDING)
-  input      Json?
-  output     Json?
-  error      String?                   @db.Text
-  executedAt DateTime                  @default(now())
+  id             String                    @id @default(uuid()) @db.Uuid
+  ruleId         String                    @db.Uuid
+  domainEventId  String?                   @db.Uuid
+  idempotencyKey String?                   @unique @db.VarChar(240)
+  status         AutomationExecutionStatus @default(PENDING)
+  input          Json?
+  output         Json?
+  error          String?                   @db.Text
+  attempts       Int                       @default(0)
+  maxAttempts    Int                       @default(3)
+  nextAttemptAt  DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  executedAt     DateTime                  @default(now())
 
-  rule AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  rule           AutomationRule         @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  domainEvent    DomainEvent?           @relation(fields: [domainEventId], references: [id], onDelete: SetNull)
+  communications CommunicationMessage[]
 
   @@index([ruleId, executedAt])
   @@index([status])
+  @@index([domainEventId])
+  @@index([status, nextAttemptAt])
+}
+
+model DomainEvent {
+  id             String            @id @default(uuid()) @db.Uuid
+  type           String            @db.VarChar(160)
+  idempotencyKey String            @unique @db.VarChar(240)
+  aggregateType  String            @db.VarChar(120)
+  aggregateId    String            @db.VarChar(140)
+  payload        Json
+  status         DomainEventStatus @default(PENDING)
+  institutionId  String?           @db.Uuid
+  divisionId     String?           @db.Uuid
+  districtId     String?           @db.Uuid
+  campusId       String?           @db.Uuid
+  departmentId   String?           @db.Uuid
+  actorId        String?           @db.Uuid
+  attempts       Int               @default(0)
+  maxAttempts    Int               @default(3)
+  availableAt    DateTime          @default(now())
+  processedAt    DateTime?
+  lastError      String?           @db.Text
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  institution    Institution?           @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  division       Division?              @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  district       District?              @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  campus         Campus?                @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  department     Department?            @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  actor          User?                  @relation("DomainEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+  executions     AutomationExecution[]
+  communications CommunicationMessage[]
+
+  @@index([status, availableAt])
+  @@index([type, createdAt])
+  @@index([institutionId, status])
+  @@index([divisionId])
+  @@index([districtId])
+  @@index([campusId])
+  @@index([departmentId])
+  @@index([aggregateType, aggregateId])
+}
+
+model CommunicationTemplate {
+  id            String                      @id @default(uuid()) @db.Uuid
+  code          String                      @db.VarChar(120)
+  name          String                      @db.VarChar(180)
+  channel       CommunicationChannel
+  purpose       CommunicationPurpose        @default(OPERATIONAL)
+  status        CommunicationTemplateStatus @default(DRAFT)
+  institutionId String?                     @db.Uuid
+  divisionId    String?                     @db.Uuid
+  districtId    String?                     @db.Uuid
+  campusId      String?                     @db.Uuid
+  departmentId  String?                     @db.Uuid
+  createdById   String?                     @db.Uuid
+  createdAt     DateTime                    @default(now())
+  updatedAt     DateTime                    @updatedAt
+
+  institution Institution?                   @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  division    Division?                      @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  district    District?                      @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  campus      Campus?                        @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  department  Department?                    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  createdBy   User?                          @relation("CommunicationTemplateCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  versions    CommunicationTemplateVersion[]
+
+  @@unique([institutionId, code])
+  @@index([channel, status])
+  @@index([institutionId, status])
+  @@index([divisionId])
+  @@index([districtId])
+  @@index([campusId])
+  @@index([departmentId])
+}
+
+model CommunicationTemplateVersion {
+  id                 String   @id @default(uuid()) @db.Uuid
+  templateId         String   @db.Uuid
+  version            Int
+  subject            String?  @db.VarChar(220)
+  body               String   @db.Text
+  requiredVariables  String[] @default([])
+  providerTemplateId String?  @db.VarChar(180)
+  locale             String   @default("en") @db.VarChar(20)
+  createdAt          DateTime @default(now())
+
+  template CommunicationTemplate  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  messages CommunicationMessage[]
+
+  @@unique([templateId, version])
+  @@index([templateId, createdAt])
+}
+
+model CommunicationMessage {
+  id                    String                      @id @default(uuid()) @db.Uuid
+  channel               CommunicationChannel
+  purpose               CommunicationPurpose        @default(OPERATIONAL)
+  status                CommunicationDeliveryStatus @default(QUEUED)
+  idempotencyKey        String                      @unique @db.VarChar(240)
+  recipientUserId       String?                     @db.Uuid
+  recipientAddress      String?                     @db.VarChar(320)
+  recipientMasked       String?                     @db.VarChar(320)
+  templateVersionId     String?                     @db.Uuid
+  subject               String?                     @db.VarChar(220)
+  body                  String?                     @db.Text
+  provider              String?                     @db.VarChar(100)
+  providerRef           String?                     @db.VarChar(180)
+  domainEventId         String?                     @db.Uuid
+  automationExecutionId String?                     @db.Uuid
+  institutionId         String?                     @db.Uuid
+  divisionId            String?                     @db.Uuid
+  districtId            String?                     @db.Uuid
+  campusId              String?                     @db.Uuid
+  departmentId          String?                     @db.Uuid
+  createdById           String?                     @db.Uuid
+  attempts              Int                         @default(0)
+  maxAttempts           Int                         @default(3)
+  availableAt           DateTime                    @default(now())
+  submittedAt           DateTime?
+  sentAt                DateTime?
+  deliveredAt           DateTime?
+  readAt                DateTime?
+  failedAt              DateTime?
+  errorCode             String?                     @db.VarChar(100)
+  errorMessage          String?                     @db.Text
+  metadata              Json?
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+
+  recipient           User?                         @relation("CommunicationMessageRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+  templateVersion     CommunicationTemplateVersion? @relation(fields: [templateVersionId], references: [id], onDelete: SetNull)
+  domainEvent         DomainEvent?                  @relation(fields: [domainEventId], references: [id], onDelete: SetNull)
+  automationExecution AutomationExecution?          @relation(fields: [automationExecutionId], references: [id], onDelete: SetNull)
+  institution         Institution?                  @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  division            Division?                     @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  district            District?                     @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  campus              Campus?                       @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  department          Department?                   @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  createdBy           User?                         @relation("CommunicationMessageCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  notification        Notification?
+
+  @@index([status, availableAt])
+  @@index([channel, status])
+  @@index([recipientUserId, createdAt])
+  @@index([provider, providerRef])
+  @@index([institutionId, status])
+  @@index([divisionId])
+  @@index([districtId])
+  @@index([campusId])
+  @@index([departmentId])
+  @@index([domainEventId])
+  @@index([automationExecutionId])
 }
 
 model ExecutiveReport {
@@ -3887,17 +4129,19 @@ model CommunicationLog {
 }
 
 model Notification {
-  id        String             @id @default(uuid()) @db.Uuid
-  userId    String             @db.Uuid
-  type      NotificationType
-  title     String             @db.VarChar(180)
-  message   String             @db.Text
-  status    NotificationStatus @default(UNREAD)
-  actionUrl String?            @db.VarChar(500)
-  createdAt DateTime           @default(now())
-  readAt    DateTime?
+  id                     String             @id @default(uuid()) @db.Uuid
+  userId                 String             @db.Uuid
+  communicationMessageId String?            @unique @db.Uuid
+  type                   NotificationType
+  title                  String             @db.VarChar(180)
+  message                String             @db.Text
+  status                 NotificationStatus @default(UNREAD)
+  actionUrl              String?            @db.VarChar(500)
+  createdAt              DateTime           @default(now())
+  readAt                 DateTime?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  communicationMessage CommunicationMessage? @relation(fields: [communicationMessageId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
   @@index([createdAt])

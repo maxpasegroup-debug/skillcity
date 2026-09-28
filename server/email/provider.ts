@@ -12,15 +12,16 @@ export async function sendEmail({ to, subject, html }: SendEmailInput) {
     if (process.env.NODE_ENV === "production") {
       throw new Error("RESEND_API_KEY is required in production");
     }
-    console.info("[email:development]", { to, subject });
-    return;
+    console.info("[email:development] provider unavailable; message not sent");
+    return { status: "QUEUED" as const, provider: "UNCONFIGURED" };
   }
 
   const resend = new Resend(env.RESEND_API_KEY);
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from: "SkillCity <noreply@skillcity.in>",
     to,
     subject,
     html
   });
+  return { status: "SUBMITTED" as const, provider: "RESEND", providerRef: result.data?.id };
 }

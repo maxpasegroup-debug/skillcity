@@ -11,6 +11,7 @@ import { assertPermission, AuthorizationError } from "@/server/auth/authorizatio
 import { assertCareerEmployerAccess, assertCareerOpportunityAccess, assertCareerOpportunityApplicationAccess } from "@/server/auth/resource-access";
 import { careerEmployerScopeWhere, employeeScopeWhere } from "@/server/auth/scoping";
 import { validateOrganizationPathForActor } from "@/server/organization/service";
+import { recordDomainEvent } from "@/server/communications/outbox";
 
 export type CareerHubActionState = { ok: boolean; message: string; code?: string };
 
@@ -133,7 +134,7 @@ export async function applyToCareerOpportunityAction(_: CareerHubActionState, fo
   const actor = await assertPermission(PERMISSIONS.CAREER_APPLY);
   const parsed = careerApplicationSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? "Check your application.");
-  const opportunity = await prisma.careerOpportunity.findUnique({ where: { id: parsed.data.opportunityId } });
+  const opportunity = await prisma.careerOpportunity.findUnique({ where: { id: parsed.data.opportunityId }, include: { ownerEmployee: { select: { userId: true } } } });
   if (!opportunity || !["AUTHENTICATED", "PUBLIC"].includes(opportunity.visibility)) throw new AuthorizationError("Opportunity is not available to this participant");
   const profile = await prisma.careerTalentProfile.findUnique({ where: { userId: actor.id } });
   if (!profile) return failure("Create your private Career Hub profile before applying.");
@@ -146,6 +147,7 @@ export async function applyToCareerOpportunityAction(_: CareerHubActionState, fo
       if (!current || !opportunityAcceptsApplications({ ...current, activeApplications: current.applications.length })) throw new AuthorizationError("This opportunity is not accepting applications");
       const created = await tx.careerOpportunityApplication.create({ data: { opportunityId: opportunity.id, applicantId: actor.id, talentProfileId: profile.id, referralId: referral?.id, coverNote: optional(parsed.data.coverNote) } });
       await tx.platformAudit.create({ data: { actorId: actor.id, action: "CAREER_OPPORTUNITY_APPLICATION_SUBMITTED", entity: "CareerOpportunityApplication", entityId: created.id, metadata: { opportunityId: opportunity.id, referralId: referral?.id ?? null } } });
+      if (opportunity.ownerEmployee?.userId) await recordDomainEvent(tx, { type: "career.application.submitted", idempotencyKey: `career.application.submitted:${created.id}`, aggregateType: "CareerOpportunityApplication", aggregateId: created.id, actorId: actor.id, institutionId: opportunity.institutionId, divisionId: opportunity.divisionId, districtId: opportunity.districtId, campusId: opportunity.campusId, departmentId: opportunity.departmentId, payload: { recipientUserId: opportunity.ownerEmployee.userId, applicationId: created.id, opportunityId: opportunity.id } });
       return created;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     revalidatePath("/career/applications"); revalidatePath(`/career/opportunities/${opportunity.code}`);

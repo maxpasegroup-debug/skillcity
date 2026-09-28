@@ -2,13 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   createLog: vi.fn(),
+  updateLog: vi.fn(),
   send: vi.fn()
 }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     whatsAppMessageLog: {
-      create: mocks.createLog
+      create: mocks.createLog,
+      update: mocks.updateLog
     }
   }
 }));
@@ -24,9 +26,10 @@ describe("WhatsApp service integration boundary", () => {
     vi.clearAllMocks();
   });
 
-  it("persists provider delivery metadata after a successful send", async () => {
+  it("persists the queue before provider delivery metadata", async () => {
     mocks.send.mockResolvedValue({ status: "SENT", provider: "TEST", providerRef: "msg-123" });
-    mocks.createLog.mockImplementation(async ({ data }) => ({ id: "log-123", ...data }));
+    mocks.createLog.mockResolvedValue({ id: "log-123" });
+    mocks.updateLog.mockImplementation(async ({ data }) => ({ id: "log-123", ...data }));
 
     const result = await sendWhatsAppMessage({
       to: "+919876543210",
@@ -41,12 +44,13 @@ describe("WhatsApp service integration boundary", () => {
       template: "approved_admission_pin",
       message: "Test message"
     });
-    expect(mocks.createLog).toHaveBeenCalledWith({
+    expect(mocks.createLog).toHaveBeenCalledWith({ data: expect.objectContaining({ status: "QUEUED", provider: "PENDING", message: "[REDACTED: admission credential]" }) });
+    expect(mocks.updateLog).toHaveBeenCalledWith({
+      where: { id: "log-123" },
       data: expect.objectContaining({
         status: "SENT",
         provider: "TEST",
         providerRef: "msg-123",
-        applicationId: id,
         sentAt: expect.any(Date)
       })
     });

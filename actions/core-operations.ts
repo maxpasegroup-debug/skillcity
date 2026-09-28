@@ -10,6 +10,7 @@ import { assertPermission, AuthorizationError } from "@/server/auth/authorizatio
 import { assertApplicationAccess, assertCareerEmployerAccess, assertCareerOpportunityAccess, assertComplianceRecordAccess, assertCoreDocumentAccess, assertEmployeeAccess, assertInstitutionAccess, assertInvoiceAccess, assertLabsProductAccess, assertPaymentAccess, assertProgramAccess, assertStudentAccess } from "@/server/auth/resource-access";
 import { employeeScopeWhere } from "@/server/auth/scoping";
 import { validateOrganizationPathForActor } from "@/server/organization/service";
+import { recordDomainEvent } from "@/server/communications/outbox";
 
 export type CoreActionState = { ok: boolean; message: string; id?: string };
 type OrganizationPath = { institutionId: string; divisionId?: string | null; districtId?: string | null; campusId?: string | null; departmentId?: string | null };
@@ -253,6 +254,7 @@ export async function verifyFinancePaymentAction(_: CoreActionState, formData: F
     await tx.paymentTransaction.update({ where: { id: payment.id }, data: { status: nextPaymentStatus, verifiedById: actor.id, verifiedAt: new Date(), paidAt: nextPaymentStatus === "SUCCESS" ? payment.paidAt ?? new Date() : payment.paidAt, metadata: { verificationStatus: parsed.data.decision } } });
     await tx.feeInvoice.update({ where: { id: payment.invoiceId }, data: { status: nextInvoiceStatus, paidAt: nextInvoiceStatus === "PAID" ? new Date() : null } });
     await tx.platformAudit.create({ data: { actorId: actor.id, action: "FINANCE_PAYMENT_VERIFIED", entity: "PaymentTransaction", entityId: payment.id, metadata: { decision: parsed.data.decision, invoiceStatus: nextInvoiceStatus } } });
+    if (nextPaymentStatus === "SUCCESS" && payment.invoice.studentId) await recordDomainEvent(tx, { type: "payment.confirmed", idempotencyKey: `payment.confirmed:${payment.id}`, aggregateType: "PaymentTransaction", aggregateId: payment.id, actorId: actor.id, institutionId: payment.invoice.institutionId, divisionId: payment.invoice.divisionId, districtId: payment.invoice.districtId, campusId: payment.invoice.campusId, departmentId: payment.invoice.departmentId, payload: { recipientUserId: payment.invoice.studentId, paymentId: payment.id, invoiceId: payment.invoiceId } });
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   revalidatePath("/finance/payments");
   revalidatePath("/finance/invoices");

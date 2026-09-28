@@ -12,6 +12,19 @@ type SendWhatsAppMessageInput = {
 };
 
 export async function sendWhatsAppMessage(input: SendWhatsAppMessageInput) {
+  const storedMessage = input.template === "approved_admission_pin" ? "[REDACTED: admission credential]" : input.message;
+  const queued = await prisma.whatsAppMessageLog.create({
+    data: {
+      to: input.to,
+      template: input.template,
+      message: storedMessage,
+      status: "QUEUED",
+      provider: "PENDING",
+      applicationId: input.applicationId ?? null,
+      userId: input.userId ?? null,
+      metadata: input.metadata
+    }
+  });
   const provider = getWhatsAppProvider();
   const result = await provider.send({
     to: input.to,
@@ -19,16 +32,12 @@ export async function sendWhatsAppMessage(input: SendWhatsAppMessageInput) {
     message: input.message
   });
 
-  return prisma.whatsAppMessageLog.create({
+  return prisma.whatsAppMessageLog.update({
+    where: { id: queued.id },
     data: {
-      to: input.to,
-      template: input.template,
-      message: input.message,
       status: result.status,
       provider: result.provider,
       providerRef: result.providerRef,
-      applicationId: input.applicationId ?? null,
-      userId: input.userId ?? null,
       metadata: result.error ? { ...input.metadata, error: result.error } : input.metadata,
       sentAt: result.status === "SENT" ? new Date() : null
     }
