@@ -3,6 +3,7 @@ import type React from "react";
 import {
   BarChart3,
   Bot,
+  Boxes,
   BriefcaseBusiness,
   CalendarDays,
   ClipboardList,
@@ -11,6 +12,7 @@ import {
   Layers3,
   Megaphone,
   Settings,
+  UserCheck,
   Users,
   Workflow
 } from "lucide-react";
@@ -24,6 +26,8 @@ const navigation = [
   { href: "/director/blueprints", label: "Blueprints", icon: Layers3 },
   { href: "/director/batch-management", label: "Batch Management", icon: ClipboardList },
   { href: "/director/trainer-assignment", label: "Trainer Assignment", icon: Users },
+  { href: "/director/advisor-assignments", label: "Advisor Assignment", icon: UserCheck },
+  { href: "/labs", label: "AIRA Labs", icon: Boxes },
   { href: "/director/communications", label: "Communications", icon: Megaphone },
   { href: "/director/careers", label: "Careers", icon: BriefcaseBusiness },
   { href: "/director/calendar", label: "Calendar", icon: CalendarDays },

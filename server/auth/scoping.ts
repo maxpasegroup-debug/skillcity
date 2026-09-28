@@ -60,6 +60,29 @@ export function batchScopeWhere(user: AuthorizationUser, permission: PermissionK
   return scopedWhere<Prisma.BatchWhereInput>(user, permission, null, scopes.assignments.map(batchCondition));
 }
 
+export function labsProductScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.LabsProductWhereInput {
+  const scopes = resolveAuthorizedScopes(user, permission);
+  const now = new Date();
+  const conditions = scopes.assignments.map((scope): Prisma.LabsProductWhereInput | null => {
+    if (scope.scope === "ORGANIZATION" && scope.institutionId) return { institutionId: scope.institutionId };
+    if (scope.scope === "DIVISION" && scope.divisionId) return { divisionId: scope.divisionId };
+    if (scope.scope === "DISTRICT" && scope.districtId) return { districtId: scope.districtId };
+    if (scope.scope === "BRANCH" && scope.campusId) return { campusId: scope.campusId };
+    if (scope.scope === "DEPARTMENT" && scope.departmentId) return { departmentId: scope.departmentId };
+    return null;
+  });
+  return scopedWhere<Prisma.LabsProductWhereInput>(user, permission, {
+    assignments: {
+      some: {
+        employee: { userId: user.id },
+        status: "ACTIVE",
+        startsAt: { lte: now },
+        OR: [{ endsAt: null }, { endsAt: { gt: now } }]
+      }
+    }
+  }, conditions);
+}
+
 export function activityScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.ActivityWhereInput {
   const batch = batchScopeWhere(user, permission);
   const program = programScopeWhere(user, permission);

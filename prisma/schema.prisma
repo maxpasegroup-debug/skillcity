@@ -128,6 +128,40 @@ enum TrainerAssignmentStatus {
   ENDED
 }
 
+enum AcademicAdvisorAssignmentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum LabsProductType {
+  PLATFORM
+  APPLICATION
+  AI_PRODUCT
+  INTERNAL_TOOL
+  AUTOMATION
+  SERVICE
+}
+
+enum LabsProductLifecycle {
+  IDEA
+  PLANNING
+  BUILDING
+  PILOT
+  LIVE
+  MAINTENANCE
+  ARCHIVED
+}
+
+enum LabsProductAssignmentRole {
+  OWNER
+  CONTRIBUTOR
+}
+
+enum LabsProductAssignmentStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum CalendarEventType {
   LIVE_CLASS
   OFFLINE_WORKSHOP
@@ -772,6 +806,10 @@ model User {
   generatedStudentCredentials StudentLoginCredential[]         @relation("GeneratedStudentCredentials")
   whatsAppMessageLogs         WhatsAppMessageLog[]
   accessScopes                UserAccessScope[]
+  academicAdvisorAssignments  AcademicAdvisorAssignment[]      @relation("AcademicAdvisorStudent")
+  advisorAssignmentsCreated   AcademicAdvisorAssignment[]      @relation("AcademicAdvisorAssignmentCreator")
+  labsProductsCreated         LabsProduct[]                    @relation("LabsProductCreator")
+  labsAssignmentsCreated      LabsProductAssignment[]          @relation("LabsProductAssignmentCreator")
 
   @@index([email])
   @@index([deletedAt])
@@ -958,27 +996,28 @@ model Batch {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  program               Program                @relation(fields: [programId], references: [id], onDelete: Cascade)
-  journey               Journey?               @relation(fields: [journeyId], references: [id], onDelete: SetNull)
-  enrollments           StudentEnrollment[]
-  announcements         Announcement[]
-  trainerAssignments    TrainerAssignment[]
-  activities            Activity[]
-  calendarEvents        CalendarEvent[]
-  directorAnnouncements DirectorAnnouncement[]
-  counsellingSessions   CounsellingSession[]
-  feeInvoices           FeeInvoice[]
-  enrollmentLogs        EnrollmentLog[]
-  attendanceSessions    AttendanceSession[]
-  attendanceRecords     AttendanceRecord[]
-  resources             Resource[]
-  trainerAnnouncements  TrainerAnnouncement[]
-  studentConcerns       StudentConcern[]
-  reviewQueueItems      ReviewQueue[]
-  communityGroups       CommunityGroup[]
-  communityPosts        CommunityPost[]
-  communityEvents       Event[]
-  campus                Campus?                @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  program                    Program                     @relation(fields: [programId], references: [id], onDelete: Cascade)
+  journey                    Journey?                    @relation(fields: [journeyId], references: [id], onDelete: SetNull)
+  enrollments                StudentEnrollment[]
+  announcements              Announcement[]
+  trainerAssignments         TrainerAssignment[]
+  activities                 Activity[]
+  calendarEvents             CalendarEvent[]
+  directorAnnouncements      DirectorAnnouncement[]
+  counsellingSessions        CounsellingSession[]
+  feeInvoices                FeeInvoice[]
+  enrollmentLogs             EnrollmentLog[]
+  attendanceSessions         AttendanceSession[]
+  attendanceRecords          AttendanceRecord[]
+  resources                  Resource[]
+  trainerAnnouncements       TrainerAnnouncement[]
+  studentConcerns            StudentConcern[]
+  reviewQueueItems           ReviewQueue[]
+  communityGroups            CommunityGroup[]
+  communityPosts             CommunityPost[]
+  communityEvents            Event[]
+  academicAdvisorAssignments AcademicAdvisorAssignment[]
+  campus                     Campus?                     @relation(fields: [campusId], references: [id], onDelete: SetNull)
 
   @@index([programId])
   @@index([campusId])
@@ -2052,6 +2091,7 @@ model Institution {
   careerApplications  CareerApplication[]
   reports             ExecutiveReport[]
   settings            SystemSetting[]
+  labsProducts        LabsProduct[]
 
   @@index([status])
 }
@@ -2080,6 +2120,7 @@ model Campus {
   leads               Lead[]
   userAccessScopes    UserAccessScope[]
   careerApplications  CareerApplication[]
+  labsProducts        LabsProduct[]
 
   @@unique([institutionId, slug])
   @@index([institutionId, status])
@@ -2105,6 +2146,7 @@ model Department {
   employees           Employee[]
   employeeAssignments EmployeeOrganizationAssignment[]
   userAccessScopes    UserAccessScope[]
+  labsProducts        LabsProduct[]
 
   @@index([institutionId])
   @@index([divisionId])
@@ -2149,18 +2191,20 @@ model Employee {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  user                    User                             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  institution             Institution?                     @relation(fields: [institutionId], references: [id], onDelete: SetNull)
-  division                Division?                        @relation(fields: [divisionId], references: [id], onDelete: SetNull)
-  district                District?                        @relation(fields: [districtId], references: [id], onDelete: SetNull)
-  campus                  Campus?                          @relation(fields: [campusId], references: [id], onDelete: SetNull)
-  department              Department?                      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  designation             Designation?                     @relation(fields: [designationId], references: [id], onDelete: SetNull)
-  manager                 Employee?                        @relation("EmployeeReportingLine", fields: [managerId], references: [id], onDelete: SetNull)
-  directReports           Employee[]                       @relation("EmployeeReportingLine")
-  organizationAssignments EmployeeOrganizationAssignment[]
-  careerApplications      CareerApplication[]
-  rmDevelopmentRecords    RelationshipManagerDevelopment[]
+  user                       User                             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institution                Institution?                     @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  division                   Division?                        @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  district                   District?                        @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  campus                     Campus?                          @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  department                 Department?                      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  designation                Designation?                     @relation(fields: [designationId], references: [id], onDelete: SetNull)
+  manager                    Employee?                        @relation("EmployeeReportingLine", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports              Employee[]                       @relation("EmployeeReportingLine")
+  organizationAssignments    EmployeeOrganizationAssignment[]
+  careerApplications         CareerApplication[]
+  rmDevelopmentRecords       RelationshipManagerDevelopment[]
+  academicAdvisorAssignments AcademicAdvisorAssignment[]
+  labsProductAssignments     LabsProductAssignment[]
 
   @@index([institutionId, status])
   @@index([divisionId])
@@ -2201,6 +2245,85 @@ model EmployeeOrganizationAssignment {
   @@index([campusId])
   @@index([departmentId])
   @@index([designationId])
+}
+
+model AcademicAdvisorAssignment {
+  id          String                          @id @default(uuid()) @db.Uuid
+  advisorId   String                          @db.Uuid
+  studentId   String?                         @db.Uuid
+  batchId     String?                         @db.Uuid
+  status      AcademicAdvisorAssignmentStatus @default(ACTIVE)
+  startsAt    DateTime                        @default(now())
+  endsAt      DateTime?
+  createdById String?                         @db.Uuid
+  createdAt   DateTime                        @default(now())
+  updatedAt   DateTime                        @updatedAt
+
+  advisor   Employee @relation(fields: [advisorId], references: [id], onDelete: Restrict)
+  student   User?    @relation("AcademicAdvisorStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  batch     Batch?   @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  createdBy User?    @relation("AcademicAdvisorAssignmentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([advisorId, status, startsAt, endsAt])
+  @@index([studentId, status, startsAt, endsAt])
+  @@index([batchId, status, startsAt, endsAt])
+  @@index([createdById])
+}
+
+model LabsProduct {
+  id                String               @id @default(uuid()) @db.Uuid
+  institutionId     String               @db.Uuid
+  divisionId        String               @db.Uuid
+  districtId        String?              @db.Uuid
+  campusId          String?              @db.Uuid
+  departmentId      String?              @db.Uuid
+  code              String               @unique @db.VarChar(100)
+  name              String               @db.VarChar(180)
+  description       String               @db.Text
+  type              LabsProductType
+  lifecycle         LabsProductLifecycle @default(IDEA)
+  technicalMetadata Json?
+  archivedAt        DateTime?
+  createdById       String?              @db.Uuid
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  institution Institution             @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  division    Division                @relation(fields: [divisionId], references: [id], onDelete: Restrict)
+  district    District?               @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  campus      Campus?                 @relation(fields: [campusId], references: [id], onDelete: Restrict)
+  department  Department?             @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  createdBy   User?                   @relation("LabsProductCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  assignments LabsProductAssignment[]
+
+  @@index([institutionId, lifecycle])
+  @@index([divisionId, lifecycle])
+  @@index([districtId])
+  @@index([campusId])
+  @@index([departmentId])
+  @@index([type, lifecycle])
+}
+
+model LabsProductAssignment {
+  id             String                      @id @default(uuid()) @db.Uuid
+  productId      String                      @db.Uuid
+  employeeId     String                      @db.Uuid
+  role           LabsProductAssignmentRole
+  responsibility String?                     @db.VarChar(140)
+  status         LabsProductAssignmentStatus @default(ACTIVE)
+  startsAt       DateTime                    @default(now())
+  endsAt         DateTime?
+  createdById    String?                     @db.Uuid
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+
+  product   LabsProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+  employee  Employee    @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  createdBy User?       @relation("LabsProductAssignmentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([productId, role, status, startsAt, endsAt])
+  @@index([employeeId, status, startsAt, endsAt])
+  @@index([createdById])
 }
 
 model CareerApplication {
@@ -2350,6 +2473,7 @@ model Division {
   leads               Lead[]
   userAccessScopes    UserAccessScope[]
   careerApplications  CareerApplication[]
+  labsProducts        LabsProduct[]
 
   @@unique([institutionId, slug])
   @@unique([institutionId, code])
@@ -2375,6 +2499,7 @@ model District {
   leads               Lead[]
   userAccessScopes    UserAccessScope[]
   careerApplications  CareerApplication[]
+  labsProducts        LabsProduct[]
 
   @@unique([institutionId, stateName, slug])
   @@index([institutionId, status])

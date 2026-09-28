@@ -3,6 +3,7 @@ export const platformRoles = [
   "Telecaller",
   "Counsellor",
   "Trainer",
+  "Academic Advisor",
   "Director",
   "CEO",
   "COO",

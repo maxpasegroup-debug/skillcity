@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { AuthorizationUser, PermissionKey } from "@/lib/auth/permissions";
 import { AuthorizationError } from "@/server/auth/authorization";
-import { activityScopeWhere, applicationScopeWhere, batchScopeWhere, campusScopeWhere, careerApplicationScopeWhere, departmentScopeWhere, districtScopeWhere, divisionScopeWhere, documentScopeWhere, employeeScopeWhere, enrollmentScopeWhere, feeInvoiceScopeWhere, institutionScopeWhere, leadScopeWhere, programScopeWhere } from "@/server/auth/scoping";
+import { activityScopeWhere, applicationScopeWhere, batchScopeWhere, campusScopeWhere, careerApplicationScopeWhere, departmentScopeWhere, districtScopeWhere, divisionScopeWhere, documentScopeWhere, employeeScopeWhere, enrollmentScopeWhere, feeInvoiceScopeWhere, institutionScopeWhere, labsProductScopeWhere, leadScopeWhere, programScopeWhere } from "@/server/auth/scoping";
 
 async function requireRecord(record: { id: string } | null, label: string) {
   if (!record) throw new AuthorizationError(`${label} was not found in the authorized organization scope`);
@@ -22,6 +22,10 @@ export async function assertProgramAccess(user: AuthorizationUser, permission: P
 
 export async function assertBatchAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {
   return requireRecord(await prisma.batch.findFirst({ where: { AND: [{ id }, batchScopeWhere(user, permission)] }, select: { id: true } }), "Batch");
+}
+
+export async function assertLabsProductAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {
+  return requireRecord(await prisma.labsProduct.findFirst({ where: { AND: [{ id }, labsProductScopeWhere(user, permission)] }, select: { id: true } }), "Labs product");
 }
 
 export async function assertEnrollmentAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {

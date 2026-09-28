@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Award, CalendarClock, CheckCircle2, Flame, GraduationCap, ListTodo, MapPin, MessageCircle, Radio, TrendingUp, Users } from "lucide-react";
+import { Award, CalendarClock, CheckCircle2, Flame, GraduationCap, ListTodo, MapPin, MessageCircle, Radio, TrendingUp, UserCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AnnouncementList } from "@/features/journey/components/announcement-card";
@@ -108,6 +108,19 @@ export default async function DashboardPage() {
               </CardContent>
             </Card>
           </section>
+
+          {home.advisor ? (
+            <Card>
+              <CardContent className="flex min-h-36 items-center gap-5 p-6 md:p-8">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-brand-beige text-brand-red"><UserCheck className="h-6 w-6" /></div>
+                <div>
+                  <p className="text-sm font-black uppercase tracking-wider text-brand-red">Academic Advisor</p>
+                  <h2 className="mt-2 text-2xl font-black text-brand-dark">{home.advisor.assignment.advisor.user.name}</h2>
+                  <p className="mt-1 font-semibold text-brand-muted">{home.advisor.assignment.advisor.designation?.name ?? "Academic Advisor"}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
 
           {home.onboardingState === "ORIENTATION_PENDING" ? (
             <Card>

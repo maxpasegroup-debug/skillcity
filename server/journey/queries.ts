@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/server/auth/authorization";
 import type { JourneyActivityView, JourneyPhaseView } from "@/types/journey";
 import { resolveAlttStage } from "@/lib/academic/altt";
+import { getEffectiveStudentAdvisor } from "@/server/advisor/access";
 
 type DayWithActivities = JourneyDay & {
   activities: Activity[];
@@ -236,6 +237,7 @@ export async function getStudentOnboardingHome(studentId: string) {
       journey: null,
       onboardingState: "NO_ENROLLMENT" as const,
       nextClass: null,
+      advisor: null,
       attendance: null,
       pendingSubmissions: 0,
       todaysTasks: 0,
@@ -244,7 +246,7 @@ export async function getStudentOnboardingHome(studentId: string) {
   }
 
   const now = new Date();
-  const [nextClass, attendanceRecords, pendingSubmissions, completedProgress] = await Promise.all([
+  const [nextClass, attendanceRecords, pendingSubmissions, completedProgress, advisor] = await Promise.all([
     journey.enrollment.batchId
       ? prisma.calendarEvent.findFirst({
           where: {
@@ -268,7 +270,8 @@ export async function getStudentOnboardingHome(studentId: string) {
     }),
     prisma.studentProgress.count({
       where: { studentId, status: "COMPLETED" }
-    })
+    }),
+    getEffectiveStudentAdvisor(studentId, journey.enrollment.batchId, now)
   ]);
 
   const present = attendanceRecords.filter((item) => item.status === "PRESENT" || item.status === "LATE").length;
@@ -290,6 +293,7 @@ export async function getStudentOnboardingHome(studentId: string) {
     journey,
     onboardingState,
     nextClass,
+    advisor,
     attendance,
     pendingSubmissions,
     todaysTasks: journey.today?.activities.filter((activity) => activity.required && activity.progressStatus !== "COMPLETED").length ?? 0,
