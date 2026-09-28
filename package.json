@@ -22,6 +22,7 @@
     "audit:employees": "tsx scripts/audit-employee-data.ts",
     "audit:academic-advisors": "tsx scripts/audit-academic-advisor-data.ts",
     "audit:labs": "tsx scripts/audit-labs-data.ts",
+    "audit:skill-studio": "tsx scripts/audit-skill-studio-data.ts",
     "launch:check": "tsx scripts/launch-readiness.ts"
   },
   "dependencies": {

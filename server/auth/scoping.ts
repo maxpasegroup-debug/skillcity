@@ -60,6 +60,40 @@ export function batchScopeWhere(user: AuthorizationUser, permission: PermissionK
   return scopedWhere<Prisma.BatchWhereInput>(user, permission, null, scopes.assignments.map(batchCondition));
 }
 
+export function skillStudioProgramScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.ProgramWhereInput {
+  const resolved = resolveAuthorizedScopes(user, permission);
+  const organizationScope = programScopeWhere(user, permission);
+  const own: Prisma.ProgramWhereInput = {
+    OR: [
+      { enrollments: { some: { studentId: user.id } } },
+      { batches: { some: { trainerAssignments: { some: { trainerId: user.id, status: "ACTIVE" } } } } }
+    ]
+  };
+  return {
+    AND: [
+      { operatingDomain: "SKILL_STUDIO", deletedAt: null },
+      resolved.global ? {} : resolved.own ? { OR: [organizationScope, own] } : organizationScope
+    ]
+  };
+}
+
+export function skillStudioBatchScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.BatchWhereInput {
+  const resolved = resolveAuthorizedScopes(user, permission);
+  const organizationScope = batchScopeWhere(user, permission);
+  const own: Prisma.BatchWhereInput = {
+    OR: [
+      { enrollments: { some: { studentId: user.id } } },
+      { trainerAssignments: { some: { trainerId: user.id, status: "ACTIVE" } } }
+    ]
+  };
+  return {
+    AND: [
+      { program: { operatingDomain: "SKILL_STUDIO", deletedAt: null } },
+      resolved.global ? {} : resolved.own ? { OR: [organizationScope, own] } : organizationScope
+    ]
+  };
+}
+
 export function labsProductScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.LabsProductWhereInput {
   const scopes = resolveAuthorizedScopes(user, permission);
   const now = new Date();

@@ -5,6 +5,7 @@ import { requirePermission } from "@/server/auth/authorization";
 import type { JourneyActivityView, JourneyPhaseView } from "@/types/journey";
 import { resolveAlttStage } from "@/lib/academic/altt";
 import { getEffectiveStudentAdvisor } from "@/server/advisor/access";
+import { usesAltt } from "@/lib/skill-studio/program";
 
 type DayWithActivities = JourneyDay & {
   activities: Activity[];
@@ -213,7 +214,7 @@ export async function getStudentJourney(studentId: string) {
       streak,
       pendingTasks: today?.activities.filter((activity) => activity.required && activity.progressStatus !== "COMPLETED").length ?? 0,
       upcomingLiveClass: liveActivities ? `${liveActivities.activity.title} - Day ${liveActivities.day.absoluteDay}` : null,
-      currentAlttStage: currentActivity ? resolveAlttStage(currentActivity) : "GROW"
+      currentAlttStage: usesAltt(enrollment.program) ? (currentActivity ? resolveAlttStage(currentActivity) : "GROW") : null
     }
   };
 }

@@ -52,6 +52,32 @@ enum ProgramAdmissionStatus {
   WAITLIST
 }
 
+enum ProgramOperatingDomain {
+  STARTUP_SCHOOL
+  SKILL_STUDIO
+  GENERAL
+}
+
+enum SkillStudioProgramType {
+  COURSE
+  WORKSHOP
+  BOOTCAMP
+  MASTERCLASS
+  PROFESSIONAL_PROGRAM
+  CORPORATE_TRAINING
+}
+
+enum ProgramDeliveryMode {
+  ONLINE
+  OFFLINE
+  HYBRID
+}
+
+enum ProgramLearningModel {
+  STANDARD
+  ALTT
+}
+
 enum EnrollmentStatus {
   ACTIVE
   PAUSED
@@ -816,25 +842,29 @@ model User {
 }
 
 model Program {
-  id              String                 @id @default(uuid()) @db.Uuid
-  institutionId   String?                @db.Uuid
-  divisionId      String?                @db.Uuid
-  campusId        String?                @db.Uuid
-  departmentId    String?                @db.Uuid
-  name            String                 @db.VarChar(160)
-  slug            String                 @unique @db.VarChar(180)
-  description     String                 @db.Text
+  id              String                  @id @default(uuid()) @db.Uuid
+  institutionId   String?                 @db.Uuid
+  divisionId      String?                 @db.Uuid
+  campusId        String?                 @db.Uuid
+  departmentId    String?                 @db.Uuid
+  name            String                  @db.VarChar(160)
+  slug            String                  @unique @db.VarChar(180)
+  description     String                  @db.Text
   durationDays    Int
-  status          ContentStatus          @default(DRAFT)
-  thumbnail       String?                @db.VarChar(500)
-  category        String?                @db.VarChar(120)
-  feeType         ProgramFeeType         @default(PAID)
-  admissionStatus ProgramAdmissionStatus @default(CLOSED)
-  displayOrder    Int                    @default(0)
-  publicVisible   Boolean                @default(false)
+  status          ContentStatus           @default(DRAFT)
+  thumbnail       String?                 @db.VarChar(500)
+  category        String?                 @db.VarChar(120)
+  feeType         ProgramFeeType          @default(PAID)
+  admissionStatus ProgramAdmissionStatus  @default(CLOSED)
+  displayOrder    Int                     @default(0)
+  publicVisible   Boolean                 @default(false)
+  operatingDomain ProgramOperatingDomain?
+  skillStudioType SkillStudioProgramType?
+  deliveryMode    ProgramDeliveryMode?
+  learningModel   ProgramLearningModel?
   deletedAt       DateTime?
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
 
   journeys              Journey[]
   batches               Batch[]
@@ -869,6 +899,8 @@ model Program {
   @@index([divisionId])
   @@index([campusId])
   @@index([departmentId])
+  @@index([operatingDomain, status])
+  @@index([skillStudioType, deliveryMode])
 }
 
 model Journey {
@@ -984,17 +1016,18 @@ model Activity {
 }
 
 model Batch {
-  id              String        @id @default(uuid()) @db.Uuid
-  programId       String        @db.Uuid
-  campusId        String?       @db.Uuid
-  journeyId       String?       @db.Uuid
-  name            String        @db.VarChar(160)
+  id              String               @id @default(uuid()) @db.Uuid
+  programId       String               @db.Uuid
+  campusId        String?              @db.Uuid
+  journeyId       String?              @db.Uuid
+  name            String               @db.VarChar(160)
   startsAt        DateTime?
   endsAt          DateTime?
   enrollmentLimit Int?
-  status          ContentStatus @default(ACTIVE)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  status          ContentStatus        @default(ACTIVE)
+  deliveryMode    ProgramDeliveryMode?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 
   program                    Program                     @relation(fields: [programId], references: [id], onDelete: Cascade)
   journey                    Journey?                    @relation(fields: [journeyId], references: [id], onDelete: SetNull)
@@ -1023,6 +1056,7 @@ model Batch {
   @@index([campusId])
   @@index([journeyId])
   @@index([status])
+  @@index([deliveryMode])
 }
 
 model StudentEnrollment {
