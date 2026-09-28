@@ -1,0 +1,9 @@
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { FinanceInvoiceForm } from "@/features/core-operations/components/core-operation-forms";
+import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/server/auth/authorization";
+import { getCoreOperationOptions, getFinanceOverview } from "@/server/core-operations/queries";
+
+export default async function InvoicesPage() { const actor = await requirePermission(PERMISSIONS.FINANCE_READ); const manage = hasPermission(actor, PERMISSIONS.FINANCE_INVOICE_MANAGE); const [data, options] = await Promise.all([getFinanceOverview(), manage ? getCoreOperationOptions(PERMISSIONS.FINANCE_INVOICE_MANAGE) : null]); return <div className="space-y-8"><PageHeader title="Invoices" subtitle="Central scoped view over the existing authoritative FeeInvoice records." />{options ? <Card><CardContent className="p-6"><h2 className="mb-5 text-2xl font-black">Create program invoice</h2><FinanceInvoiceForm programs={options.programs} /></CardContent></Card> : null}<div className="space-y-4">{data.invoices.map((invoice) => <Link key={invoice.id} href={`/finance/invoices/${invoice.id}`}><Card className="transition hover:border-brand-red"><CardContent className="flex flex-col justify-between gap-3 p-6 md:flex-row"><div><p className="text-xs font-black uppercase text-brand-red">{invoice.status}</p><h2 className="mt-2 text-2xl font-black">{invoice.invoiceNo}</h2><p className="mt-1 font-bold text-brand-muted">{invoice.program?.name ?? "Unlinked service"} · {invoice.student?.name ?? "No linked customer"}</p></div><p className="text-xl font-black">{invoice.currency ?? "Currency not recorded"} {invoice.total}</p></CardContent></Card></Link>)}</div></div>; }

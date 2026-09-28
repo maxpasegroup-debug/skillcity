@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { AuthorizationUser, PermissionKey } from "@/lib/auth/permissions";
 import { AuthorizationError } from "@/server/auth/authorization";
-import { activityScopeWhere, applicationScopeWhere, batchScopeWhere, campusScopeWhere, careerApplicationScopeWhere, departmentScopeWhere, districtScopeWhere, divisionScopeWhere, documentScopeWhere, employeeScopeWhere, enrollmentScopeWhere, feeInvoiceScopeWhere, institutionScopeWhere, labsProductScopeWhere, leadScopeWhere, programScopeWhere } from "@/server/auth/scoping";
+import { activityScopeWhere, applicationScopeWhere, batchScopeWhere, campusScopeWhere, careerApplicationScopeWhere, careerEmployerScopeWhere, careerOpportunityApplicationScopeWhere, careerOpportunityScopeWhere, complianceRecordScopeWhere, coreDocumentScopeWhere, departmentScopeWhere, districtScopeWhere, divisionScopeWhere, documentScopeWhere, employeeScopeWhere, enrollmentScopeWhere, feeInvoiceScopeWhere, institutionScopeWhere, labsProductScopeWhere, leadScopeWhere, paymentTransactionScopeWhere, programScopeWhere } from "@/server/auth/scoping";
 
 async function requireRecord(record: { id: string } | null, label: string) {
   if (!record) throw new AuthorizationError(`${label} was not found in the authorized organization scope`);
@@ -28,6 +28,18 @@ export async function assertLabsProductAccess(user: AuthorizationUser, permissio
   return requireRecord(await prisma.labsProduct.findFirst({ where: { AND: [{ id }, labsProductScopeWhere(user, permission)] }, select: { id: true } }), "Labs product");
 }
 
+export async function assertCareerEmployerAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {
+  return requireRecord(await prisma.careerEmployer.findFirst({ where: { AND: [{ id }, careerEmployerScopeWhere(user, permission)] }, select: { id: true } }), "Career employer");
+}
+
+export async function assertCareerOpportunityAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {
+  return requireRecord(await prisma.careerOpportunity.findFirst({ where: { AND: [{ id }, careerOpportunityScopeWhere(user, permission)] }, select: { id: true } }), "Career opportunity");
+}
+
+export async function assertCareerOpportunityApplicationAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {
+  return requireRecord(await prisma.careerOpportunityApplication.findFirst({ where: { AND: [{ id }, careerOpportunityApplicationScopeWhere(user, permission)] }, select: { id: true } }), "Opportunity application");
+}
+
 export async function assertEnrollmentAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {
   return requireRecord(await prisma.studentEnrollment.findFirst({ where: { AND: [{ id }, enrollmentScopeWhere(user, permission)] }, select: { id: true } }), "Enrollment");
 }
@@ -41,8 +53,20 @@ export async function assertDocumentAccess(user: AuthorizationUser, permission: 
   return requireRecord(await prisma.studentDocument.findFirst({ where: { AND: [{ id }, documentScopeWhere(user, permission)] }, select: { id: true } }), "Document");
 }
 
+export async function assertCoreDocumentAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {
+  return requireRecord(await prisma.coreDocument.findFirst({ where: { AND: [{ id }, coreDocumentScopeWhere(user, permission)] }, select: { id: true } }), "Core document");
+}
+
+export async function assertComplianceRecordAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {
+  return requireRecord(await prisma.complianceRecord.findFirst({ where: { AND: [{ id }, complianceRecordScopeWhere(user, permission)] }, select: { id: true } }), "Compliance record");
+}
+
 export async function assertInvoiceAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {
   return requireRecord(await prisma.feeInvoice.findFirst({ where: { AND: [{ id }, feeInvoiceScopeWhere(user, permission)] }, select: { id: true } }), "Invoice");
+}
+
+export async function assertPaymentAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {
+  return requireRecord(await prisma.paymentTransaction.findFirst({ where: { AND: [{ id }, paymentTransactionScopeWhere(user, permission)] }, select: { id: true } }), "Payment");
 }
 
 export async function assertCareerApplicationAccess(user: AuthorizationUser, permission: PermissionKey, id: string) {

@@ -117,6 +117,39 @@ export function labsProductScopeWhere(user: AuthorizationUser, permission: Permi
   }, conditions);
 }
 
+export function careerEmployerScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.CareerEmployerWhereInput {
+  const scopes = resolveAuthorizedScopes(user, permission);
+  const conditions = scopes.assignments.map((scope): Prisma.CareerEmployerWhereInput | null => {
+    if (scope.scope === "ORGANIZATION" && scope.institutionId) return { institutionId: scope.institutionId };
+    if (scope.scope === "DIVISION" && scope.divisionId) return { divisionId: scope.divisionId };
+    if (scope.scope === "DISTRICT" && scope.districtId) return { districtId: scope.districtId };
+    if (scope.scope === "BRANCH" && scope.campusId) return { campusId: scope.campusId };
+    if (scope.scope === "DEPARTMENT" && scope.departmentId) return { departmentId: scope.departmentId };
+    return null;
+  });
+  return scopedWhere<Prisma.CareerEmployerWhereInput>(user, permission, {
+    opportunities: { some: { ownerEmployee: { userId: user.id } } }
+  }, conditions);
+}
+
+export function careerOpportunityScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.CareerOpportunityWhereInput {
+  const scopes = resolveAuthorizedScopes(user, permission);
+  const conditions = scopes.assignments.map((scope): Prisma.CareerOpportunityWhereInput | null => {
+    if (scope.scope === "ORGANIZATION" && scope.institutionId) return { institutionId: scope.institutionId };
+    if (scope.scope === "DIVISION" && scope.divisionId) return { divisionId: scope.divisionId };
+    if (scope.scope === "DISTRICT" && scope.districtId) return { districtId: scope.districtId };
+    if (scope.scope === "BRANCH" && scope.campusId) return { campusId: scope.campusId };
+    if (scope.scope === "DEPARTMENT" && scope.departmentId) return { departmentId: scope.departmentId };
+    return null;
+  });
+  return scopedWhere<Prisma.CareerOpportunityWhereInput>(user, permission, { ownerEmployee: { userId: user.id } }, conditions);
+}
+
+export function careerOpportunityApplicationScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.CareerOpportunityApplicationWhereInput {
+  const opportunity = careerOpportunityScopeWhere(user, permission);
+  return scopedWhere<Prisma.CareerOpportunityApplicationWhereInput>(user, permission, { applicantId: user.id }, [{ opportunity }]);
+}
+
 export function activityScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.ActivityWhereInput {
   const batch = batchScopeWhere(user, permission);
   const program = programScopeWhere(user, permission);
@@ -195,17 +228,59 @@ export function documentScopeWhere(user: AuthorizationUser, permission: Permissi
   ]);
 }
 
+export function coreDocumentScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.CoreDocumentWhereInput {
+  const scopes = resolveAuthorizedScopes(user, permission);
+  const conditions = scopes.assignments.map((scope): Prisma.CoreDocumentWhereInput | null => {
+    if (scope.scope === "ORGANIZATION" && scope.institutionId) return { institutionId: scope.institutionId };
+    if (scope.scope === "DIVISION" && scope.divisionId) return { divisionId: scope.divisionId };
+    if (scope.scope === "DISTRICT" && scope.districtId) return { districtId: scope.districtId };
+    if (scope.scope === "BRANCH" && scope.campusId) return { campusId: scope.campusId };
+    if (scope.scope === "DEPARTMENT" && scope.departmentId) return { departmentId: scope.departmentId };
+    return null;
+  });
+  return scopedWhere<Prisma.CoreDocumentWhereInput>(user, permission, { ownerUserId: user.id }, conditions);
+}
+
+export function complianceRecordScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.ComplianceRecordWhereInput {
+  const scopes = resolveAuthorizedScopes(user, permission);
+  const conditions = scopes.assignments.map((scope): Prisma.ComplianceRecordWhereInput | null => {
+    if (scope.scope === "ORGANIZATION" && scope.institutionId) return { institutionId: scope.institutionId };
+    if (scope.scope === "DIVISION" && scope.divisionId) return { divisionId: scope.divisionId };
+    if (scope.scope === "DISTRICT" && scope.districtId) return { districtId: scope.districtId };
+    if (scope.scope === "BRANCH" && scope.campusId) return { campusId: scope.campusId };
+    if (scope.scope === "DEPARTMENT" && scope.departmentId) return { departmentId: scope.departmentId };
+    return null;
+  });
+  return scopedWhere<Prisma.ComplianceRecordWhereInput>(user, permission, {
+    OR: [{ responsibleEmployee: { userId: user.id } }, { reviewerEmployee: { userId: user.id } }]
+  }, conditions);
+}
+
 export function feeInvoiceScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.FeeInvoiceWhereInput {
+  const scopes = resolveAuthorizedScopes(user, permission);
   const lead = leadScopeWhere(user, permission);
   const batch = batchScopeWhere(user, permission);
   const program = programScopeWhere(user, permission);
   const enrollment = enrollmentScopeWhere(user, permission);
+  const direct = scopes.assignments.map((scope): Prisma.FeeInvoiceWhereInput | null => {
+    if (scope.scope === "ORGANIZATION" && scope.institutionId) return { institutionId: scope.institutionId };
+    if (scope.scope === "DIVISION" && scope.divisionId) return { divisionId: scope.divisionId };
+    if (scope.scope === "DISTRICT" && scope.districtId) return { districtId: scope.districtId };
+    if (scope.scope === "BRANCH" && scope.campusId) return { campusId: scope.campusId };
+    if (scope.scope === "DEPARTMENT" && scope.departmentId) return { departmentId: scope.departmentId };
+    return null;
+  });
   return scopedWhere<Prisma.FeeInvoiceWhereInput>(user, permission, { OR: [{ lead: { assignedToId: user.id } }, { lead: { ownerId: user.id } }, { studentId: user.id }] }, [
+    ...direct,
     { leadId: { not: null }, lead },
     { leadId: null, batchId: { not: null }, batch },
     { leadId: null, batchId: null, programId: { not: null }, program },
     { leadId: null, batchId: null, programId: null, student: { enrollments: { some: enrollment } } }
   ]);
+}
+
+export function paymentTransactionScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.PaymentTransactionWhereInput {
+  return { invoice: feeInvoiceScopeWhere(user, permission) };
 }
 
 export function employeeScopeWhere(user: AuthorizationUser, permission: PermissionKey): Prisma.EmployeeWhereInput {

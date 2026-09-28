@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type React from "react";
-import { Award, BookOpen, CalendarDays, CreditCard, Home, ListChecks, MessageCircle, Settings, Sparkles, Users, Workflow } from "lucide-react";
+import { Award, BookOpen, BriefcaseBusiness, CalendarDays, CreditCard, Home, ListChecks, MessageCircle, Settings, Sparkles, Users, Workflow } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/my-journey", label: "My Journey", icon: Workflow },
   { href: "/my-skill-studio", label: "Skill Studio", icon: BookOpen },
+  { href: "/career", label: "Career Hub", icon: BriefcaseBusiness },
   { href: "/todays-tasks", label: "Today's Tasks", icon: ListChecks },
   { href: "/projects", label: "Projects", icon: Sparkles },
   { href: "/success/dashboard", label: "Success", icon: Award },

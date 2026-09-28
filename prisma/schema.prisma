@@ -399,11 +399,72 @@ enum DocumentStatus {
   REJECTED
 }
 
+enum CoreDocumentCategory {
+  IDENTITY
+  CONTRACT
+  AGREEMENT
+  CERTIFICATE
+  INVOICE
+  RECEIPT
+  APPLICATION_RECORD
+  PORTFOLIO
+  COMPLIANCE
+  POLICY
+  OTHER
+}
+
+enum CoreDocumentStatus {
+  ACTIVE
+  ARCHIVED
+  QUARANTINED
+}
+
+enum DocumentAccessPolicy {
+  PRIVATE
+  OWNER
+  ORGANIZATION
+  AUTHORIZED_CONTEXT
+}
+
+enum DocumentContextType {
+  EMPLOYEE
+  STUDENT
+  APPLICATION
+  INVOICE
+  COMPLIANCE
+  ORGANIZATION
+  CAREER_OPPORTUNITY
+  LABS_PRODUCT
+  PROGRAM
+  OTHER
+}
+
+enum ComplianceStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  REJECTED
+  WAIVED
+  ARCHIVED
+}
+
+enum ComplianceSubjectType {
+  ORGANIZATION
+  EMPLOYEE
+  STUDENT
+  EMPLOYER
+  PROGRAM
+  DOCUMENT
+  OTHER
+}
+
 enum InvoiceStatus {
   DRAFT
   ISSUED
   PARTIALLY_PAID
   PAID
+  OVERDUE
+  VOID
   CANCELLED
 }
 
@@ -714,6 +775,70 @@ enum CareerRecruitmentStage {
   ON_HOLD
 }
 
+enum CareerProfileVisibility {
+  PRIVATE
+  APPLICATION_ONLY
+  DISCOVERABLE
+}
+
+enum CareerAvailability {
+  AVAILABLE
+  OPEN_TO_OPPORTUNITIES
+  NOT_AVAILABLE
+}
+
+enum CareerEmployerStatus {
+  PENDING
+  VERIFIED
+  SUSPENDED
+  REJECTED
+}
+
+enum CareerOpportunityType {
+  EMPLOYMENT
+  FREELANCE
+  CONTRACT
+  INTERNSHIP
+  APPRENTICESHIP
+  PROJECT
+  SELF_EMPLOYMENT
+}
+
+enum CareerWorkMode {
+  ONSITE
+  REMOTE
+  HYBRID
+  FLEXIBLE
+}
+
+enum CareerOpportunityStatus {
+  DRAFT
+  OPEN
+  PAUSED
+  CLOSED
+  ARCHIVED
+}
+
+enum CareerOpportunityVisibility {
+  INTERNAL
+  AUTHENTICATED
+  PUBLIC
+}
+
+enum CareerOpportunityApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  SHORTLISTED
+  REJECTED
+  WITHDRAWN
+  SELECTED
+}
+
+enum CareerReferralStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum InterviewStatus {
   SCHEDULED
   COMPLETED
@@ -740,102 +865,116 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  roles                       UserRole[]
-  sessions                    Session[]
-  emailOtps                   EmailOTP[]
-  passwordResetTokens         PasswordResetToken[]
-  auditLogs                   AuditLog[]
-  enrollments                 StudentEnrollment[]
-  progress                    StudentProgress[]
-  announcements               Announcement[]
-  notifications               Notification[]
-  authoredBlueprints          Blueprint[]
-  contentLibraryItems         ContentLibrary[]
-  trainerAssignments          TrainerAssignment[]              @relation("TrainerAssignments")
-  directorAnnouncements       DirectorAnnouncement[]
-  directorActivityLogs        DirectorActivityLog[]
-  dailyLearningSessions       DailyLearningSession[]
-  studentReflections          StudentReflection[]
-  submissions                 Submission[]
-  submissionReviews           SubmissionReview[]               @relation("SubmissionReviewer")
-  quizAttempts                QuizAttempt[]
-  assessmentResults           AssessmentResult[]
-  aiConversations             AIConversation[]
-  aiMessages                  AIMessage[]
-  aiUsageLogs                 AIUsageLog[]
-  aiFeedback                  AIFeedback[]
-  tokenUsage                  TokenUsage[]
-  assignedLeads               Lead[]                           @relation("LeadAssignee")
-  ownedLeads                  Lead[]                           @relation("LeadOwner")
-  counsellingSessions         CounsellingSession[]             @relation("CounsellorSessions")
-  admissionApplications       AdmissionApplication[]
-  studentDocuments            StudentDocument[]
-  feeInvoices                 FeeInvoice[]
-  paymentTransactions         PaymentTransaction[]
-  commissionRecords           CommissionRecord[]               @relation("CommissionOwner")
-  approvedCommissions         CommissionRecord[]               @relation("CommissionApprover")
-  referrals                   Referral[]
-  enrollmentLogs              EnrollmentLog[]
-  communicationLogs           CommunicationLog[]
-  leadActivities              LeadActivity[]
-  leadNotes                   LeadNote[]
-  attendanceSessions          AttendanceSession[]              @relation("AttendanceTrainer")
-  attendanceRecords           AttendanceRecord[]               @relation("AttendanceStudent")
-  trainerFeedbackGiven        TrainerFeedback[]                @relation("TrainerFeedbackTrainer")
-  trainerFeedbackReceived     TrainerFeedback[]                @relation("TrainerFeedbackStudent")
-  reviewComments              ReviewComment[]                  @relation("ReviewCommentTrainer")
-  trainerResources            Resource[]                       @relation("TrainerResources")
-  trainerAnnouncements        TrainerAnnouncement[]            @relation("TrainerAnnouncements")
-  studentConcernsRaised       StudentConcern[]                 @relation("StudentConcernTrainer")
-  studentConcerns             StudentConcern[]                 @relation("StudentConcernStudent")
-  reviewQueueItems            ReviewQueue[]                    @relation("ReviewQueueTrainer")
-  reviewQueueAsStudent        ReviewQueue[]
-  studentPortfolio            StudentPortfolio?
-  portfolioProjects           PortfolioProject[]               @relation("PortfolioProjectStudent")
-  approvedPortfolioProjects   PortfolioProject[]               @relation("PortfolioProjectApprover")
-  verifiedSkills              VerifiedSkill[]                  @relation("VerifiedSkillStudent")
-  skillVerifierRecords        VerifiedSkill[]                  @relation("VerifiedSkillVerifier")
-  certificates                Certificate[]                    @relation("CertificateStudent")
-  approvedCertificates        Certificate[]                    @relation("CertificateApprover")
-  achievements                Achievement[]                    @relation("AchievementStudent")
-  publishedAchievements       Achievement[]                    @relation("AchievementPublisher")
-  resumeProfiles              ResumeProfile[]
-  placementProfile            PlacementProfile?
-  internships                 Internship[]                     @relation("InternshipStudent")
-  mentoredInternships         Internship[]                     @relation("InternshipMentor")
-  founderProfile              FounderProfile?
-  careerMilestones            CareerMilestone[]
-  communityGroupsCreated      CommunityGroup[]                 @relation("CommunityGroupCreator")
-  communityMemberships        CommunityMembership[]
-  communityPosts              CommunityPost[]
-  communityComments           CommunityComment[]
-  communityReactions          CommunityReaction[]
-  eventRegistrations          EventRegistration[]
-  challengeParticipations     ChallengeParticipation[]
-  wallet                      Wallet?
-  walletTransactions          WalletTransaction[]              @relation("WalletTransactionActor")
-  marketplaceListings         MarketplaceListing[]             @relation("MarketplaceSeller")
-  marketplaceApprovals        MarketplaceApproval[]            @relation("MarketplaceApprover")
-  alumniProfile               AlumniProfile?
-  missionCompletions          MissionCompletion[]
-  employeeProfile             Employee?
-  careerApplicationsReviewed  CareerApplication[]              @relation("CareerApplicationReviewer")
-  careerApplicationsAssigned  CareerApplication[]              @relation("CareerApplicationAssignedHr")
-  careerInterviews            CareerInterview[]                @relation("CareerInterviewInterviewer")
-  careerActivities            CareerApplicationActivity[]      @relation("CareerActivityActor")
-  rmEvaluations               RelationshipManagerDevelopment[] @relation("RMEvaluationActor")
-  activationProfile           StudentActivationProfile?
-  executiveReports            ExecutiveReport[]                @relation("ExecutiveReportCreator")
-  executiveInsights           ExecutiveInsight[]               @relation("ExecutiveInsightOwner")
-  platformAudits              PlatformAudit[]                  @relation("PlatformAuditActor")
-  studentLoginCredentials     StudentLoginCredential[]         @relation("StudentLoginCredentials")
-  generatedStudentCredentials StudentLoginCredential[]         @relation("GeneratedStudentCredentials")
-  whatsAppMessageLogs         WhatsAppMessageLog[]
-  accessScopes                UserAccessScope[]
-  academicAdvisorAssignments  AcademicAdvisorAssignment[]      @relation("AcademicAdvisorStudent")
-  advisorAssignmentsCreated   AcademicAdvisorAssignment[]      @relation("AcademicAdvisorAssignmentCreator")
-  labsProductsCreated         LabsProduct[]                    @relation("LabsProductCreator")
-  labsAssignmentsCreated      LabsProductAssignment[]          @relation("LabsProductAssignmentCreator")
+  roles                         UserRole[]
+  sessions                      Session[]
+  emailOtps                     EmailOTP[]
+  passwordResetTokens           PasswordResetToken[]
+  auditLogs                     AuditLog[]
+  enrollments                   StudentEnrollment[]
+  progress                      StudentProgress[]
+  announcements                 Announcement[]
+  notifications                 Notification[]
+  authoredBlueprints            Blueprint[]
+  contentLibraryItems           ContentLibrary[]
+  trainerAssignments            TrainerAssignment[]              @relation("TrainerAssignments")
+  directorAnnouncements         DirectorAnnouncement[]
+  directorActivityLogs          DirectorActivityLog[]
+  dailyLearningSessions         DailyLearningSession[]
+  studentReflections            StudentReflection[]
+  submissions                   Submission[]
+  submissionReviews             SubmissionReview[]               @relation("SubmissionReviewer")
+  quizAttempts                  QuizAttempt[]
+  assessmentResults             AssessmentResult[]
+  aiConversations               AIConversation[]
+  aiMessages                    AIMessage[]
+  aiUsageLogs                   AIUsageLog[]
+  aiFeedback                    AIFeedback[]
+  tokenUsage                    TokenUsage[]
+  assignedLeads                 Lead[]                           @relation("LeadAssignee")
+  ownedLeads                    Lead[]                           @relation("LeadOwner")
+  counsellingSessions           CounsellingSession[]             @relation("CounsellorSessions")
+  admissionApplications         AdmissionApplication[]
+  studentDocuments              StudentDocument[]
+  feeInvoices                   FeeInvoice[]
+  paymentTransactions           PaymentTransaction[]
+  commissionRecords             CommissionRecord[]               @relation("CommissionOwner")
+  approvedCommissions           CommissionRecord[]               @relation("CommissionApprover")
+  referrals                     Referral[]
+  enrollmentLogs                EnrollmentLog[]
+  communicationLogs             CommunicationLog[]
+  leadActivities                LeadActivity[]
+  leadNotes                     LeadNote[]
+  attendanceSessions            AttendanceSession[]              @relation("AttendanceTrainer")
+  attendanceRecords             AttendanceRecord[]               @relation("AttendanceStudent")
+  trainerFeedbackGiven          TrainerFeedback[]                @relation("TrainerFeedbackTrainer")
+  trainerFeedbackReceived       TrainerFeedback[]                @relation("TrainerFeedbackStudent")
+  reviewComments                ReviewComment[]                  @relation("ReviewCommentTrainer")
+  trainerResources              Resource[]                       @relation("TrainerResources")
+  trainerAnnouncements          TrainerAnnouncement[]            @relation("TrainerAnnouncements")
+  studentConcernsRaised         StudentConcern[]                 @relation("StudentConcernTrainer")
+  studentConcerns               StudentConcern[]                 @relation("StudentConcernStudent")
+  reviewQueueItems              ReviewQueue[]                    @relation("ReviewQueueTrainer")
+  reviewQueueAsStudent          ReviewQueue[]
+  studentPortfolio              StudentPortfolio?
+  portfolioProjects             PortfolioProject[]               @relation("PortfolioProjectStudent")
+  approvedPortfolioProjects     PortfolioProject[]               @relation("PortfolioProjectApprover")
+  verifiedSkills                VerifiedSkill[]                  @relation("VerifiedSkillStudent")
+  skillVerifierRecords          VerifiedSkill[]                  @relation("VerifiedSkillVerifier")
+  certificates                  Certificate[]                    @relation("CertificateStudent")
+  approvedCertificates          Certificate[]                    @relation("CertificateApprover")
+  achievements                  Achievement[]                    @relation("AchievementStudent")
+  publishedAchievements         Achievement[]                    @relation("AchievementPublisher")
+  resumeProfiles                ResumeProfile[]
+  placementProfile              PlacementProfile?
+  internships                   Internship[]                     @relation("InternshipStudent")
+  mentoredInternships           Internship[]                     @relation("InternshipMentor")
+  founderProfile                FounderProfile?
+  careerMilestones              CareerMilestone[]
+  communityGroupsCreated        CommunityGroup[]                 @relation("CommunityGroupCreator")
+  communityMemberships          CommunityMembership[]
+  communityPosts                CommunityPost[]
+  communityComments             CommunityComment[]
+  communityReactions            CommunityReaction[]
+  eventRegistrations            EventRegistration[]
+  challengeParticipations       ChallengeParticipation[]
+  wallet                        Wallet?
+  walletTransactions            WalletTransaction[]              @relation("WalletTransactionActor")
+  marketplaceListings           MarketplaceListing[]             @relation("MarketplaceSeller")
+  marketplaceApprovals          MarketplaceApproval[]            @relation("MarketplaceApprover")
+  alumniProfile                 AlumniProfile?
+  missionCompletions            MissionCompletion[]
+  employeeProfile               Employee?
+  careerApplicationsReviewed    CareerApplication[]              @relation("CareerApplicationReviewer")
+  careerApplicationsAssigned    CareerApplication[]              @relation("CareerApplicationAssignedHr")
+  careerInterviews              CareerInterview[]                @relation("CareerInterviewInterviewer")
+  careerActivities              CareerApplicationActivity[]      @relation("CareerActivityActor")
+  rmEvaluations                 RelationshipManagerDevelopment[] @relation("RMEvaluationActor")
+  activationProfile             StudentActivationProfile?
+  executiveReports              ExecutiveReport[]                @relation("ExecutiveReportCreator")
+  executiveInsights             ExecutiveInsight[]               @relation("ExecutiveInsightOwner")
+  platformAudits                PlatformAudit[]                  @relation("PlatformAuditActor")
+  studentLoginCredentials       StudentLoginCredential[]         @relation("StudentLoginCredentials")
+  generatedStudentCredentials   StudentLoginCredential[]         @relation("GeneratedStudentCredentials")
+  whatsAppMessageLogs           WhatsAppMessageLog[]
+  accessScopes                  UserAccessScope[]
+  academicAdvisorAssignments    AcademicAdvisorAssignment[]      @relation("AcademicAdvisorStudent")
+  advisorAssignmentsCreated     AcademicAdvisorAssignment[]      @relation("AcademicAdvisorAssignmentCreator")
+  labsProductsCreated           LabsProduct[]                    @relation("LabsProductCreator")
+  labsAssignmentsCreated        LabsProductAssignment[]          @relation("LabsProductAssignmentCreator")
+  careerTalentProfile           CareerTalentProfile?
+  careerOpportunityApplications CareerOpportunityApplication[]   @relation("CareerOpportunityApplicant")
+  careerApplicationReviews      CareerOpportunityApplication[]   @relation("CareerOpportunityReviewer")
+  careerReferrals               CareerReferral[]                 @relation("CareerReferralReferrer")
+  careerEmployersCreated        CareerEmployer[]                 @relation("CareerEmployerCreator")
+  careerEmployersVerified       CareerEmployer[]                 @relation("CareerEmployerVerifier")
+  careerOpportunitiesCreated    CareerOpportunity[]              @relation("CareerOpportunityCreator")
+  coreDocumentsOwned            CoreDocument[]                   @relation("CoreDocumentOwner")
+  coreDocumentsCreated          CoreDocument[]                   @relation("CoreDocumentCreator")
+  coreDocumentVersionsUploaded  CoreDocumentVersion[]            @relation("CoreDocumentVersionUploader")
+  complianceRecordsCreated      ComplianceRecord[]               @relation("ComplianceRecordCreator")
+  financeInvoicesCreated        FeeInvoice[]                     @relation("FinanceInvoiceCreator")
+  financePaymentsRecorded       PaymentTransaction[]             @relation("FinancePaymentRecorder")
+  financePaymentsVerified       PaymentTransaction[]             @relation("FinancePaymentVerifier")
 
   @@index([email])
   @@index([deletedAt])
@@ -2126,6 +2265,11 @@ model Institution {
   reports             ExecutiveReport[]
   settings            SystemSetting[]
   labsProducts        LabsProduct[]
+  careerEmployers     CareerEmployer[]
+  careerOpportunities CareerOpportunity[]
+  coreDocuments       CoreDocument[]
+  complianceRecords   ComplianceRecord[]
+  feeInvoicesScoped   FeeInvoice[]
 
   @@index([status])
 }
@@ -2155,6 +2299,11 @@ model Campus {
   userAccessScopes    UserAccessScope[]
   careerApplications  CareerApplication[]
   labsProducts        LabsProduct[]
+  careerEmployers     CareerEmployer[]
+  careerOpportunities CareerOpportunity[]
+  coreDocuments       CoreDocument[]
+  complianceRecords   ComplianceRecord[]
+  feeInvoicesScoped   FeeInvoice[]
 
   @@unique([institutionId, slug])
   @@index([institutionId, status])
@@ -2181,6 +2330,11 @@ model Department {
   employeeAssignments EmployeeOrganizationAssignment[]
   userAccessScopes    UserAccessScope[]
   labsProducts        LabsProduct[]
+  careerEmployers     CareerEmployer[]
+  careerOpportunities CareerOpportunity[]
+  coreDocuments       CoreDocument[]
+  complianceRecords   ComplianceRecord[]
+  feeInvoicesScoped   FeeInvoice[]
 
   @@index([institutionId])
   @@index([divisionId])
@@ -2239,6 +2393,9 @@ model Employee {
   rmDevelopmentRecords       RelationshipManagerDevelopment[]
   academicAdvisorAssignments AcademicAdvisorAssignment[]
   labsProductAssignments     LabsProductAssignment[]
+  careerOpportunitiesOwned   CareerOpportunity[]
+  complianceResponsibilities ComplianceRecord[]               @relation("ComplianceResponsibleEmployee")
+  complianceReviews          ComplianceRecord[]               @relation("ComplianceReviewerEmployee")
 
   @@index([institutionId, status])
   @@index([divisionId])
@@ -2358,6 +2515,162 @@ model LabsProductAssignment {
   @@index([productId, role, status, startsAt, endsAt])
   @@index([employeeId, status, startsAt, endsAt])
   @@index([createdById])
+}
+
+model CareerTalentProfile {
+  id                        String                  @id @default(uuid()) @db.Uuid
+  userId                    String                  @unique @db.Uuid
+  headline                  String?                 @db.VarChar(180)
+  bio                       String?                 @db.Text
+  skills                    String[]                @default([])
+  experienceSummary         String?                 @db.Text
+  educationSummary          String?                 @db.Text
+  preferredOpportunityTypes CareerOpportunityType[] @default([])
+  workPreference            CareerWorkMode?
+  availability              CareerAvailability      @default(OPEN_TO_OPPORTUNITIES)
+  location                  String?                 @db.VarChar(180)
+  visibility                CareerProfileVisibility @default(APPLICATION_ONLY)
+  createdAt                 DateTime                @default(now())
+  updatedAt                 DateTime                @updatedAt
+
+  user         User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications CareerOpportunityApplication[]
+
+  @@index([visibility, availability])
+}
+
+model CareerEmployer {
+  id                String               @id @default(uuid()) @db.Uuid
+  institutionId     String               @db.Uuid
+  divisionId        String?              @db.Uuid
+  districtId        String?              @db.Uuid
+  campusId          String?              @db.Uuid
+  departmentId      String?              @db.Uuid
+  code              String               @unique @db.VarChar(100)
+  name              String               @db.VarChar(180)
+  publicDescription String               @db.Text
+  websiteUrl        String?              @db.VarChar(700)
+  industry          String?              @db.VarChar(140)
+  contactName       String?              @db.VarChar(160)
+  contactEmail      String?              @db.VarChar(255)
+  status            CareerEmployerStatus @default(PENDING)
+  verificationNote  String?              @db.Text
+  verifiedById      String?              @db.Uuid
+  verifiedAt        DateTime?
+  createdById       String?              @db.Uuid
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  institution   Institution         @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  division      Division?           @relation(fields: [divisionId], references: [id], onDelete: Restrict)
+  district      District?           @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  campus        Campus?             @relation(fields: [campusId], references: [id], onDelete: Restrict)
+  department    Department?         @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  verifiedBy    User?               @relation("CareerEmployerVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  createdBy     User?               @relation("CareerEmployerCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  opportunities CareerOpportunity[]
+
+  @@index([institutionId, status])
+  @@index([divisionId])
+  @@index([districtId])
+  @@index([campusId])
+  @@index([departmentId])
+}
+
+model CareerOpportunity {
+  id                  String                      @id @default(uuid()) @db.Uuid
+  institutionId       String                      @db.Uuid
+  divisionId          String?                     @db.Uuid
+  districtId          String?                     @db.Uuid
+  campusId            String?                     @db.Uuid
+  departmentId        String?                     @db.Uuid
+  employerId          String                      @db.Uuid
+  ownerEmployeeId     String                      @db.Uuid
+  code                String                      @unique @db.VarChar(100)
+  title               String                      @db.VarChar(180)
+  publicDescription   String                      @db.Text
+  type                CareerOpportunityType
+  requiredSkills      String[]                    @default([])
+  workMode            CareerWorkMode
+  location            String?                     @db.VarChar(180)
+  compensationSummary String?                     @db.VarChar(180)
+  applicationDeadline DateTime?
+  capacity            Int?
+  status              CareerOpportunityStatus     @default(DRAFT)
+  visibility          CareerOpportunityVisibility @default(INTERNAL)
+  archivedAt          DateTime?
+  createdById         String?                     @db.Uuid
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+
+  institution   Institution                    @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  division      Division?                      @relation(fields: [divisionId], references: [id], onDelete: Restrict)
+  district      District?                      @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  campus        Campus?                        @relation(fields: [campusId], references: [id], onDelete: Restrict)
+  department    Department?                    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  employer      CareerEmployer                 @relation(fields: [employerId], references: [id], onDelete: Restrict)
+  ownerEmployee Employee                       @relation(fields: [ownerEmployeeId], references: [id], onDelete: Restrict)
+  createdBy     User?                          @relation("CareerOpportunityCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  applications  CareerOpportunityApplication[]
+  referrals     CareerReferral[]
+
+  @@index([institutionId, status, visibility])
+  @@index([divisionId])
+  @@index([districtId])
+  @@index([campusId])
+  @@index([departmentId])
+  @@index([employerId, status])
+  @@index([ownerEmployeeId, status])
+  @@index([type, workMode, status])
+  @@index([applicationDeadline])
+}
+
+model CareerOpportunityApplication {
+  id              String                             @id @default(uuid()) @db.Uuid
+  opportunityId   String                             @db.Uuid
+  applicantId     String                             @db.Uuid
+  talentProfileId String                             @db.Uuid
+  referralId      String?                            @db.Uuid
+  status          CareerOpportunityApplicationStatus @default(SUBMITTED)
+  coverNote       String?                            @db.Text
+  reviewNote      String?                            @db.Text
+  reviewedById    String?                            @db.Uuid
+  submittedAt     DateTime                           @default(now())
+  reviewedAt      DateTime?
+  withdrawnAt     DateTime?
+  createdAt       DateTime                           @default(now())
+  updatedAt       DateTime                           @updatedAt
+
+  opportunity   CareerOpportunity   @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  applicant     User                @relation("CareerOpportunityApplicant", fields: [applicantId], references: [id], onDelete: Restrict)
+  talentProfile CareerTalentProfile @relation(fields: [talentProfileId], references: [id], onDelete: Restrict)
+  referral      CareerReferral?     @relation(fields: [referralId], references: [id], onDelete: SetNull)
+  reviewedBy    User?               @relation("CareerOpportunityReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([opportunityId, applicantId])
+  @@index([applicantId, status])
+  @@index([opportunityId, status])
+  @@index([talentProfileId])
+  @@index([referralId])
+  @@index([reviewedById])
+}
+
+model CareerReferral {
+  id            String               @id @default(uuid()) @db.Uuid
+  opportunityId String               @db.Uuid
+  referrerId    String               @db.Uuid
+  code          String               @unique @db.VarChar(80)
+  status        CareerReferralStatus @default(ACTIVE)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  opportunity  CareerOpportunity              @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  referrer     User                           @relation("CareerReferralReferrer", fields: [referrerId], references: [id], onDelete: Restrict)
+  applications CareerOpportunityApplication[]
+
+  @@unique([opportunityId, referrerId])
+  @@index([referrerId, status])
+  @@index([opportunityId, status])
 }
 
 model CareerApplication {
@@ -2508,6 +2821,11 @@ model Division {
   userAccessScopes    UserAccessScope[]
   careerApplications  CareerApplication[]
   labsProducts        LabsProduct[]
+  careerEmployers     CareerEmployer[]
+  careerOpportunities CareerOpportunity[]
+  coreDocuments       CoreDocument[]
+  complianceRecords   ComplianceRecord[]
+  feeInvoicesScoped   FeeInvoice[]
 
   @@unique([institutionId, slug])
   @@unique([institutionId, code])
@@ -2534,6 +2852,11 @@ model District {
   userAccessScopes    UserAccessScope[]
   careerApplications  CareerApplication[]
   labsProducts        LabsProduct[]
+  careerEmployers     CareerEmployer[]
+  careerOpportunities CareerOpportunity[]
+  coreDocuments       CoreDocument[]
+  complianceRecords   ComplianceRecord[]
+  feeInvoicesScoped   FeeInvoice[]
 
   @@unique([institutionId, stateName, slug])
   @@index([institutionId, status])
@@ -3265,55 +3588,217 @@ model StudentDocument {
   @@index([studentId, status])
 }
 
+model CoreDocument {
+  id             String               @id @default(uuid()) @db.Uuid
+  code           String               @unique @db.VarChar(100)
+  displayName    String               @db.VarChar(220)
+  category       CoreDocumentCategory
+  status         CoreDocumentStatus   @default(ACTIVE)
+  accessPolicy   DocumentAccessPolicy @default(PRIVATE)
+  ownerUserId    String?              @db.Uuid
+  institutionId  String               @db.Uuid
+  divisionId     String?              @db.Uuid
+  districtId     String?              @db.Uuid
+  campusId       String?              @db.Uuid
+  departmentId   String?              @db.Uuid
+  createdById    String               @db.Uuid
+  retentionUntil DateTime?
+  archivedAt     DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  owner             User?                     @relation("CoreDocumentOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  institution       Institution               @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  division          Division?                 @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  district          District?                 @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  campus            Campus?                   @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  department        Department?               @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  createdBy         User                      @relation("CoreDocumentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  versions          CoreDocumentVersion[]
+  contextLinks      CoreDocumentContextLink[]
+  complianceRecords ComplianceDocument[]
+
+  @@index([institutionId, status])
+  @@index([divisionId])
+  @@index([districtId])
+  @@index([campusId])
+  @@index([departmentId])
+  @@index([ownerUserId, status])
+  @@index([category, status])
+}
+
+model CoreDocumentVersion {
+  id               String   @id @default(uuid()) @db.Uuid
+  documentId       String   @db.Uuid
+  version          Int
+  originalFilename String   @db.VarChar(255)
+  mimeType         String   @db.VarChar(160)
+  sizeBytes        Int?
+  storageProvider  String   @db.VarChar(80)
+  storageKey       String   @db.VarChar(700)
+  checksum         String?  @db.VarChar(160)
+  uploadedById     String   @db.Uuid
+  createdAt        DateTime @default(now())
+
+  document   CoreDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  uploadedBy User         @relation("CoreDocumentVersionUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, version])
+  @@index([documentId, createdAt])
+  @@index([storageProvider])
+}
+
+model CoreDocumentContextLink {
+  id          String              @id @default(uuid()) @db.Uuid
+  documentId  String              @db.Uuid
+  contextType DocumentContextType
+  contextId   String              @db.VarChar(140)
+  createdAt   DateTime            @default(now())
+
+  document CoreDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, contextType, contextId])
+  @@index([contextType, contextId])
+}
+
+model ComplianceRecord {
+  id                    String                @id @default(uuid()) @db.Uuid
+  code                  String                @unique @db.VarChar(100)
+  title                 String                @db.VarChar(220)
+  description           String?               @db.Text
+  subjectType           ComplianceSubjectType
+  subjectId             String?               @db.VarChar(140)
+  status                ComplianceStatus      @default(PENDING)
+  institutionId         String                @db.Uuid
+  divisionId            String?               @db.Uuid
+  districtId            String?               @db.Uuid
+  campusId              String?               @db.Uuid
+  departmentId          String?               @db.Uuid
+  responsibleEmployeeId String?               @db.Uuid
+  reviewerEmployeeId    String?               @db.Uuid
+  effectiveAt           DateTime?
+  expiresAt             DateTime?
+  reviewAt              DateTime?
+  reviewedAt            DateTime?
+  createdById           String                @db.Uuid
+  archivedAt            DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  institution         Institution          @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  division            Division?            @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  district            District?            @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  campus              Campus?              @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  department          Department?          @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  responsibleEmployee Employee?            @relation("ComplianceResponsibleEmployee", fields: [responsibleEmployeeId], references: [id], onDelete: SetNull)
+  reviewerEmployee    Employee?            @relation("ComplianceReviewerEmployee", fields: [reviewerEmployeeId], references: [id], onDelete: SetNull)
+  createdBy           User                 @relation("ComplianceRecordCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  documents           ComplianceDocument[]
+
+  @@index([institutionId, status])
+  @@index([divisionId])
+  @@index([districtId])
+  @@index([campusId])
+  @@index([departmentId])
+  @@index([subjectType, subjectId])
+  @@index([responsibleEmployeeId, status])
+  @@index([reviewerEmployeeId, status])
+  @@index([expiresAt])
+  @@index([reviewAt])
+}
+
+model ComplianceDocument {
+  id                 String   @id @default(uuid()) @db.Uuid
+  complianceRecordId String   @db.Uuid
+  documentId         String   @db.Uuid
+  required           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+
+  complianceRecord ComplianceRecord @relation(fields: [complianceRecordId], references: [id], onDelete: Restrict)
+  document         CoreDocument     @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@unique([complianceRecordId, documentId])
+  @@index([documentId])
+}
+
 model FeeInvoice {
-  id          String        @id @default(uuid()) @db.Uuid
-  leadId      String?       @db.Uuid
-  studentId   String?       @db.Uuid
-  programId   String?       @db.Uuid
-  batchId     String?       @db.Uuid
-  invoiceNo   String        @unique @db.VarChar(80)
-  subtotal    Int
-  discount    Int           @default(0)
-  scholarship Int           @default(0)
-  gst         Int           @default(0)
-  total       Int
-  status      InvoiceStatus @default(DRAFT)
-  dueAt       DateTime?
-  paidAt      DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            String        @id @default(uuid()) @db.Uuid
+  leadId        String?       @db.Uuid
+  studentId     String?       @db.Uuid
+  programId     String?       @db.Uuid
+  batchId       String?       @db.Uuid
+  institutionId String?       @db.Uuid
+  divisionId    String?       @db.Uuid
+  districtId    String?       @db.Uuid
+  campusId      String?       @db.Uuid
+  departmentId  String?       @db.Uuid
+  createdById   String?       @db.Uuid
+  invoiceNo     String        @unique @db.VarChar(80)
+  currency      String?       @db.VarChar(3)
+  reference     String?       @db.VarChar(180)
+  subtotal      Int
+  discount      Int           @default(0)
+  scholarship   Int           @default(0)
+  gst           Int           @default(0)
+  total         Int
+  status        InvoiceStatus @default(DRAFT)
+  issuedAt      DateTime?
+  dueAt         DateTime?
+  paidAt        DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   lead              Lead?                @relation(fields: [leadId], references: [id], onDelete: SetNull)
   student           User?                @relation(fields: [studentId], references: [id], onDelete: SetNull)
   program           Program?             @relation(fields: [programId], references: [id], onDelete: SetNull)
   batch             Batch?               @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  institution       Institution?         @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  division          Division?            @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  district          District?            @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  campus            Campus?              @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  department        Department?          @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  createdBy         User?                @relation("FinanceInvoiceCreator", fields: [createdById], references: [id], onDelete: SetNull)
   transactions      PaymentTransaction[]
   commissionRecords CommissionRecord[]
 
   @@index([leadId])
   @@index([studentId])
   @@index([status])
+  @@index([institutionId, status])
+  @@index([divisionId])
+  @@index([districtId])
+  @@index([campusId])
+  @@index([departmentId])
+  @@index([currency, status])
 }
 
 model PaymentTransaction {
-  id          String          @id @default(uuid()) @db.Uuid
-  invoiceId   String          @db.Uuid
-  studentId   String?         @db.Uuid
-  provider    PaymentProvider
-  status      PaymentStatus   @default(INITIATED)
-  amount      Int
-  providerRef String?         @db.VarChar(160)
-  metadata    Json?
-  paidAt      DateTime?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id           String          @id @default(uuid()) @db.Uuid
+  invoiceId    String          @db.Uuid
+  studentId    String?         @db.Uuid
+  provider     PaymentProvider
+  status       PaymentStatus   @default(INITIATED)
+  amount       Int
+  providerRef  String?         @db.VarChar(160)
+  recordedById String?         @db.Uuid
+  verifiedById String?         @db.Uuid
+  verifiedAt   DateTime?
+  metadata     Json?
+  paidAt       DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
-  invoice FeeInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  student User?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  invoice    FeeInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  student    User?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  recordedBy User?      @relation("FinancePaymentRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  verifiedBy User?      @relation("FinancePaymentVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
   @@index([studentId])
   @@index([provider, status])
+  @@index([recordedById])
+  @@index([verifiedById])
 }
 
 model CommissionRecord {
