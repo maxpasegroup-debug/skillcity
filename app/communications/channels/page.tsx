@@ -1,0 +1,14 @@
+import Link from "next/link";
+import { Bell, MessageSquareText, Users } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { InternalChannelForm } from "@/features/communications/components/internal-channel-forms";
+import { getInternalChannelDirectory } from "@/server/communications/queries";
+
+export default async function InternalChannelsPage() {
+  const data = await getInternalChannelDirectory();
+  return <div className="space-y-8"><PageHeader title="Team Channels" subtitle="Internal communication for authorized AIRA teams, managers, trainers, advisors, and employees." />
+    {data.canManage ? <Card><CardContent className="p-6"><h2 className="text-xl font-black">Create channel</h2><p className="mt-2 mb-5 font-semibold text-brand-muted">Create a scoped team discussion or an authority-only announcement channel.</p><InternalChannelForm institutions={data.institutions} divisions={data.divisions} districts={data.districts} campuses={data.campuses} departments={data.departments} employees={data.employees} /></CardContent></Card> : null}
+    <section><h2 className="text-xl font-black">My channels</h2><div className="mt-4 grid gap-4 lg:grid-cols-2">{data.memberships.map((membership) => { const latest = membership.channel.messages[0]; const unread = Boolean(latest && (!membership.lastReadAt || latest.createdAt > membership.lastReadAt)); return <Link key={membership.id} href={`/communications/channels/${membership.channelId}`}><Card className="h-full transition hover:border-brand-red"><CardContent className="p-6"><div className="flex items-start justify-between gap-4"><div className="flex items-center gap-3">{membership.channel.type === "ANNOUNCEMENT" ? <Bell className="h-5 w-5 text-brand-red" /> : <MessageSquareText className="h-5 w-5 text-brand-red" />}<div><h3 className="text-lg font-black">{membership.channel.name}</h3><p className="text-sm font-semibold text-brand-muted">{membership.channel.institution.name}</p></div></div>{unread ? <span className="text-xs font-black uppercase text-brand-red">New</span> : null}</div><p className="mt-4 text-sm font-semibold text-brand-muted">{latest ? `${latest.author.name}: ${latest.body.slice(0, 120)}` : membership.channel.description ?? "No messages yet."}</p><div className="mt-4 flex gap-4 text-xs font-bold text-brand-muted"><span className="flex items-center gap-1"><Users className="h-4 w-4" />{membership.channel._count.members}</span><span>{membership.channel._count.messages} messages</span><span>{membership.role}</span></div></CardContent></Card></Link>; })}{data.memberships.length === 0 ? <Card><CardContent className="p-6 font-semibold text-brand-muted">You have not been added to a channel yet.</CardContent></Card> : null}</div></section>
+  </div>;
+}

@@ -12,8 +12,8 @@ export default async function BdmTaraPage() {
   return (
     <TaraChat
       scope="BDM"
-      title="Tara BDM Assistant"
-      subtitle="Tara uses your assigned leads, referrals, commissions, payments, and follow-up context to help you convert with clarity."
+      title="SIA Growth Assistant"
+      subtitle="SIA uses your authorized leads, referrals, commissions, payments, and follow-up context to help you convert with clarity."
       suggestions={bdmSuggestions}
       conversations={conversations}
       templateKey="bdm_assistant"

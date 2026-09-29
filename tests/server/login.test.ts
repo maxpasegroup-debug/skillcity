@@ -35,6 +35,20 @@ describe("email login", () => {
     expect(mocks.createSession).toHaveBeenCalledWith("user-1");
   });
 
+  it("routes a V2 role to its primary workspace", async () => {
+    mocks.findUnique.mockResolvedValue({
+      id: "user-1",
+      deletedAt: null,
+      status: "ACTIVE",
+      passwordHash: "hash",
+      roles: [{ role: { name: "Academic Advisor", permissions: [] } }],
+      accessScopes: [],
+      employeeProfile: { id: "employee-1", organizationAssignments: [] }
+    });
+    mocks.verifyPassword.mockResolvedValue(true);
+    await expect(loginAction({ ok: false, message: "" }, loginForm())).rejects.toThrow("REDIRECT:/advisor/dashboard");
+  });
+
   it("rejects an invalid password without creating a session", async () => {
     mocks.findUnique.mockResolvedValue({ id: "user-1", deletedAt: null, status: "ACTIVE", passwordHash: "hash" });
     mocks.verifyPassword.mockResolvedValue(false);

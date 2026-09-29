@@ -6,6 +6,7 @@ import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 
 const nav = [
   { href: "/executive/dashboard", label: "Executive Dashboard", icon: Gauge },
+  { href: "/workspace", label: "My Workspaces", icon: Gauge },
   { href: "/executive/institution-health", label: "Institution Health", icon: HeartPulse },
   { href: "/executive/campuses", label: "Campuses", icon: Building2 },
   { href: "/executive/programs", label: "Programs", icon: GraduationCap },
@@ -21,7 +22,9 @@ const nav = [
   { href: "/executive/departments", label: "Departments", icon: Landmark },
   { href: "/executive/automation-center", label: "Automation Center", icon: Workflow },
   { href: "/communications", label: "Communications", icon: MessageSquareText },
-  { href: "/executive/ai-command-center", label: "AI Command Center", icon: Bot },
+  { href: "/communications/channels", label: "Team Channels", icon: MessageSquareText },
+  { href: "/sia", label: "SIA Operating Centre", icon: Bot },
+  { href: "/executive/ai-command-center", label: "SIA Command Center", icon: Bot },
   { href: "/ai", label: "AI Governance", icon: ShieldCheck },
   { href: "/executive/reports", label: "Reports", icon: BarChart3 },
   { href: "/executive/system-settings", label: "System Settings", icon: Settings }

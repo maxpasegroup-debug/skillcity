@@ -26,6 +26,9 @@
     "audit:career-hub": "tsx scripts/audit-career-hub-data.ts",
     "audit:core-operations": "tsx scripts/audit-core-operations-data.ts",
     "audit:payment-references": "tsx scripts/audit-payment-references.ts",
+    "audit:v2-governance": "tsx scripts/audit-v2-role-governance.ts",
+    "audit:v2-communications": "tsx scripts/audit-v2-internal-communications.ts",
+    "audit:v2-sia": "tsx scripts/audit-v2-sia-readiness.ts",
     "audit:communications": "tsx scripts/audit-communications-automation-data.ts",
     "launch:check": "tsx scripts/launch-readiness.ts"
   },

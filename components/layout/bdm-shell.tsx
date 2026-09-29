@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type React from "react";
-import { Award, Bot, CreditCard, Gauge, Link2, Target, Trophy, Users, Wallet } from "lucide-react";
+import { Award, Bot, CreditCard, Gauge, Link2, MessageSquareText, Target, Trophy, Users, Wallet } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 
@@ -13,6 +13,7 @@ const nav = [
   { href: "/bdm/wallet", label: "Wallet", icon: Wallet },
   { href: "/bdm/payouts", label: "Payout History", icon: CreditCard },
   { href: "/bdm/targets", label: "Target", icon: Target },
+  { href: "/communications/channels", label: "Team Channels", icon: MessageSquareText },
   { href: "/bdm/tara", label: "Tara AI", icon: Bot }
 ];
 

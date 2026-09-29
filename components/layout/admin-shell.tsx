@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type React from "react";
-import { Activity, Bell, Boxes, BriefcaseBusiness, Building2, CheckCircle2, CreditCard, FileText, Gauge, GraduationCap, KeyRound, ListChecks, PhoneCall, Settings, ShieldCheck, UserCheck, Users } from "lucide-react";
+import { Activity, Bell, Boxes, BriefcaseBusiness, Building2, CheckCircle2, CreditCard, FileText, Gauge, GraduationCap, KeyRound, ListChecks, MessageSquareText, PhoneCall, Settings, ShieldCheck, UserCheck, Users } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 
 const nav = [
   { href: "/admin/dashboard", label: "Dashboard", icon: Gauge },
+  { href: "/workspace", label: "My Workspaces", icon: Gauge },
   { href: "/admissions/action-queue", label: "Action Required", icon: ListChecks },
   { href: "/admissions/leads", label: "CRM Leads", icon: Users },
   { href: "/telecaller", label: "Telecallers", icon: PhoneCall },
@@ -18,6 +19,7 @@ const nav = [
   { href: "/trainer/my-batches", label: "Trainers", icon: Users },
   { href: "/admin/academic-health", label: "Academic Health", icon: Activity },
   { href: "/admin/follow-ups", label: "Follow-ups", icon: Bell },
+  { href: "/communications/channels", label: "Team Channels", icon: MessageSquareText },
   { href: "/admin/careers", label: "Careers / Recruitment", icon: BriefcaseBusiness },
   { href: "/admin/users", label: "Users & Roles", icon: ShieldCheck },
   { href: "/labs", label: "AIRA Labs", icon: Boxes },

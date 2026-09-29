@@ -3,14 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Logo } from "@/components/ui/logo";
 import { AdminLoginForm } from "@/features/admin/components/admin-auth-forms";
 import { getCurrentUser } from "@/server/auth/session";
+import { resolveDefaultV2Workspace } from "@/lib/auth/v2-governance";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLoginPage() {
   const user = await getCurrentUser();
-  const roles = user?.roles.map((item) => item.role.name) ?? [];
-  if (roles.includes("Director")) redirect("/director/dashboard");
-  if (roles.includes("Admin")) redirect("/admin/dashboard");
+  if (user) redirect(resolveDefaultV2Workspace(user)?.href ?? "/admin/dashboard");
 
   return (
     <main className="skillcity-shell-bg grid min-h-screen place-items-center px-5 py-10 text-brand-dark">

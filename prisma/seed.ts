@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { launchPrograms } from "../config/launch-programs";
 import { platformRoles } from "../types/auth";
 import { LEGACY_ROLE_GRANTS, PERMISSIONS, ROLE_NAME_TO_KEY } from "../lib/auth/permissions";
+import { V2_DESIGNATIONS, V2_ROLE_DEFINITIONS } from "../lib/auth/v2-governance";
 
 const prisma = new PrismaClient();
 
@@ -14,27 +15,23 @@ const admissionPipelineStages = [
 ];
 
 const designations = [
-  ["CEO", "Chief Executive Officer"],
+  ...V2_DESIGNATIONS,
   ["COO", "Chief Operating Officer"],
-  ["DIRECTOR", "Director"],
   ["DEPARTMENT_HEAD", "Department Head"],
   ["HR_MANAGER", "HR Manager"],
   ["HR_EXECUTIVE", "HR Executive"],
   ["ACADEMIC_ADVISOR", "Academic Advisor"],
-  ["TRAINER", "Trainer"],
-  ["RELATIONSHIP_MANAGER", "Relationship Manager"],
-  ["BUSINESS_DEVELOPMENT_EXECUTIVE", "Business Development Executive"],
-  ["COUNSELLOR", "Counsellor"],
-  ["TELECALLER", "Telecaller"]
+  ["RELATIONSHIP_MANAGER", "Relationship Manager"]
 ] as const;
 
 async function main() {
   const roleIds = new Map<string, string>();
+  const v2RoleDescriptions = new Map<string, string>(V2_ROLE_DEFINITIONS.map((role) => [role.name, `${role.level.replaceAll("_", " ")} role in the AIRA Skill City V2 operating model.`]));
   for (const name of platformRoles) {
     const role = await prisma.role.upsert({
       where: { name },
-      update: { key: ROLE_NAME_TO_KEY[name], system: true },
-      create: { name, key: ROLE_NAME_TO_KEY[name], system: true }
+      update: { key: ROLE_NAME_TO_KEY[name], system: true, deletedAt: null, description: v2RoleDescriptions.get(name) },
+      create: { name, key: ROLE_NAME_TO_KEY[name], system: true, description: v2RoleDescriptions.get(name) }
     });
     roleIds.set(name, role.id);
   }

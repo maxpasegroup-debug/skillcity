@@ -13,7 +13,7 @@ export default async function TrainerTaraPage() {
   return (
     <TaraChat
       scope="TRAINER"
-      title="Tara Trainer Assistant"
+      title="SIA Trainer Assistant"
       subtitle="Summarize reflections, review submissions, generate feedback, create quizzes, identify struggling students, and prepare the next class."
       suggestions={trainerSuggestions}
       conversations={conversations}

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { resolveDefaultV2Workspace } from "@/lib/auth/v2-governance";
 import { hashPassword, verifyPassword } from "@/lib/security/password";
 import { createOtp, createToken, hashToken } from "@/lib/security/token";
 import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, resetPinSchema, studentActivationProfileSchema, whatsappPinLoginSchema } from "@/features/auth/schemas";
@@ -85,7 +86,14 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
     return { ok: false, message: "Too many attempts. Please wait a minute." };
   }
 
-  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  const user = await prisma.user.findUnique({
+    where: { email: parsed.data.email },
+    include: {
+      roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } },
+      accessScopes: true,
+      employeeProfile: { include: { designation: true, organizationAssignments: true } }
+    }
+  });
   if (!user || user.deletedAt || !(await verifyPassword(parsed.data.password, user.passwordHash))) {
     return { ok: false, message: "Email or password is incorrect." };
   }
@@ -96,7 +104,7 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
 
   await prisma.auditLog.create({ data: { userId: user.id, action: "USER_LOGGED_IN", entity: "User", entityId: user.id } });
   await createSession(user.id);
-  redirect("/");
+  redirect(resolveDefaultV2Workspace(user)?.href ?? "/");
 }
 
 export async function whatsappPinLoginAction(_: ActionState, formData: FormData): Promise<ActionState> {

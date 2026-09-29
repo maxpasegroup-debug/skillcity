@@ -24,6 +24,7 @@ import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 
 const navigation = [
   { href: "/director/dashboard", label: "Dashboard", icon: Gauge },
+  { href: "/workspace", label: "My Workspaces", icon: Gauge },
   { href: "/director/programs", label: "Programs", icon: GraduationCap },
   { href: "/director/journey-planner", label: "Journey Planner", icon: Workflow },
   { href: "/director/learning-flows", label: "ALTT Flows", icon: Workflow },
@@ -37,10 +38,12 @@ const navigation = [
   { href: "/documents", label: "Core Documents", icon: FileText },
   { href: "/compliance", label: "Compliance", icon: Scale },
   { href: "/director/communications", label: "Communications", icon: Megaphone },
+  { href: "/communications/channels", label: "Team Channels", icon: Megaphone },
   { href: "/director/careers", label: "Careers", icon: BriefcaseBusiness },
   { href: "/director/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/director/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/director/tara", label: "Tara AI", icon: Bot },
+  { href: "/sia", label: "SIA Operating Centre", icon: Bot },
+  { href: "/director/tara", label: "SIA Assistant", icon: Bot },
   { href: "/director/settings", label: "Settings", icon: Settings }
 ];
 

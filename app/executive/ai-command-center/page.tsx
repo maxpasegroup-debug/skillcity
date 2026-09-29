@@ -8,5 +8,5 @@ export const dynamic = "force-dynamic";
 export default async function AICommandCenterPage() {
   const user = await requireExecutive();
   const conversations = await getTaraConversations(user.id, "DIRECTOR");
-  return <TaraChat scope="DIRECTOR" title="Tara Executive Assistant" subtitle="Use Tara for planning and factual summaries from authorized platform context. Verify operational decisions against the authoritative dashboard and source records." suggestions={directorSuggestions} conversations={conversations} templateKey="director_planner" />;
+  return <TaraChat scope="DIRECTOR" title="SIA Executive Assistant" subtitle="SIA uses the governed AIRA AI Core for planning and factual summaries from authorized context. Verify decisions against the authoritative dashboard and source records." suggestions={directorSuggestions} conversations={conversations} templateKey="director_planner" />;
 }

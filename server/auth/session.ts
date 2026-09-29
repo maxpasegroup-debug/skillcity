@@ -56,6 +56,7 @@ export async function getCurrentUser() {
           accessScopes: true,
           employeeProfile: {
             include: {
+              designation: true,
               organizationAssignments: true
             }
           }

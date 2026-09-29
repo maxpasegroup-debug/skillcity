@@ -5,8 +5,10 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { hashPassword, verifyPassword } from "@/lib/security/password";
-import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
+import { hasPermission, PERMISSIONS, ROLE_NAME_TO_KEY } from "@/lib/auth/permissions";
+import { canAssignV2Role, resolveDefaultV2Workspace } from "@/lib/auth/v2-governance";
 import { createSession, revokeCurrentSession } from "@/server/auth/session";
+import { assertPermission, AuthorizationError } from "@/server/auth/authorization";
 import { requireAdminUser } from "@/server/admin/queries";
 import { adminLoginSchema, adminPinChangeSchema, adminResetAccessSchema, adminRoleChangeSchema, adminUserStatusSchema } from "@/features/admin/schemas";
 
@@ -90,7 +92,6 @@ export async function adminLoginAction(_: State, formData: FormData): Promise<St
     include: { roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } } }
   });
 
-  const roles = user?.roles.map((item) => item.role.name) ?? [];
   const valid = user && !user.deletedAt && user.status === "ACTIVE" && hasPermission(user, PERMISSIONS.ADMIN_ACCESS) && await verifyPassword(parsed.data.pin, user.passwordHash);
 
   if (!valid) {
@@ -100,7 +101,7 @@ export async function adminLoginAction(_: State, formData: FormData): Promise<St
 
   await prisma.auditLog.create({ data: { userId: user.id, action: "ADMIN_LOGIN", entity: "User", entityId: user.id } });
   await createSession(user.id);
-  redirect(roles.includes("Director") ? "/director/dashboard" : "/admin/dashboard");
+  redirect(resolveDefaultV2Workspace(user)?.href ?? "/admin/dashboard");
 }
 
 export async function changeAdminPinAction(_: State, formData: FormData): Promise<State> {
@@ -123,9 +124,13 @@ export async function changeAdminPinAction(_: State, formData: FormData): Promis
 }
 
 export async function assignUserRoleAction(formData: FormData) {
-  const actor = await requireAdminUser();
+  const actor = await assertPermission(PERMISSIONS.USER_MANAGE);
   const parsed = adminRoleChangeSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success || parsed.data.userId === actor.id) return;
+  const role = await prisma.role.findUnique({ where: { id: parsed.data.roleId }, select: { key: true, name: true, deletedAt: true } });
+  if (!role || role.deletedAt) throw new AuthorizationError("Role is unavailable");
+  const roleKey = role.key ?? ROLE_NAME_TO_KEY[role.name];
+  if (!roleKey || !canAssignV2Role(actor, roleKey)) throw new AuthorizationError("Protected or legacy role assignment requires CEO authority");
 
   await prisma.userRole.upsert({
     where: { userId_roleId: { userId: parsed.data.userId, roleId: parsed.data.roleId } },

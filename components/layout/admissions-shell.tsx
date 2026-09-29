@@ -6,6 +6,7 @@ import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 
 const nav = [
   { href: "/admissions/dashboard", label: "Dashboard", icon: Gauge },
+  { href: "/workspace", label: "My Workspaces", icon: Gauge },
   { href: "/admissions/action-queue", label: "Action Queue", icon: ListChecks },
   { href: "/admissions/leads", label: "Leads", icon: Users },
   { href: "/admissions/applications", label: "Applications", icon: FileText },
@@ -18,8 +19,9 @@ const nav = [
   { href: "/admissions/enrollments", label: "Enrollments", icon: GraduationCap },
   { href: "/admissions/counselling", label: "Counselling", icon: CalendarClock },
   { href: "/admissions/communications", label: "Communications", icon: MessageSquare },
+  { href: "/communications/channels", label: "Team Channels", icon: MessageSquare },
   { href: "/admissions/reports", label: "Reports", icon: BarChart3 },
-  { href: "/admissions/tara", label: "Tara AI", icon: Bot },
+  { href: "/admissions/tara", label: "SIA Assistant", icon: Bot },
   { href: "/admin/dashboard", label: "Admin Command", icon: ShieldCheck },
   { href: "/admissions/settings", label: "Settings", icon: Settings }
 ];

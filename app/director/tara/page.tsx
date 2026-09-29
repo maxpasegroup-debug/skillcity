@@ -11,8 +11,8 @@ export default async function DirectorTaraPage() {
   return (
     <TaraChat
       scope="DIRECTOR"
-      title="Tara Director Assistant"
-      subtitle="Tara can use platform context to help plan journeys, ALTT improvements, announcements, schedules, quizzes, and struggling-student interventions."
+      title="SIA Director Assistant"
+      subtitle="SIA can use authorized platform context to help plan journeys, ALTT improvements, announcements, schedules, quizzes, and student interventions."
       suggestions={directorSuggestions}
       conversations={conversations}
       templateKey="director_planner"

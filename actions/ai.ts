@@ -46,6 +46,7 @@ export async function createAIActionProposalAction(_: ActionState, formData: For
     proposal = await prisma.aIActionProposal.findUniqueOrThrow({ where: { idempotencyKey } });
   }
   revalidatePath("/ai");
+  revalidatePath("/sia");
   return { ok: true, message: `Proposal ${proposal.status.toLowerCase().replaceAll("_", " ")}.` };
 }
 
@@ -64,6 +65,7 @@ async function reviewProposal(formData: FormData, decision: "APPROVED" | "REJECT
     await tx.platformAudit.create({ data: { actorId: actor.id, action: `AI_ACTION_${decision}`, entity: "AIActionProposal", entityId: id, metadata: { toolCode: proposal.toolCode } } });
   });
   revalidatePath("/ai");
+  revalidatePath("/sia");
   return { ok: true, message: `Proposal ${decision.toLowerCase()}. No business mutation was executed.` };
 }
 

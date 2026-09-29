@@ -14,7 +14,30 @@ export const platformRoles = [
   "Admission",
   "Business Development",
   "Relationship Manager",
-  "Admin"
+  "Admin",
+  "Career Hub Manager",
+  "Career Participant",
+  "Opportunity Owner",
+  "Records Manager",
+  "Compliance Manager",
+  "Finance Manager",
+  "Communications Manager",
+  "Automation Manager",
+  "People & Operations Head",
+  "Admissions & Growth Head",
+  "Academic Head",
+  "Finance & Compliance Head",
+  "Technology & Products Head",
+  "Career & Partnerships Head",
+  "HR & Operations Executive",
+  "Hub Coordinator",
+  "Admission Officer",
+  "Mentor",
+  "Finance Executive",
+  "Marketing & Communications Executive",
+  "Product Contributor",
+  "Career Operations",
+  "Platform Administrator"
 ] as const;
 
 export type PlatformRole = (typeof platformRoles)[number];

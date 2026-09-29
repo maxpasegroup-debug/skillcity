@@ -1,13 +1,14 @@
 import Link from "next/link";
 import type React from "react";
-import { CalendarCheck, ClipboardCheck, Gauge } from "lucide-react";
+import { CalendarCheck, ClipboardCheck, Gauge, MessageSquareText } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 
 const nav = [
   { href: "/counsellor", label: "Today", icon: Gauge },
   { href: "/counsellor?filter=counselling-today", label: "Counselling", icon: CalendarCheck },
-  { href: "/counsellor?filter=pending-decision", label: "Decisions", icon: ClipboardCheck }
+  { href: "/counsellor?filter=pending-decision", label: "Decisions", icon: ClipboardCheck },
+  { href: "/communications/channels", label: "Team Channels", icon: MessageSquareText }
 ];
 
 export function CounsellorShell({ children }: { children: React.ReactNode }) {

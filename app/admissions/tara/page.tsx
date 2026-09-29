@@ -12,8 +12,8 @@ export default async function AdmissionTaraPage() {
   return (
     <TaraChat
       scope="ADMISSION"
-      title="Tara Admission Assistant"
-      subtitle="Tara uses CRM, counselling, documents, payments, and enrollment context to help the admissions team move students forward."
+      title="SIA Admissions Assistant"
+      subtitle="SIA uses authorized CRM, counselling, document, payment, and enrollment context to help the admissions team move students forward."
       suggestions={admissionSuggestions}
       conversations={conversations}
       templateKey="admission_assistant"

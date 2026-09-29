@@ -6,6 +6,7 @@ import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 
 const nav = [
   { href: "/trainer/dashboard", label: "Dashboard", icon: Gauge },
+  { href: "/workspace", label: "My Workspaces", icon: Gauge },
   { href: "/trainer/my-batches", label: "My Batches", icon: GraduationCap },
   { href: "/trainer/todays-classes", label: "Today's Classes", icon: Calendar },
   { href: "/trainer/attendance", label: "Attendance", icon: ClipboardCheck },
@@ -16,9 +17,10 @@ const nav = [
   { href: "/trainer/students", label: "Students", icon: Users },
   { href: "/trainer/calendar", label: "Calendar", icon: Calendar },
   { href: "/trainer/announcements", label: "Announcements", icon: Bell },
+  { href: "/communications/channels", label: "Team Channels", icon: MessageSquare },
   { href: "/trainer/resources", label: "Resources", icon: Library },
   { href: "/trainer/reports", label: "Reports", icon: BarChart3 },
-  { href: "/trainer/tara", label: "Tara", icon: Bot },
+  { href: "/trainer/tara", label: "SIA Assistant", icon: Bot },
   { href: "/trainer/settings", label: "Settings", icon: Settings }
 ];
 

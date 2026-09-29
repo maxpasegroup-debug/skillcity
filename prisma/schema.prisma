@@ -779,6 +779,22 @@ enum CommunicationTemplateStatus {
   ARCHIVED
 }
 
+enum InternalChannelType {
+  TEAM
+  ANNOUNCEMENT
+}
+
+enum InternalChannelMemberRole {
+  OWNER
+  MODERATOR
+  MEMBER
+}
+
+enum InternalChannelMemberStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum ExecutiveReportType {
   INSTITUTION
   PROGRAM
@@ -1033,6 +1049,9 @@ model User {
   aiAssistantsCreated           AIAssistant[]                    @relation("AIAssistantCreator")
   aiActionProposals             AIActionProposal[]               @relation("AIProposalActor")
   aiActionProposalReviews       AIActionProposal[]               @relation("AIProposalReviewer")
+  internalChannelsCreated       InternalChannel[]                 @relation("InternalChannelCreator")
+  internalChannelMemberships    InternalChannelMember[]
+  internalMessagesAuthored      InternalMessage[]
 
   @@index([email])
   @@index([deletedAt])
@@ -2332,6 +2351,7 @@ model Institution {
   communicationTemplates CommunicationTemplate[]
   communicationMessages  CommunicationMessage[]
   automationRules        AutomationRule[]
+  internalChannels       InternalChannel[]
 
   @@index([status])
 }
@@ -2370,6 +2390,7 @@ model Campus {
   communicationTemplates CommunicationTemplate[]
   communicationMessages  CommunicationMessage[]
   automationRules        AutomationRule[]
+  internalChannels       InternalChannel[]
 
   @@unique([institutionId, slug])
   @@index([institutionId, status])
@@ -2405,6 +2426,7 @@ model Department {
   communicationTemplates CommunicationTemplate[]
   communicationMessages  CommunicationMessage[]
   automationRules        AutomationRule[]
+  internalChannels       InternalChannel[]
 
   @@index([institutionId])
   @@index([divisionId])
@@ -2900,6 +2922,7 @@ model Division {
   communicationTemplates CommunicationTemplate[]
   communicationMessages  CommunicationMessage[]
   automationRules        AutomationRule[]
+  internalChannels       InternalChannel[]
 
   @@unique([institutionId, slug])
   @@unique([institutionId, code])
@@ -2935,6 +2958,7 @@ model District {
   communicationTemplates CommunicationTemplate[]
   communicationMessages  CommunicationMessage[]
   automationRules        AutomationRule[]
+  internalChannels       InternalChannel[]
 
   @@unique([institutionId, stateName, slug])
   @@index([institutionId, status])
@@ -3156,6 +3180,71 @@ model CommunicationMessage {
   @@index([departmentId])
   @@index([domainEventId])
   @@index([automationExecutionId])
+}
+
+model InternalChannel {
+  id            String              @id @default(uuid()) @db.Uuid
+  institutionId String              @db.Uuid
+  divisionId    String?             @db.Uuid
+  districtId    String?             @db.Uuid
+  campusId      String?             @db.Uuid
+  departmentId  String?             @db.Uuid
+  name          String              @db.VarChar(160)
+  description   String?             @db.VarChar(500)
+  type          InternalChannelType @default(TEAM)
+  createdById   String              @db.Uuid
+  archivedAt    DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  institution Institution             @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  division    Division?                @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  district    District?                @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  campus      Campus?                  @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  department  Department?              @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  createdBy   User                     @relation("InternalChannelCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  members     InternalChannelMember[]
+  messages    InternalMessage[]
+
+  @@index([institutionId, archivedAt])
+  @@index([divisionId])
+  @@index([districtId])
+  @@index([campusId])
+  @@index([departmentId])
+  @@index([type, archivedAt])
+  @@index([createdById])
+}
+
+model InternalChannelMember {
+  id         String                      @id @default(uuid()) @db.Uuid
+  channelId  String                      @db.Uuid
+  userId     String                      @db.Uuid
+  role       InternalChannelMemberRole   @default(MEMBER)
+  status     InternalChannelMemberStatus @default(ACTIVE)
+  lastReadAt DateTime?
+  joinedAt   DateTime                    @default(now())
+  updatedAt  DateTime                    @updatedAt
+
+  channel InternalChannel @relation(fields: [channelId], references: [id], onDelete: Restrict)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([channelId, userId])
+  @@index([userId, status])
+  @@index([channelId, status])
+}
+
+model InternalMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  channelId String   @db.Uuid
+  authorId  String   @db.Uuid
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  channel InternalChannel @relation(fields: [channelId], references: [id], onDelete: Restrict)
+  author  User            @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([channelId, createdAt])
+  @@index([authorId, createdAt])
 }
 
 model ExecutiveReport {

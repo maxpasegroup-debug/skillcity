@@ -37,3 +37,31 @@ export const eventAutomationSchema = z.object({
 });
 
 export const processEventsSchema = z.object({ limit: z.coerce.number().int().min(1).max(25).default(10) });
+
+export const internalChannelSchema = z.object({
+  institutionId: z.string().uuid(),
+  divisionId: optionalUuid,
+  districtId: optionalUuid,
+  campusId: optionalUuid,
+  departmentId: optionalUuid,
+  name: z.string().trim().min(2).max(160),
+  description: z.string().trim().max(500).optional(),
+  type: z.enum(["TEAM", "ANNOUNCEMENT"]),
+  memberIds: z.array(z.string().uuid()).max(100).default([])
+});
+
+export const internalMessageSchema = z.object({
+  channelId: z.string().uuid(),
+  body: z.string().trim().min(1).max(5_000)
+});
+
+export const internalChannelMemberSchema = z.object({
+  channelId: z.string().uuid(),
+  userId: z.string().uuid()
+});
+
+export const internalChannelMemberRoleSchema = internalChannelMemberSchema.extend({
+  role: z.enum(["MODERATOR", "MEMBER"])
+});
+
+export const internalChannelIdSchema = z.object({ channelId: z.string().uuid() });

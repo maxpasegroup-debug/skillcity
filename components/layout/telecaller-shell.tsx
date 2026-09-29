@@ -1,13 +1,14 @@
 import Link from "next/link";
 import type React from "react";
-import { Gauge, PhoneCall, Users } from "lucide-react";
+import { Gauge, MessageSquareText, PhoneCall, Users } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 
 const nav = [
   { href: "/telecaller", label: "Today's Work", icon: Gauge },
   { href: "/telecaller?filter=new", label: "New Leads", icon: Users },
-  { href: "/telecaller?filter=follow-up", label: "Follow-ups", icon: PhoneCall }
+  { href: "/telecaller?filter=follow-up", label: "Follow-ups", icon: PhoneCall },
+  { href: "/communications/channels", label: "Team Channels", icon: MessageSquareText }
 ];
 
 export function TelecallerShell({ children }: { children: React.ReactNode }) {
