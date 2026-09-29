@@ -11,7 +11,6 @@ export type TaraContext = {
   user: {
     id: string;
     name: string;
-    email: string;
     roles: string[];
   };
   scope: AIConversationScope;
@@ -63,7 +62,8 @@ export type TaraProviderResponse = {
   content: string;
   provider: AIProvider;
   model: string;
-  inputTokens: number;
-  outputTokens: number;
+  inputTokens?: number;
+  outputTokens?: number;
   responseTimeMs: number;
+  errorCode?: string;
 };

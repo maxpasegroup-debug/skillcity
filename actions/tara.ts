@@ -21,6 +21,9 @@ export async function saveTaraFeedbackAction(_: FeedbackState, formData: FormDat
     return { ok: false, message: "Feedback could not be saved." };
   }
 
+  const target = await prisma.aIMessage.findFirst({ where: { id: messageId, conversationId, role: "ASSISTANT", conversation: { userId: user.id } }, select: { id: true } });
+  if (!target) return { ok: false, message: "Feedback target was not found." };
+
   await prisma.aIFeedback.upsert({
     where: { userId_messageId: { userId: user.id, messageId } },
     update: { rating: rating as "HELPFUL" | "NOT_HELPFUL", comment: comment || null },

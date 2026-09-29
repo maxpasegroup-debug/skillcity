@@ -1,56 +1,46 @@
 import Link from "next/link";
-import { BarChart3, Bot, BriefcaseBusiness, CreditCard, HeartPulse, ShoppingBag, TrendingUp, Users } from "lucide-react";
+import { AlertCircle, Bot, Boxes, BriefcaseBusiness, Building2, CreditCard, Download, GraduationCap, Landmark, MessageSquareText, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { DirectorMetricCard } from "@/features/director/components/director-metric-card";
+import { AnalyticsBreakdown } from "@/features/analytics/components/analytics-breakdown";
+import { AnalyticsMetricCard, comparisonDetail } from "@/features/analytics/components/analytics-metric-card";
 import { DirectorPageHeader } from "@/features/director/components/director-page-header";
-import { getExecutiveDashboard } from "@/server/executive/queries";
+import { ANALYTICS_PERIODS } from "@/lib/analytics/metrics";
+import { getExecutiveIntelligence } from "@/server/analytics/queries";
 
-export default async function ExecutiveDashboardPage() {
-  const dashboard = await getExecutiveDashboard();
-  const actions = [
-    { title: "Review admissions", href: "/executive/admissions", detail: `${dashboard.stats.admissionsToday} new today` },
-    { title: "Check finance", href: "/executive/finance", detail: `INR ${dashboard.stats.revenueToday} today` },
-    { title: "Open automation", href: "/executive/automation-center", detail: `${dashboard.stats.pendingExecutiveActions} pending` },
-    { title: "Ask Tara", href: "/executive/ai-command-center", detail: "Executive AI assistant" }
-  ];
+function formatCurrency(currency: string | null, amount: number) {
+  return currency ? new Intl.NumberFormat("en-IN", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount) : String(amount);
+}
 
-  return (
-    <div className="space-y-10">
-      <section className="rounded-lg bg-brand-card p-6 md:p-8">
-        <DirectorPageHeader eyebrow="Founder Command Center" title="Run Skill City with clarity." description="Admissions, revenue, students, teams, community, marketplace and AI signals in one executive view." />
-        <div className="mt-6 flex flex-col gap-4 sm:flex-row">
-          <Button asChild size="lg"><Link href="/executive/ai-command-center">Ask Tara</Link></Button>
-          <Button asChild size="lg" variant="secondary"><Link href="/executive/reports">Generate Report</Link></Button>
-        </div>
-      </section>
+export default async function ExecutiveDashboardPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
+  const params = await searchParams;
+  const data = await getExecutiveIntelligence(params.period);
+  const financeValue = !data.overview.finance.available ? "Mixed currencies" : data.overview.finance.currency ? formatCurrency(data.overview.finance.currency, data.overview.finance.amount) : "No payments";
+  const periodLabels = { TODAY: "Today", THIS_WEEK: "Week", THIS_MONTH: "Month", THIS_QUARTER: "Quarter", THIS_YEAR: "Year" } as const;
 
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <DirectorMetricCard label="Today's Admissions" value={dashboard.stats.admissionsToday} icon={BriefcaseBusiness} />
-        <DirectorMetricCard label="Today's Revenue" value={`INR ${dashboard.stats.revenueToday}`} icon={CreditCard} />
-        <DirectorMetricCard label="Active Students" value={dashboard.stats.activeStudents} icon={Users} />
-        <DirectorMetricCard label="Retention Rate" value={`${dashboard.stats.retentionRate}%`} icon={TrendingUp} />
-        <DirectorMetricCard label="Completion Rate" value={`${dashboard.stats.completionRate}%`} icon={BarChart3} />
-        <DirectorMetricCard label="Attendance" value={`${dashboard.stats.attendance}%`} icon={HeartPulse} />
-        <DirectorMetricCard label="Trainer Performance" value={dashboard.stats.trainerPerformance} icon={Users} />
-        <DirectorMetricCard label="BDM Performance" value={dashboard.stats.bdmPerformance} icon={BriefcaseBusiness} />
-        <DirectorMetricCard label="Community Engagement" value={dashboard.stats.communityEngagement} icon={Users} />
-        <DirectorMetricCard label="Marketplace Revenue" value={`${dashboard.stats.marketplaceRevenue} coins`} icon={ShoppingBag} />
-        <DirectorMetricCard label="AI Usage" value={dashboard.stats.aiUsage} icon={Bot} />
-        <DirectorMetricCard label="System Health" value={`${dashboard.stats.systemHealth}%`} icon={HeartPulse} />
-      </section>
+  return <div className="space-y-10">
+    <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"><DirectorPageHeader eyebrow="Executive Intelligence" title="Operational overview" description={`Authoritative scoped metrics for ${data.range.label.toLowerCase()} in ${data.range.timeZone}.`} /><div className="flex flex-wrap gap-2"><nav className="flex flex-wrap gap-2" aria-label="Analytics period">{ANALYTICS_PERIODS.map((period) => <Button key={period} asChild variant={period === data.range.period ? "primary" : "secondary"}><Link href={`/executive/dashboard?period=${period}`}>{periodLabels[period]}</Link></Button>)}</nav><Button asChild variant="secondary"><a href={`/api/executive/analytics/export?period=${data.range.period}`}><Download className="h-4 w-4" />Export</a></Button></div></header>
 
-      <section className="grid gap-5 lg:grid-cols-4">
-        {actions.map((action) => (
-          <Card key={action.title}>
-            <CardContent className="flex min-h-44 flex-col p-6">
-              <h2 className="text-2xl font-black text-brand-dark">{action.title}</h2>
-              <p className="mt-3 flex-1 font-bold text-brand-muted">{action.detail}</p>
-              <Button asChild className="mt-5 w-full" variant="secondary"><Link href={action.href}>Open</Link></Button>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-    </div>
-  );
+    <section><h2 className="text-xl font-black text-brand-dark">Overview</h2><div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <AnalyticsMetricCard label="New leads" value={data.overview.leads.value} icon={BriefcaseBusiness} detail={comparisonDetail(data.overview.leads.previous, data.overview.leads.changePercent)} />
+      <AnalyticsMetricCard label="Applications" value={data.overview.applications.value} icon={Landmark} detail={comparisonDetail(data.overview.applications.previous, data.overview.applications.changePercent)} />
+      <AnalyticsMetricCard label="New enrollments" value={data.overview.enrollments.value} icon={GraduationCap} detail={comparisonDetail(data.overview.enrollments.previous, data.overview.enrollments.changePercent)} />
+      <AnalyticsMetricCard label="Successful payments" value={financeValue} icon={CreditCard} detail={data.overview.finance.available ? "Period total" : "Review amounts by currency"} />
+      <AnalyticsMetricCard label="Active learners" value={data.overview.activeLearners} icon={Users} detail="Current state" />
+      <AnalyticsMetricCard label="Active employees" value={data.overview.activeEmployees} icon={Users} detail="Current employment state" />
+      <AnalyticsMetricCard label="Active Labs products" value={data.overview.activeProducts} icon={Boxes} detail="Building through maintenance" />
+      <AnalyticsMetricCard label="Open opportunities" value={data.overview.openOpportunities} icon={BriefcaseBusiness} detail="Current state" />
+    </div></section>
+
+    <section className="grid gap-5 xl:grid-cols-2"><Card><CardContent className="p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black uppercase text-brand-red">Admissions</p><h2 className="mt-2 text-xl font-black">Funnel activity</h2></div><Button asChild variant="secondary"><Link href="/executive/admissions">Open</Link></Button></div><dl className="mt-5 grid grid-cols-2 gap-4 text-sm"><div><dt className="font-bold text-brand-muted">Leads</dt><dd className="mt-1 text-2xl font-black">{data.admissions.leads}</dd></div><div><dt className="font-bold text-brand-muted">Applications</dt><dd className="mt-1 text-2xl font-black">{data.admissions.applications}</dd></div><div><dt className="font-bold text-brand-muted">Counselling sessions</dt><dd className="mt-1 text-2xl font-black">{data.admissions.counselling}</dd></div><div><dt className="font-bold text-brand-muted">Period ratio</dt><dd className="mt-1 text-2xl font-black">{data.admissions.conversionPercent === null ? "No data" : `${data.admissions.conversionPercent}%`}</dd></div></dl></CardContent></Card>
+      <Card><CardContent className="p-6"><p className="text-xs font-black uppercase text-brand-red">Learning</p><h2 className="mt-2 text-xl font-black">Active delivery</h2><div className="mt-5 grid grid-cols-2 gap-5"><div><p className="font-black">Startup School</p><p className="mt-2 text-sm text-brand-muted">{data.learning.startupSchool.activePrograms} programs - {data.learning.startupSchool.activeBatches} batches</p><p className="mt-1 text-2xl font-black">{data.learning.startupSchool.activeEnrollments} learners</p></div><div><p className="font-black">Skill Studio</p><p className="mt-2 text-sm text-brand-muted">{data.learning.skillStudio.activePrograms} programs - {data.learning.skillStudio.activeBatches} batches</p><p className="mt-1 text-2xl font-black">{data.learning.skillStudio.activeEnrollments} learners</p></div></div><p className="mt-5 text-sm font-semibold text-brand-muted">{data.learning.trainerAssignments} trainer assignments - {data.learning.advisorAssignments} advisor assignments</p></CardContent></Card></section>
+
+    <section className="grid gap-5 lg:grid-cols-3"><Card><CardContent className="p-6"><p className="text-xs font-black uppercase text-brand-red">AIRA Labs</p><h2 className="mt-2 text-xl font-black">Product portfolio</h2><AnalyticsBreakdown rows={data.labs.lifecycle} /><p className="mt-5 text-sm font-semibold text-brand-muted">{data.labs.owners} active owners - {data.labs.contributors} contributors</p></CardContent></Card><Card><CardContent className="p-6"><p className="text-xs font-black uppercase text-brand-red">Career Hub</p><h2 className="mt-2 text-xl font-black">Opportunity activity</h2><AnalyticsBreakdown rows={data.career.applicationStatuses} /><p className="mt-5 text-sm font-semibold text-brand-muted">{data.career.talentProfiles} talent profiles - {data.career.verifiedEmployers} verified employers</p></CardContent></Card><Card><CardContent className="p-6"><p className="text-xs font-black uppercase text-brand-red">People</p><h2 className="mt-2 text-xl font-black">Employment states</h2><AnalyticsBreakdown rows={data.people.statuses} /><p className="mt-5 text-sm font-semibold text-brand-muted">{data.people.organizationAssignments} effective assignments</p></CardContent></Card></section>
+
+    <section className="grid gap-5 xl:grid-cols-2"><Card><CardContent className="p-6"><div className="flex items-center gap-3"><CreditCard className="h-5 w-5 text-brand-red" /><h2 className="text-xl font-black">Finance by currency</h2></div>{data.finance.currencies.length === 0 ? <p className="mt-4 text-brand-muted">No data available.</p> : <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[520px] text-left text-sm"><thead className="border-b border-black/10 text-xs uppercase text-brand-muted"><tr><th className="py-3">Currency</th><th>Invoiced</th><th>Outstanding</th><th>Paid</th></tr></thead><tbody>{data.finance.currencies.map((row) => <tr key={row.currency ?? "missing"} className="border-b border-black/5"><td className="py-3 font-black">{row.currency ?? "Missing"}</td><td>{row.currency ? formatCurrency(row.currency, row.invoiced) : "Normalization required"}</td><td>{row.currency ? formatCurrency(row.currency, row.outstanding) : "Normalization required"}</td><td>{row.currency ? formatCurrency(row.currency, row.paid) : "Normalization required"}</td></tr>)}</tbody></table></div>}</CardContent></Card><Card><CardContent className="p-6"><div className="flex items-center gap-3"><Bot className="h-5 w-5 text-brand-red" /><h2 className="text-xl font-black">AI governance</h2></div><dl className="mt-5 grid grid-cols-2 gap-4 text-sm"><div><dt className="text-brand-muted">Requests</dt><dd className="text-2xl font-black">{data.ai.requests}</dd></div><div><dt className="text-brand-muted">Assistants used</dt><dd className="text-2xl font-black">{data.ai.assistantsUsed}</dd></div><div><dt className="text-brand-muted">Tool executions</dt><dd className="text-2xl font-black">{data.ai.toolExecutions}</dd></div><div><dt className="text-brand-muted">Pending proposals</dt><dd className="text-2xl font-black">{data.ai.pendingProposals}</dd></div></dl><p className="mt-5 text-sm font-semibold text-brand-muted">Measured tokens: {(data.ai.measuredInputTokens ?? 0) + (data.ai.measuredOutputTokens ?? 0)}</p></CardContent></Card></section>
+
+    <section className="grid gap-5 xl:grid-cols-2"><Card><CardContent className="p-6"><div className="flex items-center gap-3"><MessageSquareText className="h-5 w-5 text-brand-red" /><h2 className="text-xl font-black">Operations</h2></div><div className="mt-5 grid grid-cols-2 gap-4 text-sm"><div><p className="text-brand-muted">Delivered communications</p><p className="text-2xl font-black">{data.operations.communicationDelivered}</p></div><div><p className="text-brand-muted">Failed communications</p><p className="text-2xl font-black">{data.operations.communicationFailed}</p></div><div><p className="text-brand-muted">Expiring compliance</p><p className="text-2xl font-black">{data.operations.expiringCompliance}</p></div><div><p className="text-brand-muted">Failed automations</p><p className="text-2xl font-black">{data.operations.automationFailed}</p></div></div></CardContent></Card><Card><CardContent className="p-6"><div className="flex items-center gap-3"><AlertCircle className="h-5 w-5 text-brand-red" /><h2 className="text-xl font-black">Attention</h2></div>{data.attention.length === 0 ? <p className="mt-4 font-semibold text-brand-muted">No supported attention items in the selected scope.</p> : <div className="mt-4 divide-y divide-black/5">{data.attention.map((item) => <div key={item.code} className="flex items-center justify-between gap-4 py-3"><div><p className="font-bold">{item.label}</p><p className="text-sm text-brand-muted">{item.count} records</p></div><Button asChild variant="secondary"><Link href={item.href}>Review</Link></Button></div>)}</div>}</CardContent></Card></section>
+
+    <section><div className="flex items-center gap-3"><Building2 className="h-5 w-5 text-brand-red" /><h2 className="text-xl font-black">Authorized organization footprint</h2></div><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><AnalyticsMetricCard label="Organizations" value={data.organization.institutions} icon={Building2} /><AnalyticsMetricCard label="Divisions" value={data.organization.divisions} icon={Building2} /><AnalyticsMetricCard label="Districts" value={data.organization.districts} icon={Building2} /><AnalyticsMetricCard label="Branches" value={data.organization.campuses} icon={Building2} /><AnalyticsMetricCard label="Departments" value={data.organization.departments} icon={Building2} /></div></section>
+  </div>;
 }

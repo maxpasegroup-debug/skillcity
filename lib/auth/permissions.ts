@@ -61,7 +61,11 @@ export const PERMISSIONS = {
   AI_TRAINER: "ai.trainer",
   AI_ADMISSION: "ai.admission",
   AI_BDM: "ai.bdm",
-  AI_DIRECTOR: "ai.director"
+  AI_DIRECTOR: "ai.director",
+  AI_USE: "ai.use",
+  AI_MANAGE: "ai.manage",
+  AI_AUDIT: "ai.audit",
+  AI_APPROVE: "ai.approve"
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

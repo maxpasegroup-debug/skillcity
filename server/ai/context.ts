@@ -1,10 +1,13 @@
 import type { AIConversationScope } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { PERMISSIONS, type AuthorizationUser, type PermissionKey } from "@/lib/auth/permissions";
+import { hasPermission, PERMISSIONS, type AuthorizationUser, type PermissionKey } from "@/lib/auth/permissions";
+import { AuthorizationError } from "@/server/auth/authorization";
 import { documentScopeWhere, feeInvoiceScopeWhere, leadScopeWhere, programScopeWhere } from "@/server/auth/scoping";
 import type { TaraContext } from "@/types/tara";
 
 export async function buildTaraContext(actor: AuthorizationUser, scope: AIConversationScope): Promise<TaraContext> {
+  const scopePermission: Record<AIConversationScope, PermissionKey> = { STUDENT: PERMISSIONS.AI_STUDENT, DIRECTOR: PERMISSIONS.AI_DIRECTOR, TRAINER: PERMISSIONS.AI_TRAINER, ADMISSION: PERMISSIONS.AI_ADMISSION, BDM: PERMISSIONS.AI_BDM };
+  if (!hasPermission(actor, scopePermission[scope])) throw new AuthorizationError("Tara scope is not authorized");
   const userId = actor.id;
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -89,14 +92,13 @@ export async function buildTaraContext(actor: AuthorizationUser, scope: AIConver
     scope === "ADMISSION" || scope === "BDM"
       ? await buildCrmContext(actor, scope)
       : undefined;
-  const success = await buildSuccessContext(userId);
-  const community = await buildCommunityContext(userId);
+  const success = scope === "STUDENT" ? await buildSuccessContext(userId) : undefined;
+  const community = scope === "STUDENT" ? await buildCommunityContext(userId) : undefined;
 
   return {
     user: {
       id: user.id,
       name: user.name,
-      email: user.email,
       roles: user.roles.map((item) => item.role.name)
     },
     scope,
@@ -121,13 +123,12 @@ export async function buildTaraContext(actor: AuthorizationUser, scope: AIConver
 }
 
 async function buildCommunityContext(userId: string) {
-  const [memberships, events, challenges, wallet, listings, alumni] = await Promise.all([
+  const [memberships, events, challenges, wallet, listings] = await Promise.all([
     prisma.communityMembership.findMany({ where: { userId }, include: { group: true }, take: 8 }),
     prisma.event.findMany({ where: { status: "ACTIVE", startsAt: { gte: new Date() } }, orderBy: { startsAt: "asc" }, take: 8 }),
     prisma.challenge.findMany({ where: { status: "ACTIVE" }, orderBy: { updatedAt: "desc" }, take: 8 }),
     prisma.wallet.findUnique({ where: { userId } }),
-    prisma.marketplaceListing.findMany({ where: { status: "APPROVED" }, orderBy: { updatedAt: "desc" }, take: 8 }),
-    prisma.alumniProfile.findMany({ orderBy: { updatedAt: "desc" }, take: 5, include: { user: true } })
+    prisma.marketplaceListing.findMany({ where: { status: "APPROVED" }, orderBy: { updatedAt: "desc" }, take: 8 })
   ]);
   return {
     groups: memberships.map((item) => `${item.group.name} - ${item.group.type}`),
@@ -135,7 +136,7 @@ async function buildCommunityContext(userId: string) {
     challenges: challenges.map((item) => `${item.title} - ${item.rewardXp} XP`),
     wallet: wallet ? `${wallet.xp} XP, ${wallet.skillCoins} Skill Coins, level ${wallet.level}` : undefined,
     marketplace: listings.map((item) => `${item.title} - ${item.type}`),
-    alumni: alumni.map((item) => `${item.user.name} - ${item.employment ?? item.business ?? "community"}`)
+    alumni: []
   };
 }
 

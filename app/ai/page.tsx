@@ -1,0 +1,15 @@
+import { Bot, ShieldCheck } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { getAIGovernanceOverview } from "@/server/ai/governance";
+
+export const dynamic = "force-dynamic";
+
+export default async function AIGovernancePage() {
+  const data = await getAIGovernanceOverview();
+  return <div><PageHeader title="AIRA AI Core" subtitle="Assistant policy, measured usage, and human approval records." />
+    <div className="grid gap-4 md:grid-cols-3"><Card><CardContent className="p-5"><Bot className="h-5 w-5 text-brand-red" /><p className="mt-3 text-xs font-black uppercase text-brand-muted">Provider</p><p className="mt-1 text-xl font-black">{data.provider.provider}</p><p className="mt-1 text-sm text-brand-muted">{data.provider.configured ? data.provider.model : "Not configured"}</p></CardContent></Card><Card><CardContent className="p-5"><ShieldCheck className="h-5 w-5 text-brand-red" /><p className="mt-3 text-xs font-black uppercase text-brand-muted">Assistants</p><p className="mt-1 text-3xl font-black">{data.assistants.length}</p></CardContent></Card><Card><CardContent className="p-5"><ShieldCheck className="h-5 w-5 text-brand-red" /><p className="mt-3 text-xs font-black uppercase text-brand-muted">Pending approval</p><p className="mt-1 text-3xl font-black">{data.proposals.filter((item) => item.status === "PENDING_APPROVAL").length}</p></CardContent></Card></div>
+    <section className="mt-10"><h2 className="text-2xl font-black">Assistant registry</h2><div className="mt-4 grid gap-4 md:grid-cols-2">{data.assistants.map((assistant) => <Card key={assistant.id}><CardContent className="p-5"><div className="flex items-center justify-between gap-3"><h3 className="text-lg font-black">{assistant.name}</h3><span className="text-xs font-black text-brand-red">{assistant.status}</span></div><p className="mt-2 text-sm text-brand-muted">{assistant.description}</p><p className="mt-4 text-sm font-bold">{assistant.allowedTools.length} controlled tools · {assistant._count.conversations} conversations</p></CardContent></Card>)}</div></section>
+    <section className="mt-10"><h2 className="text-2xl font-black">Action proposals</h2><div className="mt-4 overflow-x-auto rounded-lg border border-black/10 bg-white"><table className="w-full min-w-[720px] text-left"><thead className="border-b border-black/10 text-xs uppercase text-brand-muted"><tr><th className="p-4">Created</th><th className="p-4">Assistant</th><th className="p-4">Actor</th><th className="p-4">Tool</th><th className="p-4">Status</th></tr></thead><tbody>{data.proposals.map((item) => <tr key={item.id} className="border-b border-black/5"><td className="p-4 text-sm">{item.createdAt.toLocaleString()}</td><td className="p-4 font-bold">{item.assistant.name}</td><td className="p-4">{item.actor.name}</td><td className="p-4">{item.toolCode}</td><td className="p-4 font-bold">{item.status}</td></tr>)}</tbody></table>{data.proposals.length === 0 ? <p className="p-6 text-brand-muted">No AI action proposals.</p> : null}</div></section>
+  </div>;
+}

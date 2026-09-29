@@ -312,6 +312,24 @@ enum AIFeedbackRating {
   NOT_HELPFUL
 }
 
+enum AIAssistantStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AIOutputType {
+  TEXT
+  STRUCTURED
+  ACTION_PROPOSAL
+}
+
+enum AIActionProposalStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 enum AttendanceStatus {
   PRESENT
   ABSENT
@@ -1012,6 +1030,9 @@ model User {
   communicationMessagesCreated  CommunicationMessage[]           @relation("CommunicationMessageCreator")
   communicationMessagesReceived CommunicationMessage[]           @relation("CommunicationMessageRecipient")
   automationRulesCreated        AutomationRule[]                 @relation("AutomationRuleCreator")
+  aiAssistantsCreated           AIAssistant[]                    @relation("AIAssistantCreator")
+  aiActionProposals             AIActionProposal[]               @relation("AIProposalActor")
+  aiActionProposalReviews       AIActionProposal[]               @relation("AIProposalReviewer")
 
   @@index([email])
   @@index([deletedAt])
@@ -3485,15 +3506,40 @@ model AIConversation {
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
   archivedAt DateTime?
+  assistantId String?           @db.Uuid
+  organizationContext Json?
 
   user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages   AIMessage[]
   usageLogs  AIUsageLog[]
   feedback   AIFeedback[]
   tokenUsage TokenUsage[]
+  assistant  AIAssistant?      @relation(fields: [assistantId], references: [id], onDelete: SetNull)
+  actionProposals AIActionProposal[]
 
   @@index([userId, scope])
   @@index([updatedAt])
+  @@index([assistantId, updatedAt])
+}
+
+model AIAssistant {
+  id             String            @id @default(uuid()) @db.Uuid
+  code           String            @unique @db.VarChar(80)
+  name           String            @db.VarChar(160)
+  description    String            @db.VarChar(500)
+  status         AIAssistantStatus @default(ACTIVE)
+  allowedTools   String[]          @default([])
+  allowedDomains String[]          @default([])
+  createdById    String?           @db.Uuid
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  createdBy       User?              @relation("AIAssistantCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  conversations   AIConversation[]
+  usageLogs       AIUsageLog[]
+  actionProposals AIActionProposal[]
+
+  @@index([status, name])
 }
 
 model AIMessage {
@@ -3539,14 +3585,49 @@ model AIUsageLog {
   estimatedTokens Int
   success         Boolean    @default(true)
   error           String?    @db.Text
+  errorCode       String?    @db.VarChar(80)
+  assistantId     String?    @db.Uuid
+  requestId       String?    @unique @db.Uuid
+  outputType      AIOutputType @default(TEXT)
+  inputTokens     Int?
+  outputTokens    Int?
   createdAt       DateTime   @default(now())
 
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversation AIConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  assistant    AIAssistant?    @relation(fields: [assistantId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([provider, model])
   @@index([conversationId])
+  @@index([assistantId, createdAt])
+}
+
+model AIActionProposal {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  idempotencyKey      String                 @unique @db.VarChar(160)
+  assistantId         String                 @db.Uuid
+  actorId             String                 @db.Uuid
+  conversationId      String?                @db.Uuid
+  toolCode            String                 @db.VarChar(120)
+  input               Json
+  reason              String                 @db.VarChar(500)
+  organizationContext Json?
+  status              AIActionProposalStatus @default(PENDING_APPROVAL)
+  reviewedById        String?                @db.Uuid
+  reviewedAt          DateTime?
+  reviewNote          String?                @db.VarChar(500)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  assistant    AIAssistant     @relation(fields: [assistantId], references: [id], onDelete: Restrict)
+  actor        User            @relation("AIProposalActor", fields: [actorId], references: [id], onDelete: Restrict)
+  reviewedBy   User?           @relation("AIProposalReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  conversation AIConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([assistantId, status])
+  @@index([actorId, createdAt])
 }
 
 model AIFeedback {

@@ -8,6 +8,7 @@ import { getConversationMessages, getOrCreateConversation, saveMessage } from "@
 import { ensurePromptTemplates } from "@/server/ai/prompts";
 import { generateTaraResponse, logTaraUsage } from "@/server/ai/tara";
 import { summarizeContextTools } from "@/server/ai/tools";
+import { ensureTaraAssistant } from "@/server/ai/assistants";
 
 type TaraRequest = {
   conversationId?: string;
@@ -50,13 +51,22 @@ export async function POST(request: Request) {
   }
 
   await ensurePromptTemplates();
+  const assistant = await ensureTaraAssistant();
   const context = await buildTaraContext(user, body.scope);
   const conversation = await getOrCreateConversation({
     conversationId: body.conversationId,
     userId: user.id,
     scope: body.scope,
     context,
-    title: body.message.slice(0, 80)
+    title: body.message.slice(0, 80),
+    assistantId: assistant.id,
+    organizationContext: {
+      institutionId: user.employeeProfile?.institutionId ?? null,
+      divisionId: user.employeeProfile?.divisionId ?? null,
+      districtId: user.employeeProfile?.districtId ?? null,
+      campusId: user.employeeProfile?.campusId ?? null,
+      departmentId: user.employeeProfile?.departmentId ?? null
+    }
   });
   const priorMessages = await getConversationMessages(conversation.id);
   await saveMessage({
@@ -79,7 +89,7 @@ export async function POST(request: Request) {
     content: response.content,
     metadata: { provider: response.provider, model: response.model }
   });
-  await logTaraUsage({ userId: user.id, conversationId: conversation.id, response });
+  await logTaraUsage({ userId: user.id, conversationId: conversation.id, assistantId: assistant.id, requestId: crypto.randomUUID(), response });
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

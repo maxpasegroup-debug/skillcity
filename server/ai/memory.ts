@@ -8,10 +8,12 @@ export async function getOrCreateConversation(input: {
   scope: AIConversationScope;
   context: TaraContext;
   title?: string;
+  assistantId?: string;
+  organizationContext?: Prisma.InputJsonValue;
 }) {
   if (input.conversationId) {
     const existing = await prisma.aIConversation.findFirst({
-      where: { id: input.conversationId, userId: input.userId, archivedAt: null }
+      where: { id: input.conversationId, userId: input.userId, scope: input.scope, archivedAt: null }
     });
     if (existing) return existing;
   }
@@ -21,7 +23,9 @@ export async function getOrCreateConversation(input: {
       userId: input.userId,
       scope: input.scope,
       title: input.title ?? "Conversation with Tara",
-      context: input.context
+      context: input.context,
+      assistantId: input.assistantId,
+      organizationContext: input.organizationContext
     }
   });
 }
