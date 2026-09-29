@@ -37,7 +37,7 @@ npx prisma migrate status
 
 Save migration names and status without connection details. Compare against all 28 directories under `prisma/migrations`. Do not infer pending state from repository files alone.
 
-Expected: no divergent, failed or edited migration. Failure condition: failed migration, drift, unknown baseline or production-only migration. Stop and investigate.
+Expected: no divergent, failed or edited migration. Compare against all 30 directories currently under `prisma/migrations`. Failure condition: failed migration, drift, unknown baseline or production-only migration. Stop and investigate.
 
 ## 4. Review SQL
 
@@ -71,6 +71,10 @@ npm run audit:career-hub
 npm run audit:core-operations
 npm run audit:communications
 npm run audit:payment-references
+npm run audit:v2-governance
+npm run audit:v2-communications
+npm run audit:v2-sia
+npm run launch:v2:verify
 ```
 
 3. Record counts and classify gaps using each phase normalization document. Never invent missing assignments, designations, owners or results.

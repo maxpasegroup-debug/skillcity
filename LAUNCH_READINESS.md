@@ -1,6 +1,6 @@
-# AIRA Skill City Launch Readiness
+# AIRA Skill City V2 Launch Readiness
 
-Phase 8 prepares the admissions-first launch flow for production.
+The V2 release combines the lean role catalog, role-aware workspaces, Internal Channels, and the governed SIA Operating Centre. A successful build is necessary but does not prove database or production readiness.
 
 ## Required Railway Variables
 
@@ -12,6 +12,12 @@ Phase 8 prepares the admissions-first launch flow for production.
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
 
+Private document delivery is optional and fail-closed. When enabled, all three must be configured:
+
+- `PRIVATE_DOCUMENT_PROVIDER`
+- `PRIVATE_DOCUMENT_GATEWAY_URL`
+- `PRIVATE_DOCUMENT_SIGNING_SECRET`
+
 ## Launch Commands
 
 ```bash
@@ -22,19 +28,32 @@ npm run launch:check
 npm run build
 ```
 
+With a confirmed production environment and read-only database access, run:
+
+```bash
+npm run launch:v2:verify
+npm run audit:payment-references
+npm run audit:v2-governance
+npm run audit:v2-communications
+npm run audit:v2-sia
+```
+
 ## Railway Startup
 
-Railway runs:
+Railway starts only the application:
 
 ```bash
-npm run prisma:deploy && npm run start
+npm run start
 ```
 
-Run this once after migrations are healthy:
+Railway probes `/api/health`, which returns success only when PostgreSQL is reachable and the required production-remediation/V2 migrations are applied. Migrations remain a separate, controlled operator step after backup and review:
 
 ```bash
-npm run db:seed
+npx prisma migrate status
+npx prisma migrate deploy
 ```
+
+Do not run `prisma migrate reset` or `prisma db push` against production. Run `npm run db:seed` only when the reviewed release procedure explicitly authorizes reference-data normalization.
 
 ## Launch Programs
 
@@ -54,3 +73,7 @@ Students cannot self-register into dashboards. They must:
 4. Receive WhatsApp PIN.
 5. Login and reset PIN.
 6. Enter the student dashboard.
+
+## V2 Release Gate
+
+Follow [the V2 production release runbook](docs/production/AIRA_V2_PRODUCTION_RELEASE_RUNBOOK.md). The release remains blocked until backup/restore evidence, migration status, read-only audits, representative role/scope smoke tests, provider checks, and production monitoring are signed off.

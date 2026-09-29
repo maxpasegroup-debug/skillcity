@@ -45,5 +45,8 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Static launch readiness
+        run: npm run launch:check
+
       - name: Build
         run: npm run build

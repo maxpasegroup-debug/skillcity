@@ -21,9 +21,11 @@ The release remains blocked while any Critical item is open. High items require 
 - [ ] Configure and validate private storage plus the signed gateway; prove unsigned/direct, expired, cross-scope, archived, and revoked access is denied.
 - [ ] Configure production error monitoring, structured logs and alerts for auth, payments, communications, automation and AI failures.
 - [ ] Define and test email delivery; configure WhatsApp/provider webhooks only with signature, replay and idempotency controls.
-- [ ] Add an external health check and alert for application plus database connectivity.
+- [x] Add a deploy-time Railway health check for application, database, and required migration readiness.
+- [ ] Add continuous external health monitoring and alerting; Railway's probe runs only during deployment.
 - [ ] Verify HTTPS, secure cookies, trusted host/origin behavior, CSP and HSTS at the deployed edge.
-- [ ] Resolve or formally risk-assess remaining development/build dependency advisories.
+- [x] Remove critical Vitest advisories and confirm zero production dependency findings.
+- [ ] Review the remaining high development/build-tool advisories, including Prisma CLI, without forcing an unverified downgrade.
 
 ## Medium Priority
 
@@ -72,7 +74,7 @@ The release remains blocked while any Critical item is open. High items require 
 
 - [ ] Production backup completed and its identifier/timestamp/retention recorded.
 - [ ] Backup restored and verified in an isolated target using `PRODUCTION_BACKUP_RESTORE_RUNBOOK.md`.
-- [ ] All 28 migrations reviewed; payment-reference audit reports zero unresolved duplicate groups.
+- [ ] All 30 migrations reviewed; payment-reference audit reports zero unresolved duplicate groups.
 - [ ] Migration executed manually by one authorized operator.
 - [ ] Post-migration audits and application smoke tests passed.
 

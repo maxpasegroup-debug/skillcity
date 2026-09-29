@@ -29,6 +29,7 @@ const engines = packageJson.engines as Record<string, string> | undefined;
 const migrationsPath = file("prisma/migrations");
 const migrationNames = existsSync(migrationsPath) ? readdirSync(migrationsPath).filter((name) => name !== "migration_lock.toml") : [];
 const envExample = readFileSync(file(".env.example"), "utf8");
+const proxySource = readFileSync(file("proxy.ts"), "utf8");
 
 const documentedEnv = [
   "DATABASE_URL",
@@ -40,7 +41,10 @@ const documentedEnv = [
   "OPENAI_MODEL",
   "OPENAI_RESPONSES_URL",
   "AI_PROVIDER_TIMEOUT_MS",
-  "ANALYTICS_TIME_ZONE"
+  "ANALYTICS_TIME_ZONE",
+  "PRIVATE_DOCUMENT_PROVIDER",
+  "PRIVATE_DOCUMENT_GATEWAY_URL",
+  "PRIVATE_DOCUMENT_SIGNING_SECRET"
 ];
 
 const checks: Check[] = [
@@ -60,6 +64,11 @@ const checks: Check[] = [
     detail: "Railway starts Next.js without automatically applying production migrations."
   },
   {
+    name: "Railway database health gate",
+    ok: JSON.stringify(railway).includes('"healthcheckPath":"/api/health"') || JSON.stringify(railway).includes('"healthcheckPath": "/api/health"'),
+    detail: "Railway activates a deployment only after the application and required database migrations are ready."
+  },
+  {
     name: "Launch programs",
     ok:
       launchPrograms.some((program) => program.slug === "startup-skool" && !program.isFree) &&
@@ -69,8 +78,8 @@ const checks: Check[] = [
   },
   {
     name: "Prisma migrations",
-    ok: migrationNames.some((name) => name.includes("add_admission_program_fields")) && migrationNames.some((name) => name.includes("add_whatsapp_pin_login")),
-    detail: "Admissions program fields and WhatsApp PIN login migrations exist."
+    ok: ["20260929000100_remediate_production_blockers", "20260929000200_add_v2_internal_communications", "20260929000300_add_v2_sia_department_approvals"].every((name) => migrationNames.includes(name)),
+    detail: "Production remediation, V2 communications and scoped SIA approval migrations exist."
   },
   {
     name: "Required env example",
@@ -79,8 +88,23 @@ const checks: Check[] = [
   },
   {
     name: "Verification scripts",
-    ok: ["lint", "typecheck", "prisma:validate", "build", "db:seed"].every((script) => hasScript(packageJson, script)),
-    detail: "Local and deployment verification scripts are present."
+    ok: ["lint", "typecheck", "test", "prisma:validate", "build", "db:seed", "audit:v2-governance", "audit:v2-communications", "audit:v2-sia", "launch:v2:verify"].every((script) => hasScript(packageJson, script)),
+    detail: "Static, database inventory and V2 production verification scripts are present."
+  },
+  {
+    name: "V2 application surfaces",
+    ok: ["app/workspace/page.tsx", "app/advisor/dashboard/page.tsx", "app/communications/channels/page.tsx", "app/sia/page.tsx", "app/api/health/route.ts"].every((path) => existsSync(file(path))),
+    detail: "Workspace, Advisor, Internal Channels, SIA and health routes exist."
+  },
+  {
+    name: "Production transport header",
+    ok: proxySource.includes("Strict-Transport-Security") && proxySource.includes('process.env.NODE_ENV === "production"'),
+    detail: "Production responses request HSTS while local HTTP remains usable."
+  },
+  {
+    name: "V2 operator documentation",
+    ok: ["docs/production/AIRA_V2_PRODUCTION_RELEASE_RUNBOOK.md", "AIRA_SKILL_CITY_V2_PHASE_5_REPORT.md"].every((path) => existsSync(file(path))),
+    detail: "The controlled V2 release and evidence process is documented."
   }
 ];
 
@@ -96,4 +120,4 @@ if (failed > 0) {
   process.exit(1);
 }
 
-console.log("PASS Launch readiness: AIRA Skill City admissions launch checks passed.");
+console.log("PASS Launch readiness: AIRA Skill City V2 static release checks passed.");
