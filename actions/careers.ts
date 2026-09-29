@@ -62,7 +62,7 @@ function logSubmissionError(scope: string, error: unknown) {
 async function checkCareerSubmissionLimit(contact: string) {
   const headerStore = await headers();
   const ip = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || headerStore.get("x-real-ip") || "unknown";
-  const limited = checkRateLimit(`public:career:${ip}:${normalizePhone(contact)}`, 4, 15 * 60_000);
+  const limited = await checkRateLimit(`public:career:${ip}:${normalizePhone(contact)}`, 4, 15 * 60_000);
   return limited.allowed ? null : { ok: false, message: "Please wait a few minutes before trying again." };
 }
 

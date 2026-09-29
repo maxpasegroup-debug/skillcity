@@ -23,10 +23,11 @@ export function ApplicationStatusForm() {
         </div>
         <h2 className="mt-8 text-3xl font-black uppercase leading-none text-black">Check application.</h2>
         <p className="mt-4 font-semibold leading-7 text-brand-muted">
-          Use the WhatsApp number submitted in your NEXA AI application.
+          Use the WhatsApp number and private reference from your NEXA AI application.
         </p>
         <div className="mt-7 space-y-5">
           <Input name="whatsapp" label="WhatsApp number" inputMode="tel" autoComplete="tel" placeholder="+91 98765 43210" required />
+          <Input name="applicationReference" label="Application reference" autoComplete="off" required />
           <Button className="w-full rounded-full" size="lg" disabled={pending}>
             {pending ? "Checking..." : "Check Status"}
           </Button>

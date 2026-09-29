@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthorizationError } from "@/server/auth/authorization";
 
@@ -78,6 +79,13 @@ describe("Core operations mutations", () => {
   it("records payments as initiated rather than successful", async () => {
     const result = await recordFinancePaymentAction({ ok: false, message: "" }, form({ invoiceId, provider: "MANUAL", amount: "500", providerRef: "BANK-1" }));
     expect(result.ok).toBe(true); expect(mocks.paymentCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "INITIATED", recordedById: "actor-1" }) }));
+  });
+
+  it("returns a safe duplicate response when the database uniqueness constraint wins a race", async () => {
+    mocks.paymentCreate.mockRejectedValue(new Prisma.PrismaClientKnownRequestError("duplicate", { code: "P2002", clientVersion: "6.19.3" }));
+    const result = await recordFinancePaymentAction({ ok: false, message: "" }, form({ invoiceId, provider: "MANUAL", amount: "500", providerRef: "BANK-RACE" }));
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("already recorded");
   });
 
   it("blocks crafted payment IDs before verification", async () => {

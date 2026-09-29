@@ -9,15 +9,16 @@ The release remains blocked while any Critical item is open. High items require 
 - [ ] Run every read-only normalization audit and manually reconcile required data gaps.
 - [ ] Validate all production environment variables without exposing values.
 - [ ] Complete authenticated cross-role and cross-organization smoke tests against production-shaped data.
-- [ ] Fix the phone-only application-status privacy/enumeration boundary before broad public traffic, or disable that public status feature.
+- [x] Replace phone-only application status with contact plus an opaque hashed reference and uniform failure responses.
+- [ ] Apply the remediation migration and verify new public application/reference lookup end to end; define legacy reference reissue.
 
 ## High Priority
 
 - [x] Patch the production Next.js dependency to `16.3.7` or newer reviewed patch.
 - [x] Remove automatic `prisma migrate deploy` from Railway application startup.
-- [ ] Replace process-local login/public/AI rate limiting with shared durable enforcement or an edge/WAF equivalent.
-- [ ] Add a database uniqueness/idempotency constraint for provider payment references before concurrent payment ingestion or webhooks.
-- [ ] Select and validate private object storage, signed downloads, type/size checks and malware policy before storing private files.
+- [ ] Deploy and multi-replica validate the PostgreSQL-backed rate limiter for login, reset, public forms/status, AI, and exports.
+- [ ] Run `npm run audit:payment-references`, reconcile duplicates, deploy the compound unique index, and verify concurrent rejection.
+- [ ] Configure and validate private storage plus the signed gateway; prove unsigned/direct, expired, cross-scope, archived, and revoked access is denied.
 - [ ] Configure production error monitoring, structured logs and alerts for auth, payments, communications, automation and AI failures.
 - [ ] Define and test email delivery; configure WhatsApp/provider webhooks only with signature, replay and idempotency controls.
 - [ ] Add an external health check and alert for application plus database connectivity.
@@ -64,6 +65,40 @@ The release remains blocked while any Critical item is open. High items require 
 | PWA | HTTPS install on Android/iOS/desktop; inspect cache after login/logout/offline | Public shell works; private pages/API are absent from Cache Storage | Authenticated/private response remains cached |
 | Mobile | Test narrow viewport, keyboard, forms, tables and sign-out on physical devices | No overlap; commands remain usable | Hidden controls, clipped data or failed sign-out |
 | Production smoke | Check public pages, login, each main shell, API 401/403, logs and alerts | Expected 2xx/redirect/401/403 with no secret/stack trace | 500, leaked internals, alert silence |
+
+## Explicit Release Gates
+
+### Database
+
+- [ ] Production backup completed and its identifier/timestamp/retention recorded.
+- [ ] Backup restored and verified in an isolated target using `PRODUCTION_BACKUP_RESTORE_RUNBOOK.md`.
+- [ ] All 28 migrations reviewed; payment-reference audit reports zero unresolved duplicate groups.
+- [ ] Migration executed manually by one authorized operator.
+- [ ] Post-migration audits and application smoke tests passed.
+
+### Security
+
+- [x] Application lookup requires an opaque reference and does not return internal IDs.
+- [ ] Distributed rate limiting verified against the deployed shared database.
+- [ ] Private document provider/gateway configured and direct unsigned access denied.
+- [ ] Payment-reference unique index verified in the production database.
+
+### Environment
+
+- [ ] Production server variables validated without printing values.
+- [ ] Public domain, HTTPS, trusted origin, cookies, CSP/HSTS behavior validated.
+- [ ] Email and WhatsApp provider variables/contracts validated where enabled.
+- [ ] AI provider variables, timeout, scoped access, and failure behavior validated where enabled.
+- [ ] Private document provider, HTTPS gateway, signing secret, and TTL validated.
+- [ ] Payment provider credentials/webhooks validated only when those integrations are enabled.
+
+### Validation
+
+- [ ] Authenticated browser tests completed across representative roles/scopes.
+- [ ] Production provider tests completed for every enabled external provider.
+- [ ] Physical mobile-device checks completed.
+- [ ] PWA installation/cache checks completed over production HTTPS.
+- [ ] Critical workflows passed with approved test records.
 
 ## Go / No-Go
 

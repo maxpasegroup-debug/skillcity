@@ -229,11 +229,19 @@ export async function recordFinancePaymentAction(_: CoreActionState, formData: F
   if (parsed.data.amount > outstandingInvoiceAmount(invoice)) return failure("Payment amount exceeds the invoice balance.");
   const duplicate = await prisma.paymentTransaction.findFirst({ where: { provider: parsed.data.provider, providerRef: parsed.data.providerRef } });
   if (duplicate) return failure("This provider payment reference is already recorded.");
-  const payment = await prisma.$transaction(async (tx) => {
-    const created = await tx.paymentTransaction.create({ data: { invoiceId: invoice.id, studentId: invoice.studentId, provider: parsed.data.provider, status: "INITIATED", amount: parsed.data.amount, providerRef: parsed.data.providerRef, paidAt: date(parsed.data.paidAt), recordedById: actor.id, metadata: { verificationStatus: "PENDING" } } });
-    await tx.platformAudit.create({ data: { actorId: actor.id, action: "FINANCE_PAYMENT_RECORDED", entity: "PaymentTransaction", entityId: created.id, metadata: { invoiceId: invoice.id, provider: created.provider, amount: created.amount } } });
-    return created;
-  });
+  let payment;
+  try {
+    payment = await prisma.$transaction(async (tx) => {
+      const created = await tx.paymentTransaction.create({ data: { invoiceId: invoice.id, studentId: invoice.studentId, provider: parsed.data.provider, status: "INITIATED", amount: parsed.data.amount, providerRef: parsed.data.providerRef, paidAt: date(parsed.data.paidAt), recordedById: actor.id, metadata: { verificationStatus: "PENDING" } } });
+      await tx.platformAudit.create({ data: { actorId: actor.id, action: "FINANCE_PAYMENT_RECORDED", entity: "PaymentTransaction", entityId: created.id, metadata: { invoiceId: invoice.id, provider: created.provider, amount: created.amount } } });
+      return created;
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return failure("This provider payment reference is already recorded.");
+    }
+    throw error;
+  }
   revalidatePath("/finance/payments");
   return { ok: true, message: "Payment recorded for verification.", id: payment.id };
 }

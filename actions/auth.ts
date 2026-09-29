@@ -29,7 +29,7 @@ export async function registerAction(_: ActionState, formData: FormData): Promis
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check your details" };
   }
 
-  const limited = checkRateLimit(`register:${parsed.data.email}`, 3, 60_000);
+  const limited = await checkRateLimit(`register:${parsed.data.email}`, 3, 60_000);
   if (!limited.allowed) {
     return { ok: false, message: "Please wait a minute and try again." };
   }
@@ -80,7 +80,7 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check your details" };
   }
 
-  const limited = checkRateLimit(`login:${parsed.data.email}`, 5, 60_000);
+  const limited = await checkRateLimit(`login:${parsed.data.email}`, 5, 60_000);
   if (!limited.allowed) {
     return { ok: false, message: "Too many attempts. Please wait a minute." };
   }
@@ -106,7 +106,7 @@ export async function whatsappPinLoginAction(_: ActionState, formData: FormData)
   }
 
   const whatsapp = normalizeWhatsApp(parsed.data.whatsapp);
-  const limited = checkRateLimit(`whatsapp-login:${whatsapp}`, 5, 60_000);
+  const limited = await checkRateLimit(`whatsapp-login:${whatsapp}`, 5, 60_000);
   if (!limited.allowed) {
     return { ok: false, message: "Too many attempts. Please wait a minute." };
   }
@@ -162,7 +162,7 @@ export async function forgotPasswordAction(_: ActionState, formData: FormData): 
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Enter a valid email" };
   }
 
-  const limited = checkRateLimit(`forgot:${parsed.data.email}`, 3, 60_000);
+  const limited = await checkRateLimit(`forgot:${parsed.data.email}`, 3, 60_000);
   if (!limited.allowed) {
     return { ok: false, message: "Please wait a minute and try again." };
   }

@@ -33,7 +33,8 @@ export const publicEnquirySchema = publicApplicationSchema.pick({
 });
 
 export const applicationStatusSchema = z.object({
-  whatsapp: z.string().trim().min(7, "Enter the WhatsApp number used in your application.").max(40)
+  whatsapp: z.string().trim().min(7, "Enter the WhatsApp number used in your application.").max(40),
+  applicationReference: z.string().trim().min(24, "Enter the application reference provided after submission.").max(120).regex(/^[A-Za-z0-9_-]+$/, "Enter a valid application reference.")
 });
 
 export type PublicApplicationInput = z.infer<typeof publicApplicationSchema>;

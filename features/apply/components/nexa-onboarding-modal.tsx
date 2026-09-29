@@ -245,7 +245,7 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
                   <p className="mb-5 rounded-lg border border-brand-red/15 bg-brand-red/8 p-4 text-sm font-bold text-brand-red">{clientMessage || applicationState.message || enquiryState.message}</p>
                 ) : null}
 
-                {applicationState.ok ? <SubmittedStep programSlug={selectedProgramSlug} applicationId={applicationState.applicationId} message={applicationState.message} /> : null}
+                {applicationState.ok ? <SubmittedStep programSlug={selectedProgramSlug} applicationReference={applicationState.applicationReference} message={applicationState.message} /> : null}
                 {!applicationState.ok && currentState === "name" ? <NameStep value={values.name} onChange={(value) => updateValue("name", value)} /> : null}
                 {!applicationState.ok && currentState === "explore" ? <IntentStep selectedIntent={values.intent} onSelect={selectIntent} /> : null}
                 {!applicationState.ok && currentState === "career" ? <CareerOpportunitiesStep /> : null}

@@ -77,7 +77,7 @@ export async function adminLoginAction(_: State, formData: FormData): Promise<St
   if (!parsed.success) return { ok: false, message: "Mobile number or PIN is incorrect." };
 
   const mobile = normalizeMobile(parsed.data.mobile);
-  const limited = checkRateLimit(`admin-login:${mobile}`, 5, 15 * 60_000);
+  const limited = await checkRateLimit(`admin-login:${mobile}`, 5, 15 * 60_000);
   if (!limited.allowed) return { ok: false, message: "Too many attempts. Please wait and try again." };
 
   const bootstrap = initialAdminConfig();

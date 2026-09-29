@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/security/rate-limit";
+import { createToken, hashToken } from "@/lib/security/token";
 import { ensureDefaultPipeline } from "@/server/admissions/queries";
 import { getLaunchApplicationProgram } from "@/features/apply/programs";
 import { applicationStatusSchema, publicApplicationSchema, publicEnquirySchema } from "@/features/apply/schemas";
@@ -12,7 +13,7 @@ import { applicationStatusSchema, publicApplicationSchema, publicEnquirySchema }
 export type PublicApplicationState = {
   ok: boolean;
   message: string;
-  applicationId?: string;
+  applicationReference?: string;
   leadId?: string;
 };
 
@@ -74,7 +75,7 @@ async function checkPublicSubmissionLimit(kind: "application" | "enquiry" | "sta
   const headerStore = await headers();
   const ip = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || headerStore.get("x-real-ip") || "unknown";
   const normalizedContact = contact ? normalizePhone(contact) : "anonymous";
-  const limited = checkRateLimit(`public:${kind}:${ip}:${normalizedContact}`, kind === "status" ? 12 : 4, 15 * 60_000);
+  const limited = await checkRateLimit(`public:${kind}:${ip}:${normalizedContact}`, kind === "status" ? 12 : 4, 15 * 60_000);
 
   if (!limited.allowed) {
     return {
@@ -326,7 +327,9 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
     const applicationStage = stages.find((stage) => stage.slug === "application-submitted") ?? stages[0];
     const { selectedProgram, websiteSource, program, referrer } = await ensureWebsiteProgramAndReferrer(parsed.data.programSlug, parsed.data.referralId);
 
-    const application = await prisma.$transaction(async (tx) => {
+    const applicationReference = createToken(24);
+    const publicLookupTokenHash = hashToken(applicationReference);
+    await prisma.$transaction(async (tx) => {
       const lead = await createOrUpdatePublicLead(tx, {
         name: parsed.data.name,
         email: parsed.data.email,
@@ -359,6 +362,7 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
         return tx.admissionApplication.update({
           where: { id: existingApplication.id },
           data: {
+            publicLookupTokenHash,
             status: existingApplication.status === "DRAFT" ? "SUBMITTED" : existingApplication.status,
             submittedAt: existingApplication.submittedAt ?? new Date(),
             data: {
@@ -380,6 +384,7 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
         data: {
           leadId: lead.id,
           programId: program.id,
+          publicLookupTokenHash,
           status: "SUBMITTED",
           submittedAt: new Date(),
           data: {
@@ -402,7 +407,7 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
 
     return {
       ok: true,
-      applicationId: application.id,
+      applicationReference,
       message: "Your application has been sent to the AIRA Skill City Admissions Team."
     };
   } catch (error) {
@@ -412,14 +417,16 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
 }
 
 export async function checkApplicationStatusAction(_: ApplicationStatusState, formData: FormData): Promise<ApplicationStatusState> {
+  const verificationFailed: ApplicationStatusState = {
+    ok: false,
+    title: "Unable to verify",
+    status: "Verification required",
+    message: "We could not verify those application details.",
+    nextStep: "Check the WhatsApp number and application reference provided when you applied."
+  };
   const parsed = applicationStatusSchema.safeParse(Object.fromEntries(formData));
 
-  if (!parsed.success) {
-    return {
-      ok: false,
-      message: parsed.error.issues[0]?.message ?? "Enter your WhatsApp number."
-    };
-  }
+  if (!parsed.success) return verificationFailed;
 
   const limited = await checkPublicSubmissionLimit("status", parsed.data.whatsapp);
   if (limited) {
@@ -435,6 +442,7 @@ export async function checkApplicationStatusAction(_: ApplicationStatusState, fo
   const normalized = normalizePhone(raw);
   const application = await prisma.admissionApplication.findFirst({
     where: {
+      publicLookupTokenHash: hashToken(parsed.data.applicationReference),
       lead: {
         OR: [
           { whatsapp: raw },
@@ -452,14 +460,7 @@ export async function checkApplicationStatusAction(_: ApplicationStatusState, fo
     }
   });
 
-  if (!application) {
-    return {
-      ok: false,
-      title: "Application not found",
-      message: "We could not find an application for this WhatsApp number.",
-      nextStep: "Check the number you used during application or submit a fresh application."
-    };
-  }
+  if (!application) return verificationFailed;
 
   const credential = application.studentLoginCredentials[0];
   if (application.status === "REJECTED") {

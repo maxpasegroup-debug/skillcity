@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ currentUser: vi.fn(), intelligence: vi.fn(), audit: vi.fn() }));
+const mocks = vi.hoisted(() => ({ currentUser: vi.fn(), intelligence: vi.fn(), audit: vi.fn(), rateLimit: vi.fn() }));
 vi.mock("@/server/auth/session", () => ({ getCurrentUser: mocks.currentUser }));
 vi.mock("@/server/analytics/queries", () => ({ getExecutiveIntelligence: mocks.intelligence }));
 vi.mock("@/lib/prisma", () => ({ prisma: { platformAudit: { create: mocks.audit } } }));
+vi.mock("@/lib/security/rate-limit", () => ({ checkRateLimit: mocks.rateLimit }));
 
 import { GET } from "@/app/api/executive/analytics/export/route";
 
@@ -15,7 +16,7 @@ const base = {
 };
 
 describe("executive analytics export", () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.intelligence.mockResolvedValue(base); mocks.audit.mockResolvedValue({}); });
+  beforeEach(() => { vi.clearAllMocks(); mocks.intelligence.mockResolvedValue(base); mocks.audit.mockResolvedValue({}); mocks.rateLimit.mockResolvedValue({ allowed: true }); });
 
   it("blocks an unauthenticated export", async () => {
     mocks.currentUser.mockResolvedValue(null);
@@ -38,5 +39,13 @@ describe("executive analytics export", () => {
     expect(response.headers.get("content-type")).toContain("text/csv");
     expect(await response.text()).toContain("admissions.leads");
     expect(mocks.audit).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: "EXECUTIVE_ANALYTICS_EXPORTED", actorId: "director-1" }) }));
+  });
+
+  it("rate limits repeated expensive exports", async () => {
+    mocks.currentUser.mockResolvedValue({ id: "director-1", roles: [{ role: { name: "Director" } }] });
+    mocks.rateLimit.mockResolvedValue({ allowed: false });
+    const response = await GET(new Request("http://localhost/api/executive/analytics/export"));
+    expect(response.status).toBe(429);
+    expect(mocks.intelligence).not.toHaveBeenCalled();
   });
 });

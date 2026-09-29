@@ -2,6 +2,10 @@
 
 This runbook is manual by design. Railway application startup does not execute Prisma migrations. Never use `prisma migrate reset` or `prisma db push` against production.
 
+## Release Order Warning
+
+The remediated production rate limiter intentionally fails closed and requires `RateLimitBucket`. During a controlled maintenance window, an authorized operator must deploy migration `20260929000100_remediate_production_blockers` from the reviewed commit before routing login, password-reset, public-form/status, AI, or export traffic to the remediated application. Do not leave the new application serving traffic against the old schema. This is a separate operator action, never an application startup command.
+
 ## 1. Backup
 
 1. In Railway/PostgreSQL, identify the exact production service and database name.
@@ -19,6 +23,7 @@ Expected: a dated, restorable backup exists. Failure condition: no verified back
 3. Confirm Node satisfies `.node-version` and install exactly with `npm ci`.
 4. Confirm the deployed commit matches the reviewed commit.
 5. Run `npx prisma validate` and `npx prisma generate`.
+6. Run `npm run audit:payment-references`. Stop if `duplicateGroups` is not zero; references are redacted and reconciliation is manual.
 
 Expected: correct production target and valid schema. Failure condition: unknown target, credential error, schema error or commit mismatch. Stop.
 
@@ -30,7 +35,7 @@ Run only:
 npx prisma migrate status
 ```
 
-Save migration names and status without connection details. Compare against all 27 directories under `prisma/migrations`. Do not infer “pending” from repository files alone.
+Save migration names and status without connection details. Compare against all 28 directories under `prisma/migrations`. Do not infer pending state from repository files alone.
 
 Expected: no divergent, failed or edited migration. Failure condition: failed migration, drift, unknown baseline or production-only migration. Stop and investigate.
 
@@ -39,6 +44,8 @@ Expected: no divergent, failed or edited migration. Failure condition: failed mi
 Review pending SQL in timestamp order. Confirm that expected tables, columns, enums, indexes, data seeds and foreign keys match the release. The current static audit found no table/column drops, truncation or row deletion. Migration `20260831000300_harden_career_rm_integrity` intentionally drops one legacy unique index.
 
 Check table size and lock implications before large index/constraint operations. Confirm free disk space and expected duration.
+
+Migration `20260929000100_remediate_production_blockers` is additive: it adds the nullable admission lookup hash, shared rate-limit table, and compound payment-reference unique index. Its read-only guard raises an exception before the unique index if duplicate non-null `(provider, providerRef)` groups exist. It does not repair or delete those rows. Existing applications receive no guessed lookup reference and remain unavailable to public lookup until an authorized reference-reissue process exists.
 
 ## 5. Execute
 
@@ -63,6 +70,7 @@ npm run audit:skill-studio
 npm run audit:career-hub
 npm run audit:core-operations
 npm run audit:communications
+npm run audit:payment-references
 ```
 
 3. Record counts and classify gaps using each phase normalization document. Never invent missing assignments, designations, owners or results.
@@ -70,7 +78,7 @@ npm run audit:communications
 
 ## 7. Smoke Test
 
-Start the reviewed application build. Test login/logout, one scoped read per representative role, CRM lead/application, an existing enrollment, employee directory, finance read-only view, communications ledger, AI configuration state, analytics export and PWA public assets. Use approved test records only.
+Start the reviewed application build. Test login/logout, one scoped read per representative role, CRM lead/application plus reference lookup, an existing enrollment, employee directory, finance duplicate rejection, private document delivery, shared rate limiting, communications ledger, AI configuration state, analytics export and PWA public assets. Use approved test records only.
 
 Expected: existing data is readable and cross-scope attempts are denied. Failure condition: missing tables/columns, 500 responses, wrong counts, scope leakage or failed login. Stop writes and assess restore.
 
@@ -93,3 +101,5 @@ Prisma migrations do not provide automatic down migrations. Do not hand-edit `_p
 - Audit script summaries without PII
 - Smoke-test results and operator
 - Any lock duration, error or recovery action
+
+The complete provider-dependent recovery procedure is in `docs/production/PRODUCTION_BACKUP_RESTORE_RUNBOOK.md`. No migration or restore was executed during repository remediation.

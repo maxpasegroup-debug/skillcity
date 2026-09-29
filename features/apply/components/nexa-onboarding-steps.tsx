@@ -393,7 +393,7 @@ export function ReviewStep({ values, selectedProgramSlug }: { values: FormValues
   );
 }
 
-export function SubmittedStep({ programSlug, applicationId, message }: { programSlug: LaunchApplicationProgramSlug; applicationId?: string; message: string }) {
+export function SubmittedStep({ programSlug, applicationReference, message }: { programSlug: LaunchApplicationProgramSlug; applicationReference?: string; message: string }) {
   return (
     <section className="grid min-h-[520px] place-items-center p-6 text-center sm:p-8">
       <div className="max-w-xl">
@@ -407,7 +407,8 @@ export function SubmittedStep({ programSlug, applicationId, message }: { program
           <SummaryRow label="Selected program" value={getProgramDisplay(programSlug).label} />
           <SummaryRow label="Status" value="Application Received" />
           <SummaryRow label="Next step" value="Admissions Team will contact you." />
-          {applicationId ? <SummaryRow label="Application ID" value={applicationId} /> : null}
+          {applicationReference ? <SummaryRow label="Application reference" value={applicationReference} /> : null}
+          {applicationReference ? <p className="text-sm font-semibold text-brand-muted">Keep this private reference. It is required with your WhatsApp number to check application status.</p> : null}
         </div>
         <Button asChild className="mt-7 rounded-full" size="lg">
           <a href={applicationWhatsAppUrl(programSlug)} target="_blank" rel="noreferrer">

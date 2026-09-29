@@ -3818,16 +3818,17 @@ model CounsellingSession {
 }
 
 model AdmissionApplication {
-  id          String            @id @default(uuid()) @db.Uuid
-  leadId      String            @db.Uuid
-  studentId   String?           @db.Uuid
-  programId   String            @db.Uuid
-  status      ApplicationStatus @default(DRAFT)
-  data        Json?
-  submittedAt DateTime?
-  reviewedAt  DateTime?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id                    String            @id @default(uuid()) @db.Uuid
+  leadId                String            @db.Uuid
+  studentId             String?           @db.Uuid
+  programId             String            @db.Uuid
+  publicLookupTokenHash String?           @unique @db.VarChar(64)
+  status                ApplicationStatus @default(DRAFT)
+  data                  Json?
+  submittedAt           DateTime?
+  reviewedAt            DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
 
   lead                    Lead                     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   student                 User?                    @relation(fields: [studentId], references: [id], onDelete: SetNull)
@@ -4120,8 +4121,19 @@ model PaymentTransaction {
   @@index([invoiceId])
   @@index([studentId])
   @@index([provider, status])
+  @@unique([provider, providerRef], map: "PaymentTransaction_provider_providerRef_key")
   @@index([recordedById])
   @@index([verifiedById])
+}
+
+model RateLimitBucket {
+  keyHash         String   @id @db.VarChar(64)
+  count           Int
+  windowStartedAt DateTime
+  expiresAt       DateTime
+  updatedAt       DateTime @updatedAt
+
+  @@index([expiresAt])
 }
 
 model CommissionRecord {

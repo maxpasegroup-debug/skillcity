@@ -25,6 +25,7 @@
     "audit:skill-studio": "tsx scripts/audit-skill-studio-data.ts",
     "audit:career-hub": "tsx scripts/audit-career-hub-data.ts",
     "audit:core-operations": "tsx scripts/audit-core-operations-data.ts",
+    "audit:payment-references": "tsx scripts/audit-payment-references.ts",
     "audit:communications": "tsx scripts/audit-communications-automation-data.ts",
     "launch:check": "tsx scripts/launch-readiness.ts"
   },

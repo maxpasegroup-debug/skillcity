@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const limited = checkRateLimit(`tara:${user.id}`, 12, 60_000);
+  const limited = await checkRateLimit(`tara:${user.id}`, 12, 60_000);
   if (!limited.allowed) {
     return NextResponse.json({ error: "Tara is receiving too many requests. Please wait a minute." }, { status: 429 });
   }

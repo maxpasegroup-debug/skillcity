@@ -1,15 +1,15 @@
 # Executive Summary
 
-**Final recommendation: NOT READY - REQUIRED FIXES REMAIN.**
+**Final recommendation: NOT READY — REQUIRED FIXES REMAIN.**
 
 The Phase 0-12 codebase is a coherent modular monolith with one identity, organization, permission, database, communications, AI and analytics architecture. Static validation is strong and a critical Next.js production vulnerability found during this audit was patched from `16.2.11` to `16.3.7`. Automatic production migrations were removed from Railway startup.
 
-Launch cannot yet be approved because production database state, data normalization, backup/restore, authenticated browser/provider/device behavior and private storage have no evidence. The public application-status lookup also discloses application existence, program and state using only a phone/WhatsApp number. These are release gates, not documentation niceties.
+Launch cannot yet be approved because production database state, data normalization, backup/restore, authenticated browser/provider/device behavior and private storage-provider behavior have no evidence. The former phone-only application lookup is remediated in code but depends on an unapplied migration and end-to-end validation. These are release gates, not documentation niceties.
 
 # Current System
 
 - Next.js App Router `16.3.7`, React `19.2.8`, TypeScript `6.0.3`
-- Prisma/Client `6.19.3`, PostgreSQL, 146 models, 117 enums, 27 migrations
+- Prisma/Client `6.19.3`, PostgreSQL, 147 models, 117 enums, 28 migrations
 - Node requirement `>=20.9.0`; `.node-version` pins `20.11.1`; local audit used Node `22.14.0` and npm `10.9.2`
 - npm lockfile v3; Railway Nixpacks build with `npm run build`, start with `npm run start`
 - GitHub Actions uses Node pin, `npm ci`, Prisma validation/generation, lint, typecheck, tests and build
@@ -30,15 +30,15 @@ This was an application security review, not a penetration test.
 
 - No unsafe raw SQL, command execution, dynamic code evaluation or `dangerouslySetInnerHTML` was found in reviewed paths.
 - Sessions use random opaque tokens, hashed storage, HTTP-only/SameSite cookies, production secure flag, expiry and revocation. Passwords/PINs use bcrypt cost 12.
-- Rate limiting exists but is process-local. CSRF relies on SameSite cookies and framework Server Action origin handling; no explicit anti-CSRF token is present.
+- Production rate limiting now uses a provider-neutral PostgreSQL adapter with fail-closed behavior; deployment and multi-replica validation remain outstanding. CSRF relies on SameSite cookies and framework Server Action origin handling; no explicit anti-CSRF token is present.
 - Basic headers exist; CSP is absent and HSTS must be verified at the HTTPS edge.
-- Public status lookup is enumerable with a phone number and returns program/status information.
+- Public status lookup now requires the submitted contact plus a high-entropy reference whose hash is stored; failed verification responses are uniform. The migration and end-to-end flow remain unverified.
 - Error paths generally sanitize user messages, but centralized production error capture/redaction is absent.
 - The production Next RCE advisories identified by `npm audit` were removed by upgrading to `16.3.7`.
 
 # Database Findings
 
-The schema has useful uniqueness/index coverage and extensive transactions. Domain events, communications and AI proposals have idempotency keys. Payment duplicate detection lacks a database uniqueness constraint on provider/reference, leaving a concurrency race. The schema contains 140 cascade relations; direct destructive administration could erase historical records, although current workflows favor archive/status/soft deletion.
+The schema has useful uniqueness/index coverage and extensive transactions. Domain events, communications and AI proposals have idempotency keys. Payment provider/reference uniqueness is now defined by an additive compound unique index with a duplicate-data preflight, but it has not been applied to production. The schema contains 140 cascade relations; direct destructive administration could erase historical records, although current workflows favor archive/status/soft deletion.
 
 No live connection, row counts, query plans, drift check or restore test was available. Prisma validation therefore failed only because `DATABASE_URL` was absent.
 
@@ -73,6 +73,7 @@ No live connection, row counts, query plans, drift check or restore test was ava
 | `20260928000500_add_core_documents_compliance_finance` | Phase 8 | Additive, large |
 | `20260928000600_add_communications_automation_foundation` | Phase 9 | Additive, large |
 | `20260928000700_add_ai_intelligence_foundation` | Phase 10 | Additive |
+| `20260929000100_remediate_production_blockers` | Production blocker remediation | Additive; aborts payment index creation if duplicates exist |
 
 Execution state is **unknown**, not “pending” or “applied.” Use `docs/production/PRODUCTION_DATABASE_MIGRATION_RUNBOOK.md`. Railway no longer runs migrations during application startup.
 
@@ -133,7 +134,7 @@ CI is comprehensive for static/unit/build validation. Railway has no repository-
 
 # Testing Findings
 
-Baseline before audit: **267/267 across 42 files**. The suite materially covers schemas, policies, scope composition and mocked server actions/services, but does not prove PostgreSQL behavior, migration application, real cookies, real providers, authenticated browser journeys or physical devices. Coverage output is configured for only a small security/admissions/WhatsApp subset and is not whole-application coverage.
+Baseline before remediation: **267/267 across 42 files**. After remediation, **282/282 across 46 files** pass. The suite materially covers schemas, policies, scope composition and mocked server actions/services, but does not prove PostgreSQL behavior, migration application, real cookies, real providers, authenticated browser journeys or physical devices. Coverage output is configured for only a small security/admissions/WhatsApp subset and is not whole-application coverage.
 
 Required before launch: database/migration/normalization tests, authenticated role/scope smoke tests, provider sandbox checks and production smoke. Recommended: Playwright, webhook replay, accessibility and load tests. Post-launch: visual regression and broader measured coverage.
 
@@ -141,7 +142,7 @@ Audit validation after changes:
 
 | Check | Result |
 |---|---|
-| Vitest | 267/267 passed; 42/42 files |
+| Vitest | 282/282 passed; 46/46 files |
 | ESLint | Exit 0; no errors; one existing internal-navigation warning |
 | TypeScript | Passed with `tsc --noEmit` |
 | Prisma Client | Generated successfully, version 6.19.3 |
@@ -188,14 +189,14 @@ See `docs/production/AIRA_PRODUCTION_LAUNCH_CHECKLIST.md`. Critical items are re
 
 1. Production database migration/drift/data state is unknown and Prisma DB validation is blocked by absent `DATABASE_URL`.
 2. No evidence of a PostgreSQL backup restore test, recovery ownership, RPO or RTO exists.
-3. Phone-only public application-status lookup permits privacy-sensitive enumeration.
+3. Application lookup remediation is not active until the additive migration is deployed and the reference flow is verified.
 4. Production authenticated browser, provider and role/scope validation has not occurred.
 
 # High Findings
 
-1. Process-local rate limiting is not effective across replicas/restarts.
-2. Payment provider-reference duplicate protection is not database-enforced.
-3. Private document storage/download, scanning and secure deletion are absent.
+1. Shared PostgreSQL rate limiting is code-complete but not deployed or validated across replicas.
+2. Payment provider-reference uniqueness is code-complete but the live duplicate audit and production migration are pending.
+3. Authorized private document delivery is code-complete, but the provider/gateway, scanning, limits, and legacy URL policy are absent.
 4. Provider webhooks, reconciliation and monitored automation worker are absent.
 5. Production error monitoring, health checks and alerting are not evidenced.
 6. Runtime development fallbacks can hide missing production URL/configuration.
@@ -226,17 +227,16 @@ Payment gateway/refunds/accounting, private object storage, provider-specific we
 
 # Files Changed And Git Status
 
-- Security patch: `package.json`, `package-lock.json`, and Next-generated `next-env.d.ts`
-- Deployment safety: `railway.json`, `scripts/launch-readiness.ts`
-- Environment documentation: `.env.example`
-- Canonical architecture: `docs/architecture/AIRA_FINAL_ARCHITECTURE.md`
-- Production operations: three new files under `docs/production/`
-- Final audit: `AIRA_FINAL_PRODUCTION_READINESS_REPORT.md`
+The original audit changed the dependency/security baseline, Railway startup, launch checks, and production documentation. The blocker remediation additionally changes the public lookup, shared rate limiter, private document delivery boundary, payment uniqueness, one additive migration, focused tests, and operating runbooks. The exact current worktree is recorded by `git status --short` at completion. No production migration or database command was executed.
 
-No feature model, business action, Prisma schema, migration, or test was changed. The worktree is intentionally not clean because these reviewed audit/security changes are uncommitted. No production migration or database command was executed.
+# Production Blocker Remediation Addendum - 2026-09-29
+
+The repository now contains code-level remediation for opaque application lookup references, a provider-neutral PostgreSQL-backed rate limiter, an authorized short-lived private document delivery boundary, and provider-scoped payment-reference uniqueness. It also contains a concrete backup/restore runbook and payment duplicate audit. Focused test coverage was added without removing prior tests.
+
+This does not close the production gates. `DATABASE_URL` remained unavailable; no live audit, migration, backup, restore, provider, browser, device, or multi-replica test occurred. The private storage gateway remains unconfigured and legacy `StudentDocument.fileUrl` records require separate review. See `AIRA_PRODUCTION_BLOCKER_REMEDIATION_REPORT.md` for exact evidence and status.
 
 # Final Recommendation
 
-**NOT READY - REQUIRED FIXES REMAIN**
+**NOT READY — REQUIRED FIXES REMAIN**
 
 Code architecture and static validation are strong enough to proceed to controlled production-readiness work, not broad operational launch. Resolve the Critical findings, complete manual production validation, and either remediate or formally constrain High risks. Do not start Phase 13 until those gates have evidence.
