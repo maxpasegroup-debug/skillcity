@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { ArrowLeft, Users } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
+import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
+
+const navigation = [
+  { href: "/employees", label: "Employees" },
+  { href: "/dashboard", label: "Dashboard" }
+];
 
 export function EmployeeShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="skillcity-shell-bg min-h-screen text-brand-dark">
-      <header className="border-b border-black/8 bg-white/90 px-5 py-4 backdrop-blur sm:px-8">
+      <header className="hidden border-b border-black/8 bg-white/90 px-5 py-4 backdrop-blur sm:px-8 lg:block">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
           <Link href="/dashboard"><Logo /></Link>
           <nav className="flex items-center gap-2">
@@ -18,7 +24,8 @@ export function EmployeeShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="mx-auto min-h-screen max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">{children}</main>
+      <MobileAppNavigation homeHref="/employees" navigation={navigation} label="Employee workspace" hideAt="lg" />
+      <main className="skillcity-shell-content mx-auto min-h-screen max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">{children}</main>
     </div>
   );
 }

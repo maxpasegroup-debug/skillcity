@@ -3,6 +3,7 @@ import type React from "react";
 import { Award, BookOpen, BriefcaseBusiness, CalendarDays, CreditCard, Home, ListChecks, MessageCircle, Settings, Sparkles, Users, Workflow } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
+import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -33,31 +34,11 @@ export function StudentShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       </aside>
-      <header className="skillcity-mobile-header sticky top-0 z-30 px-5 py-4 lg:hidden">
-        <div className="flex items-center justify-between">
-          <Link href="/dashboard" aria-label="Skill City dashboard">
-            <Logo />
-          </Link>
-          <Button asChild variant="secondary" className="px-4">
-            <Link href="/tara">Ask Tara</Link>
-          </Button>
-        </div>
-        <nav className="mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Student mobile navigation">
-          {navigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="shrink-0 rounded-lg border border-black/10 px-4 py-2 text-sm font-bold text-brand-muted"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </header>
+      <MobileAppNavigation homeHref="/dashboard" navigation={navigation.map(({ href, label }) => ({ href, label }))} label="Student workspace" hideAt="lg" />
       <main className="lg:pl-72">
         <div className="skillcity-shell-content mx-auto min-h-screen w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">{children}</div>
       </main>
-      <Button asChild className="fixed bottom-5 right-5 z-50 shadow-soft" size="lg">
+      <Button asChild className="fixed bottom-5 right-5 z-50 hidden shadow-soft lg:inline-flex" size="lg">
         <Link href="/tara">
           <MessageCircle className="h-5 w-5" />
           Ask Tara

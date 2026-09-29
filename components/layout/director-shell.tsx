@@ -20,6 +20,7 @@ import {
   Workflow
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
+import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 
 const navigation = [
   { href: "/director/dashboard", label: "Dashboard", icon: Gauge },
@@ -63,22 +64,7 @@ export function DirectorShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       </aside>
-      <header className="skillcity-mobile-header sticky top-0 z-30 px-5 py-4 xl:hidden">
-        <Link href="/director/dashboard" aria-label="Skill City Director dashboard">
-          <Logo />
-        </Link>
-        <nav className="mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Director mobile navigation">
-          {navigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="shrink-0 rounded-lg border border-black/10 px-4 py-2 text-sm font-bold text-brand-muted"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </header>
+      <MobileAppNavigation homeHref="/director/dashboard" navigation={navigation.map(({ href, label }) => ({ href, label }))} label="Director workspace" />
       <main className="xl:pl-80">
         <div className="skillcity-shell-content mx-auto min-h-screen w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">{children}</div>
       </main>

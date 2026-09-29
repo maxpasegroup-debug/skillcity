@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   applicationName: siteConfig.name,
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "AIRA Skill City" },
+  icons: { icon: "/icon.svg", apple: "/pwa/icon-192.png" },
   openGraph: {
     title: siteConfig.name,
     description: siteConfig.description,
@@ -34,6 +37,13 @@ export const metadata: Metadata = {
     index: true,
     follow: true
   }
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#EB001B"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
