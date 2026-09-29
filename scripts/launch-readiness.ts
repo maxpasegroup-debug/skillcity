@@ -30,14 +30,17 @@ const migrationsPath = file("prisma/migrations");
 const migrationNames = existsSync(migrationsPath) ? readdirSync(migrationsPath).filter((name) => name !== "migration_lock.toml") : [];
 const envExample = readFileSync(file(".env.example"), "utf8");
 
-const requiredEnv = [
+const documentedEnv = [
   "DATABASE_URL",
   "AUTH_SECRET",
   "RESEND_API_KEY",
   "REDIS_URL",
   "NEXT_PUBLIC_APP_URL",
   "OPENAI_API_KEY",
-  "OPENAI_MODEL"
+  "OPENAI_MODEL",
+  "OPENAI_RESPONSES_URL",
+  "AI_PROVIDER_TIMEOUT_MS",
+  "ANALYTICS_TIME_ZONE"
 ];
 
 const checks: Check[] = [
@@ -52,9 +55,9 @@ const checks: Check[] = [
     detail: "Railway builds through the production Next.js build."
   },
   {
-    name: "Railway migration startup",
-    ok: JSON.stringify(railway).includes("npm run prisma:deploy"),
-    detail: "Railway runs Prisma migrations before starting Next.js."
+    name: "Railway migration gate",
+    ok: !JSON.stringify(railway).includes("npm run prisma:deploy"),
+    detail: "Railway starts Next.js without automatically applying production migrations."
   },
   {
     name: "Launch programs",
@@ -71,8 +74,8 @@ const checks: Check[] = [
   },
   {
     name: "Required env example",
-    ok: requiredEnv.every((name) => envExample.includes(name)),
-    detail: "All required Railway variables are documented in .env.example."
+    ok: documentedEnv.every((name) => envExample.includes(name)),
+    detail: "All runtime environment variables are documented in .env.example."
   },
   {
     name: "Verification scripts",
