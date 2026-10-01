@@ -188,6 +188,23 @@ enum LabsProductAssignmentStatus {
   INACTIVE
 }
 
+enum LabsCommercialDocumentType {
+  QUOTATION
+  INVOICE
+}
+
+enum LabsCommercialService {
+  AI_POWERED_SIGNATURE_OS
+  TALKIN_LABS
+  CUSTOM
+}
+
+enum LabsCommercialDocumentStatus {
+  DRAFT
+  ISSUED
+  VOID
+}
+
 enum CalendarEventType {
   LIVE_CLASS
   OFFLINE_WORKSHOP
@@ -1027,6 +1044,7 @@ model User {
   advisorAssignmentsCreated     AcademicAdvisorAssignment[]      @relation("AcademicAdvisorAssignmentCreator")
   labsProductsCreated           LabsProduct[]                    @relation("LabsProductCreator")
   labsAssignmentsCreated        LabsProductAssignment[]          @relation("LabsProductAssignmentCreator")
+  labsCommercialDocuments       LabsCommercialDocument[]         @relation("LabsCommercialDocumentCreator")
   careerTalentProfile           CareerTalentProfile?
   careerOpportunityApplications CareerOpportunityApplication[]   @relation("CareerOpportunityApplicant")
   careerApplicationReviews      CareerOpportunityApplication[]   @relation("CareerOpportunityReviewer")
@@ -2606,6 +2624,42 @@ model LabsProductAssignment {
 
   @@index([productId, role, status, startsAt, endsAt])
   @@index([employeeId, status, startsAt, endsAt])
+  @@index([createdById])
+}
+
+model LabsCommercialDocument {
+  id            String                       @id @default(uuid()) @db.Uuid
+  number        String                       @unique @db.VarChar(80)
+  type          LabsCommercialDocumentType
+  service       LabsCommercialService
+  status        LabsCommercialDocumentStatus @default(ISSUED)
+  issuerName    String                       @default("AIRASKILLCITY PRIVATE LIMITED") @db.VarChar(200)
+  issuerAddress String?                      @db.Text
+  issuerGstin   String?                      @db.VarChar(30)
+  customerName  String                       @db.VarChar(180)
+  customerPhone String?                      @db.VarChar(40)
+  customerEmail String?                      @db.VarChar(255)
+  customerAddress String?                    @db.Text
+  customerGstin String?                      @db.VarChar(30)
+  description   String                       @db.Text
+  quantity      Decimal                      @default(1) @db.Decimal(12, 2)
+  unitPrice     Decimal                      @db.Decimal(12, 2)
+  subtotal      Decimal                      @db.Decimal(12, 2)
+  gstApplicable Boolean                      @default(false)
+  gstRate       Decimal                      @default(18) @db.Decimal(5, 2)
+  gstAmount     Decimal                      @default(0) @db.Decimal(12, 2)
+  total         Decimal                      @db.Decimal(12, 2)
+  currency      String                       @default("INR") @db.VarChar(3)
+  validUntil    DateTime?
+  notes         String?                      @db.Text
+  createdById   String?                      @db.Uuid
+  createdAt     DateTime                     @default(now())
+  updatedAt     DateTime                     @updatedAt
+
+  createdBy User? @relation("LabsCommercialDocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([type, status, createdAt])
+  @@index([service, createdAt])
   @@index([createdById])
 }
 

@@ -36,6 +36,7 @@ export const platformRoles = [
   "Finance Executive",
   "Marketing & Communications Executive",
   "Product Contributor",
+  "AIRA Labs Member",
   "Career Operations",
   "Platform Administrator"
 ] as const;

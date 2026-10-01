@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Bell, Bot, BriefcaseBusiness, Building2, Gauge, GraduationCap, ShieldCheck, Users } from "lucide-react";
+import { ArrowRight, Bell, Bot, BriefcaseBusiness, Building2, FlaskConical, Gauge, GraduationCap, ShieldCheck, Users } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +26,7 @@ const workspaceIcons = {
   COMMUNICATIONS: Bell,
   FINANCE: Building2,
   TECHNOLOGY: Building2,
+  LABS_PORTAL: FlaskConical,
   CAREER: BriefcaseBusiness,
   PLATFORM: ShieldCheck,
   EMPLOYEE: Users,

@@ -54,6 +54,26 @@ export const studentActivationProfileSchema = z.object({
   guardianPhone: z.string().trim().max(40).optional()
 });
 
+export const labsSignupSchema = z.object({
+  name: z.string().trim().min(2, "Enter your full name").max(120),
+  mobile: z.string().trim().min(7, "Enter a valid mobile number").max(20),
+  pin: z.string().trim().regex(/^[0-9]{6}$/, "Choose a 6 digit PIN"),
+  accountPurpose: z.enum(["PROGRAM", "PRODUCT", "PARTNERSHIP", "GENERAL"])
+});
+
+export const mobilePinLoginSchema = z.object({
+  mobile: z.string().trim().min(7, "Enter a valid mobile number").max(20),
+  pin: z.string().trim().regex(/^[0-9]{6}$/, "Enter your 6 digit PIN")
+});
+
+export const mobilePinResetRequestSchema = z.object({ mobile: z.string().trim().min(7).max(20) });
+export const mobilePinResetSchema = z.object({
+  mobile: z.string().trim().min(7).max(20),
+  otp: z.string().trim().regex(/^[0-9]{6}$/, "Enter the 6 digit OTP"),
+  pin: z.string().trim().regex(/^[0-9]{6}$/, "Choose a 6 digit PIN"),
+  confirmPin: z.string().trim()
+}).refine((data) => data.pin === data.confirmPin, { path: ["confirmPin"], message: "PIN confirmation must match" });
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type WhatsAppPinLoginInput = z.infer<typeof whatsappPinLoginSchema>;

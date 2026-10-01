@@ -9,6 +9,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: vi.fn(async () => new Headers({ "x-forwarded-for": "203.0.113.10" })) }));
 vi.mock("@/lib/security/rate-limit", () => ({ checkRateLimit: mocks.checkRateLimit }));
 vi.mock("@/server/admissions/queries", () => ({ ensureDefaultPipeline: mocks.ensurePipeline }));
+vi.mock("@/server/auth/session", () => ({ getCurrentUser: vi.fn(async () => null) }));
 vi.mock("@/lib/prisma", () => ({ prisma: {
   admissionApplication: { findFirst: mocks.findFirst },
   leadSource: { upsert: vi.fn(async () => ({ id: "source-1" })) },

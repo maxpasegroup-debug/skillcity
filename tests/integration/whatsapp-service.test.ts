@@ -56,6 +56,14 @@ describe("WhatsApp service integration boundary", () => {
     });
     expect(result.id).toBe("log-123");
   });
+
+  it("never stores a mobile reset OTP in message logs", async () => {
+    mocks.send.mockResolvedValue({ status: "QUEUED", provider: "TEST" });
+    mocks.createLog.mockResolvedValue({ id: "log-otp" });
+    mocks.updateLog.mockImplementation(async ({ data }) => ({ id: "log-otp", ...data }));
+    await sendWhatsAppMessage({ to: "8089239823", template: "mobile_pin_reset_otp", message: "Your OTP is 123456", userId: id });
+    expect(mocks.createLog).toHaveBeenCalledWith({ data: expect.objectContaining({ message: "[REDACTED: authentication credential]" }) });
+  });
 });
 
 const id = "550e8400-e29b-41d4-a716-446655440000";

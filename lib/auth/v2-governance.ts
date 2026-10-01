@@ -21,6 +21,7 @@ export const V2_ROLE_DEFINITIONS = [
   { key: ROLE_KEYS.FINANCE_EXECUTIVE, name: "Finance Executive", level: "EXECUTION" },
   { key: ROLE_KEYS.MARKETING_COMMUNICATIONS, name: "Marketing & Communications Executive", level: "EXECUTION" },
   { key: ROLE_KEYS.PRODUCT_CONTRIBUTOR, name: "Product Contributor", level: "EXECUTION" },
+  { key: ROLE_KEYS.LABS_MEMBER, name: "AIRA Labs Member", level: "PARTICIPANT" },
   { key: ROLE_KEYS.CAREER_OPERATIONS, name: "Career Operations", level: "EXECUTION" },
   { key: ROLE_KEYS.PLATFORM_ADMIN, name: "Platform Administrator", level: "PLATFORM" },
   { key: ROLE_KEYS.STUDENT, name: "Student", level: "PARTICIPANT" }
@@ -71,6 +72,7 @@ export type V2WorkspaceKey =
   | "COMMUNICATIONS"
   | "FINANCE"
   | "TECHNOLOGY"
+  | "LABS_PORTAL"
   | "CAREER"
   | "PLATFORM"
   | "EMPLOYEE"
@@ -100,6 +102,7 @@ export const V2_WORKSPACES: readonly WorkspaceDefinition[] = [
   { key: "COMMUNICATIONS", label: "Team Communications", href: "/communications/channels", roleKeys: [ROLE_KEYS.MARKETING_COMMUNICATIONS, ROLE_KEYS.COMMUNICATIONS_MANAGER], anyPermissions: [PERMISSIONS.INTERNAL_COMMUNICATIONS_READ] },
   { key: "FINANCE", label: "Finance & Compliance", href: "/finance", roleKeys: [ROLE_KEYS.FINANCE_COMPLIANCE_HEAD, ROLE_KEYS.FINANCE_EXECUTIVE, ROLE_KEYS.FINANCE_MANAGER], anyPermissions: [PERMISSIONS.FINANCE_READ] },
   { key: "TECHNOLOGY", label: "Technology & Products", href: "/labs", roleKeys: [ROLE_KEYS.TECHNOLOGY_PRODUCTS_HEAD, ROLE_KEYS.PRODUCT_CONTRIBUTOR], anyPermissions: [PERMISSIONS.LABS_READ] },
+  { key: "LABS_PORTAL", label: "AIRA Labs", href: "/aira-labs/dashboard", roleKeys: [ROLE_KEYS.LABS_MEMBER], anyPermissions: [PERMISSIONS.LABS_PORTAL_ACCESS] },
   { key: "CAREER", label: "Career & Partnerships", href: "/career/manage", roleKeys: [ROLE_KEYS.CAREER_PARTNERSHIPS_HEAD, ROLE_KEYS.CAREER_OPERATIONS, ROLE_KEYS.CAREER_HUB_MANAGER], anyPermissions: [PERMISSIONS.CAREER_APPLICATION_MANAGE] },
   { key: "PLATFORM", label: "Platform Administration", href: "/admin/dashboard", roleKeys: [ROLE_KEYS.PLATFORM_ADMIN, ROLE_KEYS.ADMIN], anyPermissions: [PERMISSIONS.ADMIN_ACCESS] },
   { key: "STUDENT", label: "Student", href: "/dashboard", roleKeys: [ROLE_KEYS.STUDENT], anyPermissions: [PERMISSIONS.STUDENT_ACCESS] },

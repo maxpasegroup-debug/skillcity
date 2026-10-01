@@ -33,15 +33,17 @@ type NexaOnboardingModalProps = {
   referralId?: string;
   onClose?: () => void;
   standalone?: boolean;
+  closeHref?: string;
+  accountIdentity?: { name: string; email: string };
 };
 
-export function NexaOnboardingModal({ open = true, initialProgramSlug, referralId, onClose, standalone = false }: NexaOnboardingModalProps) {
+export function NexaOnboardingModal({ open = true, initialProgramSlug, referralId, onClose, standalone = false, closeHref = "/", accountIdentity }: NexaOnboardingModalProps) {
   const initialProgram = launchApplicationPrograms.find((program) => program.slug === initialProgramSlug);
   const firstProgram = initialProgram ?? launchApplicationPrograms[0];
   const [selectedProgramSlug, setSelectedProgramSlug] = useState<LaunchApplicationProgramSlug>(firstProgram.slug);
   const [currentState, setCurrentState] = useState<OnboardingState>("name");
   const [programSelectedOnce, setProgramSelectedOnce] = useState(Boolean(initialProgram));
-  const [values, setValues] = useState<FormValues>(initialApplicationValues);
+  const [values, setValues] = useState<FormValues>({ ...initialApplicationValues, name: accountIdentity?.name ?? "", email: accountIdentity?.email ?? "" });
   const [clientMessage, setClientMessage] = useState("");
   const [applicationState, applicationAction, applicationPending] = useActionState(submitPublicApplicationAction, publicApplicationInitialState);
   const [enquiryState, enquiryAction, enquiryPending] = useActionState(submitPublicEnquiryAction, publicApplicationInitialState);
@@ -64,9 +66,9 @@ export function NexaOnboardingModal({ open = true, initialProgramSlug, referralI
     }
 
     if (standalone) {
-      window.location.href = "/";
+      window.location.href = closeHref;
     }
-  }, [onClose, standalone]);
+  }, [closeHref, onClose, standalone]);
 
   useEffect(() => {
     if (!open) return;

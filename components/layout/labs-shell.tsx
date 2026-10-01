@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type React from "react";
-import { Boxes, LayoutDashboard } from "lucide-react";
+import { Boxes, FileText, LayoutDashboard } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 
 const nav = [
   { href: "/labs", label: "Product Catalog", icon: Boxes },
+  { href: "/labs/commercial", label: "Quotes & Invoices", icon: FileText },
   { href: "/executive/dashboard", label: "Core Dashboard", icon: LayoutDashboard }
 ];
 

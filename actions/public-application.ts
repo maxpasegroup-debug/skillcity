@@ -9,6 +9,7 @@ import { createToken, hashToken } from "@/lib/security/token";
 import { ensureDefaultPipeline } from "@/server/admissions/queries";
 import { getLaunchApplicationProgram } from "@/features/apply/programs";
 import { applicationStatusSchema, publicApplicationSchema, publicEnquirySchema } from "@/features/apply/schemas";
+import { getCurrentUser } from "@/server/auth/session";
 
 export type PublicApplicationState = {
   ok: boolean;
@@ -264,27 +265,29 @@ export async function submitPublicEnquiryAction(_: PublicApplicationState, formD
       };
     }
 
-    const limited = await checkPublicSubmissionLimit("enquiry", parsed.data.whatsapp);
+    const account = await getCurrentUser();
+    const input = account ? { ...parsed.data, name: account.name, email: account.email } : parsed.data;
+    const limited = await checkPublicSubmissionLimit("enquiry", input.whatsapp);
     if (limited) return limited;
 
     const stages = await ensureDefaultPipeline();
     const enquiryStage = stages.find((stage) => stage.slug === "new-lead") ?? stages[0];
-    const { selectedProgram, websiteSource, program, referrer } = await ensureWebsiteProgramAndReferrer(parsed.data.programSlug, parsed.data.referralId);
+    const { selectedProgram, websiteSource, program, referrer } = await ensureWebsiteProgramAndReferrer(input.programSlug, input.referralId);
 
     const lead = await prisma.$transaction(async (tx) => {
       const savedLead = await createOrUpdatePublicLead(tx, {
-        name: parsed.data.name,
-        email: parsed.data.email,
-        phone: parsed.data.phone,
-        whatsapp: parsed.data.whatsapp,
-        city: parsed.data.city,
-        state: parsed.data.state,
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+        whatsapp: input.whatsapp,
+        city: input.city,
+        state: input.state,
         programId: program.id,
         sourceId: websiteSource.id,
         pipelineStageId: enquiryStage.id,
         ownerId: referrer?.id ?? null,
         priority: "MEDIUM",
-        notes: `Nexa enquiry for ${selectedProgram.title}. Intent: ${parsed.data.intent || parsed.data.goal}. Counselling pending.`,
+        notes: `Nexa enquiry for ${selectedProgram.title}. Intent: ${input.intent || input.goal}. Counselling pending.`,
         activityType: "PUBLIC_ENQUIRY_SUBMITTED",
         activitySummary: `Nexa enquiry captured for ${selectedProgram.title}. Counselling pending.`,
         preservePipelineStage: true
@@ -320,29 +323,31 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
       };
     }
 
-    const limited = await checkPublicSubmissionLimit("application", parsed.data.whatsapp);
+    const account = await getCurrentUser();
+    const input = account ? { ...parsed.data, name: account.name, email: account.email } : parsed.data;
+    const limited = await checkPublicSubmissionLimit("application", input.whatsapp);
     if (limited) return limited;
 
     const stages = await ensureDefaultPipeline();
     const applicationStage = stages.find((stage) => stage.slug === "application-submitted") ?? stages[0];
-    const { selectedProgram, websiteSource, program, referrer } = await ensureWebsiteProgramAndReferrer(parsed.data.programSlug, parsed.data.referralId);
+    const { selectedProgram, websiteSource, program, referrer } = await ensureWebsiteProgramAndReferrer(input.programSlug, input.referralId);
 
     const applicationReference = createToken(24);
     const publicLookupTokenHash = hashToken(applicationReference);
     await prisma.$transaction(async (tx) => {
       const lead = await createOrUpdatePublicLead(tx, {
-        name: parsed.data.name,
-        email: parsed.data.email,
-        phone: parsed.data.phone,
-        whatsapp: parsed.data.whatsapp,
-        city: parsed.data.city,
-        state: parsed.data.state,
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+        whatsapp: input.whatsapp,
+        city: input.city,
+        state: input.state,
         programId: program.id,
         sourceId: websiteSource.id,
         pipelineStageId: applicationStage.id,
         ownerId: referrer?.id ?? null,
         priority: selectedProgram.isFree ? "MEDIUM" : "HIGH",
-        notes: `Public application for ${selectedProgram.title}. Intent: ${parsed.data.intent || parsed.data.goal}. Counselling: ${parsed.data.counselled ?? "YES"}.`,
+        notes: `Public application for ${selectedProgram.title}. Intent: ${input.intent || input.goal}. Counselling: ${input.counselled ?? "YES"}.`,
         activityType: "PUBLIC_APPLICATION_SUBMITTED",
         activitySummary: `Application submitted for ${selectedProgram.title}.`
       });
@@ -359,19 +364,23 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
       });
 
       if (existingApplication) {
+        if (account && existingApplication.studentId && existingApplication.studentId !== account.id) {
+          throw new Error("Application identity conflict");
+        }
         return tx.admissionApplication.update({
           where: { id: existingApplication.id },
           data: {
             publicLookupTokenHash,
+            studentId: account?.id ?? existingApplication.studentId,
             status: existingApplication.status === "DRAFT" ? "SUBMITTED" : existingApplication.status,
             submittedAt: existingApplication.submittedAt ?? new Date(),
             data: {
               programSlug: selectedProgram.slug,
               feeType: selectedProgram.isFree ? "FREE" : "PAID",
-              educationOrWork: parsed.data.educationOrWork || "Counselling completed",
-              goal: parsed.data.goal,
-              preferredCounsellingTime: parsed.data.preferredCounsellingTime || "Admissions follow-up",
-              intent: parsed.data.intent || parsed.data.goal,
+              educationOrWork: input.educationOrWork || "Counselling completed",
+              goal: input.goal,
+              preferredCounsellingTime: input.preferredCounsellingTime || "Admissions follow-up",
+              intent: input.intent || input.goal,
               counsellingStatus: "COUNSELLING_COMPLETED",
               source: "NEXA_ONBOARDING",
               duplicatePrevented: true
@@ -383,6 +392,7 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
       return tx.admissionApplication.create({
         data: {
           leadId: lead.id,
+          studentId: account?.id,
           programId: program.id,
           publicLookupTokenHash,
           status: "SUBMITTED",
@@ -390,10 +400,10 @@ export async function submitPublicApplicationAction(_: PublicApplicationState, f
           data: {
             programSlug: selectedProgram.slug,
             feeType: selectedProgram.isFree ? "FREE" : "PAID",
-            educationOrWork: parsed.data.educationOrWork || "Counselling completed",
-            goal: parsed.data.goal,
-            preferredCounsellingTime: parsed.data.preferredCounsellingTime || "Admissions follow-up",
-            intent: parsed.data.intent || parsed.data.goal,
+            educationOrWork: input.educationOrWork || "Counselling completed",
+            goal: input.goal,
+            preferredCounsellingTime: input.preferredCounsellingTime || "Admissions follow-up",
+            intent: input.intent || input.goal,
             counsellingStatus: "COUNSELLING_COMPLETED",
             source: "NEXA_ONBOARDING"
           }

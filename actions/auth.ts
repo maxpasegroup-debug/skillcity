@@ -6,11 +6,12 @@ import { checkRateLimit } from "@/lib/security/rate-limit";
 import { resolveDefaultV2Workspace } from "@/lib/auth/v2-governance";
 import { hashPassword, verifyPassword } from "@/lib/security/password";
 import { createOtp, createToken, hashToken } from "@/lib/security/token";
-import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, resetPinSchema, studentActivationProfileSchema, whatsappPinLoginSchema } from "@/features/auth/schemas";
+import { labsSignupSchema, loginSchema, mobilePinLoginSchema, mobilePinResetRequestSchema, mobilePinResetSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, resetPinSchema, studentActivationProfileSchema, whatsappPinLoginSchema } from "@/features/auth/schemas";
 import { createSession, getCurrentUser, revokeCurrentSession } from "@/server/auth/session";
 import { sendEmail } from "@/server/email/provider";
 import { otpEmail, resetPasswordEmail, welcomeEmail } from "@/emails/templates";
 import { siteConfig } from "@/config/site";
+import { sendWhatsAppMessage } from "@/server/whatsapp/service";
 
 type ActionState = {
   ok: boolean;
@@ -75,6 +76,118 @@ export async function registerAction(_: ActionState, formData: FormData): Promis
   redirect("/");
 }
 
+function normalizeAccountMobile(value: string) {
+  const digits = value.replace(/\D/g, "");
+  return digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits;
+}
+
+const DEFAULT_CEO_MOBILE = "8089239823";
+
+async function ensureInitialCeoMobileCredential(mobile: string) {
+  if (mobile.replace(/\D/g, "") !== DEFAULT_CEO_MOBILE) return;
+  const pinHash = process.env.INITIAL_CEO_PIN_HASH?.trim();
+  if (!pinHash?.startsWith("$2")) return;
+  const role = await prisma.role.upsert({ where: { name: "CEO" }, update: { key: "CEO", system: true, deletedAt: null }, create: { name: "CEO", key: "CEO", system: true, description: "Chief Executive Officer" } });
+  const user = await prisma.user.upsert({
+    where: { email: "8089239823@ceo.airaskillcity.local" },
+    update: { name: "AIRA Skill City CEO", status: "ACTIVE", deletedAt: null },
+    create: { name: "AIRA Skill City CEO", email: "8089239823@ceo.airaskillcity.local", passwordHash: pinHash, status: "ACTIVE" }
+  });
+  await prisma.userRole.upsert({ where: { userId_roleId: { userId: user.id, roleId: role.id } }, update: {}, create: { userId: user.id, roleId: role.id } });
+  await prisma.studentLoginCredential.upsert({
+    where: { whatsapp: DEFAULT_CEO_MOBILE },
+    update: { userId: user.id, status: "ACTIVE", revokedAt: null },
+    create: { userId: user.id, whatsapp: DEFAULT_CEO_MOBILE, pinHash, temporary: false, mustResetPin: false }
+  });
+}
+
+export async function labsSignupAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = labsSignupSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check your details" };
+
+  const mobile = normalizeAccountMobile(parsed.data.mobile);
+  const limited = await checkRateLimit(`labs-register:${mobile}`, 3, 60_000);
+  if (!limited.allowed) return { ok: false, message: "Please wait a minute and try again." };
+
+  const existing = await prisma.studentLoginCredential.findUnique({ where: { whatsapp: mobile } });
+  if (existing) return { ok: false, message: "An account already exists for this mobile number. Sign in instead." };
+
+  const labsRole = await prisma.role.findUnique({ where: { key: "LABS_MEMBER" } });
+  if (!labsRole || labsRole.deletedAt) return { ok: false, message: "AIRA Labs account setup is temporarily unavailable." };
+
+  const pinHash = await hashPassword(parsed.data.pin);
+  const user = await prisma.user.create({
+    data: {
+      name: parsed.data.name,
+      email: `${mobile.replace(/\D/g, "")}@member.airalabs.local`,
+      passwordHash: pinHash,
+      status: "ACTIVE",
+      roles: { create: { roleId: labsRole.id } },
+      studentLoginCredentials: { create: { whatsapp: mobile, pinHash, temporary: false, mustResetPin: false } },
+      auditLogs: { create: { action: `LABS_ACCOUNT_REGISTERED:${parsed.data.accountPurpose}`, entity: "User" } }
+    }
+  });
+  await createSession(user.id);
+  redirect("/aira-labs/dashboard");
+}
+
+export async function mobilePinLoginAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = mobilePinLoginSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, message: "Mobile number or PIN is incorrect." };
+  const mobile = normalizeAccountMobile(parsed.data.mobile);
+  const limited = await checkRateLimit(`mobile-login:${mobile}`, 5, 15 * 60_000);
+  if (!limited.allowed) return { ok: false, message: "Too many attempts. Please wait and try again." };
+  await ensureInitialCeoMobileCredential(mobile);
+  const credential = await prisma.studentLoginCredential.findUnique({
+    where: { whatsapp: mobile },
+    include: { user: { include: { roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } }, accessScopes: true, employeeProfile: { include: { designation: true, organizationAssignments: true } } } } }
+  });
+  const valid = credential && credential.status === "ACTIVE" && !credential.revokedAt && credential.user.status === "ACTIVE" && !credential.user.deletedAt && await verifyPassword(parsed.data.pin, credential.pinHash);
+  if (!valid) return { ok: false, message: "Mobile number or PIN is incorrect." };
+  await prisma.auditLog.create({ data: { userId: credential.userId, action: "MOBILE_PIN_LOGIN", entity: "User", entityId: credential.userId } });
+  await createSession(credential.userId);
+  redirect(resolveDefaultV2Workspace(credential.user)?.href ?? "/workspace");
+}
+
+async function findMobileAccount(mobile: string) {
+  return prisma.studentLoginCredential.findUnique({ where: { whatsapp: normalizeAccountMobile(mobile) }, include: { user: true } });
+}
+
+export async function requestMobilePinResetAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = mobilePinResetRequestSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: true, message: "If an account exists, an OTP has been sent." };
+  const mobile = normalizeAccountMobile(parsed.data.mobile);
+  const limited = await checkRateLimit(`mobile-reset:${mobile}`, 3, 15 * 60_000);
+  if (!limited.allowed) return { ok: false, message: "Please wait before requesting another OTP." };
+  await ensureInitialCeoMobileCredential(mobile);
+  const account = await findMobileAccount(mobile);
+  if (account) {
+    const otp = createOtp();
+    await prisma.passwordResetToken.create({ data: { userId: account.userId, tokenHash: hashToken(`${mobile}:${otp}`), expiresAt: new Date(Date.now() + 10 * 60_000) } });
+    await sendWhatsAppMessage({ to: mobile, template: "mobile_pin_reset_otp", message: `Your AIRA verification OTP is ${otp}. It expires in 10 minutes.`, userId: account.userId, metadata: { sensitive: true } });
+  }
+  return { ok: true, message: "If an account exists, an OTP has been sent." };
+}
+
+export async function resetMobilePinWithOtpAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = mobilePinResetSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the OTP and PIN." };
+  const account = await findMobileAccount(parsed.data.mobile);
+  if (!account) return { ok: false, message: "The OTP is invalid or expired." };
+  const mobile = normalizeAccountMobile(parsed.data.mobile);
+  const reset = await prisma.passwordResetToken.findFirst({ where: { userId: account.userId, tokenHash: hashToken(`${mobile}:${parsed.data.otp}`), usedAt: null, expiresAt: { gt: new Date() } }, orderBy: { createdAt: "desc" } });
+  if (!reset) return { ok: false, message: "The OTP is invalid or expired." };
+  const pinHash = await hashPassword(parsed.data.pin);
+  await prisma.$transaction([
+    prisma.studentLoginCredential.update({ where: { id: account.id }, data: { pinHash, temporary: false, mustResetPin: false } }),
+    prisma.user.update({ where: { id: account.userId }, data: { passwordHash: pinHash } }),
+    prisma.passwordResetToken.update({ where: { id: reset.id }, data: { usedAt: new Date() } }),
+    prisma.session.updateMany({ where: { userId: account.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+    prisma.auditLog.create({ data: { userId: account.userId, action: "MOBILE_PIN_RESET_COMPLETED", entity: "User", entityId: account.userId } })
+  ]);
+  redirect("/aira-labs/sign-in");
+}
+
 export async function loginAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -100,6 +213,9 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
 
   if (user.status === "SUSPENDED") {
     return { ok: false, message: "This account is currently unavailable." };
+  }
+  if (user.status !== "ACTIVE") {
+    return { ok: false, message: "Verify your email before signing in." };
   }
 
   await prisma.auditLog.create({ data: { userId: user.id, action: "USER_LOGGED_IN", entity: "User", entityId: user.id } });

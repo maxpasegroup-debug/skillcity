@@ -12,7 +12,9 @@ type SendWhatsAppMessageInput = {
 };
 
 export async function sendWhatsAppMessage(input: SendWhatsAppMessageInput) {
-  const storedMessage = input.template === "approved_admission_pin" ? "[REDACTED: admission credential]" : input.message;
+  const storedMessage = input.template === "approved_admission_pin"
+    ? "[REDACTED: admission credential]"
+    : input.template.includes("otp") ? "[REDACTED: authentication credential]" : input.message;
   const queued = await prisma.whatsAppMessageLog.create({
     data: {
       to: input.to,

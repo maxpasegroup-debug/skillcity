@@ -49,6 +49,19 @@ describe("email login", () => {
     await expect(loginAction({ ok: false, message: "" }, loginForm())).rejects.toThrow("REDIRECT:/advisor/dashboard");
   });
 
+  it("routes an AIRA Labs member to the personal Labs dashboard", async () => {
+    mocks.findUnique.mockResolvedValue({ id: "user-1", deletedAt: null, status: "ACTIVE", passwordHash: "hash", roles: [{ role: { name: "AIRA Labs Member", permissions: [] } }], accessScopes: [], employeeProfile: null });
+    mocks.verifyPassword.mockResolvedValue(true);
+    await expect(loginAction({ ok: false, message: "" }, loginForm())).rejects.toThrow("REDIRECT:/aira-labs/dashboard");
+  });
+
+  it("requires email verification before password login", async () => {
+    mocks.findUnique.mockResolvedValue({ id: "user-1", deletedAt: null, status: "PENDING_EMAIL_VERIFICATION", passwordHash: "hash" });
+    mocks.verifyPassword.mockResolvedValue(true);
+    await expect(loginAction({ ok: false, message: "" }, loginForm())).resolves.toEqual({ ok: false, message: "Verify your email before signing in." });
+    expect(mocks.createSession).not.toHaveBeenCalled();
+  });
+
   it("rejects an invalid password without creating a session", async () => {
     mocks.findUnique.mockResolvedValue({ id: "user-1", deletedAt: null, status: "ACTIVE", passwordHash: "hash" });
     mocks.verifyPassword.mockResolvedValue(false);

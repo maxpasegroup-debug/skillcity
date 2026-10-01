@@ -1,7 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { isAiraLabsHostname } from "@/lib/aira-labs/domain";
 
-export function proxy() {
-  const response = NextResponse.next();
+export function proxy(request: NextRequest) {
+  const hostname = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const response = isAiraLabsHostname(hostname) && request.nextUrl.pathname === "/"
+    ? NextResponse.rewrite(new URL("/aira-labs", request.url))
+    : NextResponse.next();
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");

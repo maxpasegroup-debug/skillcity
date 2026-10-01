@@ -23,7 +23,7 @@ export async function getLabsCatalogData() {
       }
     }
   });
-  return { actor, products, canCreate: hasPermission(actor, PERMISSIONS.LABS_CREATE) };
+  return { actor, products, canCreate: hasPermission(actor, PERMISSIONS.LABS_CREATE), canManageCommercial: hasPermission(actor, PERMISSIONS.LABS_COMMERCIAL_MANAGE) };
 }
 
 export async function getLabsCreateOptions() {
